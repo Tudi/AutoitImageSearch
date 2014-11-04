@@ -42,11 +42,16 @@ HBITMAP LoadPicture(char *aFilespec, int aWidth, int aHeight, int &aImageType, i
 LPCOLORREF getbits(HBITMAP ahImage, HDC hdc, LONG &aWidth, LONG &aHeight, bool &aIs16Bit, int aMinColorDepth = 8);
 
 char* WINAPI ImageSearch(int aLeft, int aTop, int aRight, int aBottom, char *aImageFile);
+
 void WINAPI TakeScreenshot(int aLeft, int aTop, int aRight, int aBottom);
 void WINAPI SaveScreenshot();
 void WINAPI ResizeScreenshot( int NewWidth, int NewHeight );
 void WINAPI ReleaseScreenshot( );
 void WINAPI BlurrImage( int HalfKernelSize );
-char* WINAPI ImageSearchOnScreenshot( char *aImageFile );
+char* WINAPI ImageSearchOnScreenshot( char *aImageFile, int TransparentColor, int AcceptedColorDiff, int AcceptedErrorCount, int StopAfterNMatches );
+
+void DumpAsPPM( unsigned char *R,unsigned char *G,unsigned char *B, int Width, int Height );
+void DumpAsPPM( LPCOLORREF RGB, int Width, int Height );
+void DumpAsPPM( LPCOLORREF RGB, int Width, int Height, int Stride );
 
 #endif
