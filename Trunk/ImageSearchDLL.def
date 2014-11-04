@@ -1,0 +1,12 @@
+LIBRARY	"ImageSearchDLL"
+
+EXPORTS
+
+	ImageSearch
+	TakeScreenshot
+	SaveScreenshot	
+	ResizeScreenshot
+	BlurrImage
+	ImageSearchOnScreenshot
+	
+	
