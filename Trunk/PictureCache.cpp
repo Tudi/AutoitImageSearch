@@ -75,6 +75,8 @@ void CheckPrepareToleranceMaps( CachedPicture *cache, int NewTolerance, int Tran
 	if( NewTolerance == cache->MinMaxMapTolerance && TransparentColor == cache->TransparentColor )
 		return;
 
+	FileDebug( "Generating tolerance map" );
+
 	cache->MinMaxMapTolerance = NewTolerance;
 	cache->TransparentColor = TransparentColor;
 

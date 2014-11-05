@@ -133,19 +133,26 @@ char* WINAPI ImageSearchOnScreenshot( char *aFilespec, int TransparentColor, int
 	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
 	if( AcceptedColorDiff > 0 )
 	{
+		FileDebug( "\t Image search with tolerance" );
 		CheckPrepareToleranceMaps( cache, AcceptedColorDiff, TransparentColor );
+		FileDebug( "\t Image search generated tolerance maps" );
 //DumpAsPPM( MinMap[0], MinMap[1], MinMap[2], cache->Width, cache->Height );
 //DumpAsPPM( &CurScreenshot->Pixels[ 40 * Width + 40 ], 40, 40, Width );
 //DumpAsPPM( MaxMap[0], MaxMap[1], MaxMap[2], cache->Width, cache->Height );
-		for( int y = 0; y < Height; y +=1 )
-			for( int x = 0; x < Width; x += 1 )
+		for( int y = 0; y < Height - cache->Height; y +=1 )
+		{
+			for( int x = 0; x < Width - cache->Width; x += 1 )
 			{
 				int ImageMatched = 1;
 				int FoundErrors = 0;
 				for( int y2=0;y2<cache->Height;y2++ )
 				{
+//					if( y + y2 >= Height )
+//						break;
 					for( int x2=0;x2<cache->Width;x2++)
 					{
+//						if( x + x2 >= Width )
+//							break;
 						int PixelIndexDst = ( 0 + y2 ) * cache->Width + 0 + x2;
 						int PixelIndexSrc = ( y + y2 ) * Width + x + x2;
 						COLORREF BGRSrc = CurScreenshot->Pixels[ PixelIndexSrc ];
@@ -181,22 +188,24 @@ AbandonIMageInImageSearch:
 				if( ImageMatched == 1 )
 				{
 					FileDebug( "Image search found a match" );
-					sprintf_s( ReturnBuff2, DEFAULT_STR_BUFFER_SIZE*10, "%s|%d|%d", ReturnBuff, x, y );
+					sprintf_s( ReturnBuff2, DEFAULT_STR_BUFFER_SIZE*10, "%s|%d|%d", ReturnBuff2, CurScreenshot->Left + x, CurScreenshot->Top + y );
 					FileDebug( ReturnBuff2 );
 					MatchesFound++;
 					if( MatchesFound >= StopAfterNMatches )
 						goto docleanupandreturn;
 				}
 			}
+		}
 docleanupandreturn:
-			;
+			if( MatchesFound == 0 )
+				FileDebug( "\t Image search found no matches" );
 	}
 	else
 	{
 //DumpAsPPM( &CurScreenshot->Pixels[ 40 * Width + 40 ], 40, 40, Width );
 //DumpAsPPM( &cache->Pixels[ 0 ], 40, 40 );
-		for( int y = 0; y < Height; y +=1 )
-			for( int x = 0; x < Width; x += 1 )
+		for( int y = 0; y < Height - cache->Height; y +=1 )
+			for( int x = 0; x < Width - cache->Width; x += 1 )
 			{
 				int ImageMatched = 1;
 				int FoundErrors = 0;
@@ -226,7 +235,7 @@ AbandonIMageInImageSearch2:
 				if( ImageMatched == 1 )
 				{
 					FileDebug( "Image search found a match" );
-					sprintf_s( ReturnBuff2, DEFAULT_STR_BUFFER_SIZE*10, "%s|%d|%d", ReturnBuff, x, y );
+					sprintf_s( ReturnBuff2, DEFAULT_STR_BUFFER_SIZE*10, "%s|%d|%d", ReturnBuff2, CurScreenshot->Left + x, CurScreenshot->Top + y );
 					FileDebug( ReturnBuff2 );
 					MatchesFound++;
 					if( MatchesFound >= StopAfterNMatches )
@@ -237,6 +246,7 @@ docleanupandreturn2:
 			;
 	}
 	sprintf_s( ReturnBuff, DEFAULT_STR_BUFFER_SIZE*10, "%d%s", MatchesFound, ReturnBuff2 );
+	FileDebug( "\tImage search finished" );
 	return ReturnBuff;
 }
 
@@ -302,8 +312,8 @@ char* WINAPI ImageSearchOnScreenshotMasked( char *aFilespec, char *MaskFile, int
 //DumpAsPPM( MinMap[0], MinMap[1], MinMap[2], cache->Width, cache->Height );
 //DumpAsPPM( &CurScreenshot->Pixels[ 40 * Width + 40 ], 40, 40, Width );
 //DumpAsPPM( MaxMap[0], MaxMap[1], MaxMap[2], cache->Width, cache->Height );
-		for( int y = 0; y < Height; y +=1 )
-			for( int x = 0; x < Width; x += 1 )
+		for( int y = 0; y < Height - cache->Height; y +=1 )
+			for( int x = 0; x < Width - cache->Width; x += 1 )
 			{
 				int ImageMatched = 1;
 				int FoundErrors = 0;
@@ -349,7 +359,7 @@ AbandonIMageInImageSearch:
 				if( ImageMatched == 1 )
 				{
 					FileDebug( "Image search found a match" );
-					sprintf_s( ReturnBuff2, DEFAULT_STR_BUFFER_SIZE*10, "%s|%d|%d", ReturnBuff, x, y );
+					sprintf_s( ReturnBuff2, DEFAULT_STR_BUFFER_SIZE*10, "%s|%d|%d", ReturnBuff2, CurScreenshot->Left + x, CurScreenshot->Top + y );
 					FileDebug( ReturnBuff2 );
 					MatchesFound++;
 					if( MatchesFound >= StopAfterNMatches )
@@ -363,8 +373,8 @@ docleanupandreturn:
 	{
 //DumpAsPPM( &CurScreenshot->Pixels[ 40 * Width + 40 ], 40, 40, Width );
 //DumpAsPPM( &cache->Pixels[ 0 ], 40, 40 );
-		for( int y = 0; y < Height; y +=1 )
-			for( int x = 0; x < Width; x += 1 )
+		for( int y = 0; y < Height - cache->Height; y +=1 )
+			for( int x = 0; x < Width - cache->Width; x += 1 )
 			{
 				int ImageMatched = 1;
 				int FoundErrors = 0;
@@ -397,7 +407,7 @@ AbandonIMageInImageSearch2:
 				if( ImageMatched == 1 )
 				{
 					FileDebug( "Image search found a match" );
-					sprintf_s( ReturnBuff2, DEFAULT_STR_BUFFER_SIZE*10, "%s|%d|%d", ReturnBuff, x, y );
+					sprintf_s( ReturnBuff2, DEFAULT_STR_BUFFER_SIZE*10, "%s|%d|%d", ReturnBuff2, CurScreenshot->Left + x, CurScreenshot->Top + y );
 					FileDebug( ReturnBuff2 );
 					MatchesFound++;
 					if( MatchesFound >= StopAfterNMatches )
