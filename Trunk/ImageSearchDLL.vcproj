@@ -205,6 +205,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\MotionEstimation.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\MotionEstimation.h"
+				>
+			</File>
+			<File
 				RelativePath=".\PictureCache.cpp"
 				>
 			</File>

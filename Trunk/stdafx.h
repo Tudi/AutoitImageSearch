@@ -58,6 +58,8 @@
 
 #define DEFAULT_STR_BUFFER_SIZE 1024
 
+#define SSE_PADDING				32	//12 bytes would be enough
+
 #include "PictureCache.h"
 #include "util.h"
 #include "resampling.h"
@@ -65,5 +67,6 @@
 #include "debug.h"
 #include "SaveImages.h"
 #include "ImageFilters.h"
+#include "MotionEstimation.h"
 
 // TODO: reference additional headers your program requires here

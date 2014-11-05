@@ -20,6 +20,11 @@ void WINAPI ReleaseScreenshot()
 
 void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 {
+	if( CurScreenshot->Pixels != NULL )
+	{
+		FileDebug( "Can not take screenshot as older one was not yet released." );
+		return;
+	}
 	CurScreenshot->Left = aLeft;
 	CurScreenshot->Top = aTop;
 	CurScreenshot->Right = aRight;
@@ -83,17 +88,11 @@ end:
 void WINAPI TakeScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 {
 	FileDebug( "Started taking the screenshot" );
-	if( CurScreenshot->Pixels != NULL )
-	{
-		ReleaseScreenshot();
-		CurScreenshot->Pixels = NULL;
-	}
-	if( CurScreenshot->Pixels == NULL )
-	{
-		TakeNewScreenshot( aLeft, aTop, aRight, aBottom );
-	}
+	CycleScreenshots();
+	ReleaseScreenshot();
+	TakeNewScreenshot( aLeft, aTop, aRight, aBottom );
 
-	FileDebug( "Finished taking the screenshot" );
+	FileDebug( "\tFinished taking the screenshot" );
 //	if( CurScreenshot->Pixels == NULL )
 //		FileDebug( "WARNING:Screenshot buffer is null when taking the screenshot!" );
 
@@ -128,27 +127,24 @@ char* WINAPI ImageSearchOnScreenshot( char *aFilespec, int TransparentColor, int
 		return "";
 	}
 
-	BITMAP bitmap;
-	GetObject( cache->LoadedPicture, sizeof(BITMAP), &bitmap); // Realistically shouldn't fail at this stage.
-
 	int Width = CurScreenshot->Right - CurScreenshot->Left;
 	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
 	if( AcceptedColorDiff > 0 )
 	{
 		CheckPrepareToleranceMaps( cache, AcceptedColorDiff, TransparentColor );
-//DumpAsPPM( MinMap[0], MinMap[1], MinMap[2], bitmap.bmWidth, bitmap.bmHeight );
+//DumpAsPPM( MinMap[0], MinMap[1], MinMap[2], cache->Width, cache->Height );
 //DumpAsPPM( &CurScreenshot->Pixels[ 40 * Width + 40 ], 40, 40, Width );
-//DumpAsPPM( MaxMap[0], MaxMap[1], MaxMap[2], bitmap.bmWidth, bitmap.bmHeight );
+//DumpAsPPM( MaxMap[0], MaxMap[1], MaxMap[2], cache->Width, cache->Height );
 		for( int y = 0; y < Height; y +=1 )
 			for( int x = 0; x < Width; x += 1 )
 			{
 				int ImageMatched = 1;
 				int FoundErrors = 0;
-				for( int y2=0;y2<bitmap.bmHeight;y2++ )
+				for( int y2=0;y2<cache->Height;y2++ )
 				{
-					for( int x2=0;x2<bitmap.bmWidth;x2++)
+					for( int x2=0;x2<cache->Width;x2++)
 					{
-						int PixelIndexDst = ( 0 + y2 ) * bitmap.bmWidth + 0 + x2;
+						int PixelIndexDst = ( 0 + y2 ) * cache->Width + 0 + x2;
 						int PixelIndexSrc = ( y + y2 ) * Width + x + x2;
 						COLORREF BGRSrc = CurScreenshot->Pixels[ PixelIndexSrc ];
 						int Cols[3];
@@ -202,12 +198,12 @@ docleanupandreturn:
 			{
 				int ImageMatched = 1;
 				int FoundErrors = 0;
-				for( int y2=0;y2<bitmap.bmHeight;y2++ )
+				for( int y2=0;y2<cache->Height;y2++ )
 				{
-					for( int x2=0;x2<bitmap.bmWidth;x2++)
+					for( int x2=0;x2<cache->Width;x2++)
 					{
 						int PixelIndexSrc = ( y + y2 ) * Width + x + x2;
-						int PixelIndexDst = ( 0 + y2 ) * bitmap.bmWidth + 0 + x2;
+						int PixelIndexDst = ( 0 + y2 ) * cache->Width + 0 + x2;
 						COLORREF BGRSrc = CurScreenshot->Pixels[ PixelIndexSrc ];
 						COLORREF BGRDst = cache->Pixels[ PixelIndexDst ];
 						if( BGRDst == TransparentColor || BGRSrc == BGRDst )

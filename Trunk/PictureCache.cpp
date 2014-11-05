@@ -55,8 +55,14 @@ CachedPicture *CachePicture( char *aFilespec )
 		return NULL;
 	}
 
+	PictureCache[NrPicturesCached].Width = image_width;
+	PictureCache[NrPicturesCached].Height = image_height;
+
+
 	NrPicturesCached++;
 	ReleaseDC(NULL, hdc);
+
+	FileDebug( "\tFinished caching image" );
 
 	return &PictureCache[NrPicturesCached-1];
 }
@@ -72,42 +78,39 @@ void CheckPrepareToleranceMaps( CachedPicture *cache, int NewTolerance, int Tran
 	cache->MinMaxMapTolerance = NewTolerance;
 	cache->TransparentColor = TransparentColor;
 
-	BITMAP bitmap;
-	GetObject( cache->LoadedPicture, sizeof(BITMAP), &bitmap); // Realistically shouldn't fail at this stage.
-
 	if( cache->MinMap[0] == NULL )
 	{
 		for( int i = 0;i<3;i++)
 		{
-			cache->MinMap[i] = (unsigned char *)malloc( bitmap.bmWidth * bitmap.bmHeight );
-			cache->MaxMap[i] = (unsigned char *)malloc( bitmap.bmWidth * bitmap.bmHeight );
+			cache->MinMap[i] = (unsigned char *)malloc( cache->Width * cache->Height + SSE_PADDING );
+			cache->MaxMap[i] = (unsigned char *)malloc( cache->Width * cache->Height + SSE_PADDING );
 		}
 	}
 
-	for( int y = 0; y < bitmap.bmHeight; y +=1 )
-		for( int x = 0; x < bitmap.bmWidth; x += 1 )
+	for( int y = 0; y < cache->Height; y +=1 )
+		for( int x = 0; x < cache->Width; x += 1 )
 		{
-			if( ( cache->Pixels[ y * bitmap.bmWidth + x ] & 0x00FFFFFF ) == TransparentColor )
+			if( ( cache->Pixels[ y * cache->Width + x ] & 0x00FFFFFF ) == TransparentColor )
 			{
 				for( int i=0;i<3;i++)
 				{
-					cache->MinMap[i][ y * bitmap.bmWidth + x ] = 0;
-					cache->MaxMap[i][ y * bitmap.bmWidth + x ] = 255;
+					cache->MinMap[i][ y * cache->Width + x ] = 0;
+					cache->MaxMap[i][ y * cache->Width + x ] = 255;
 				}
 			}
 			else
 			{
 				for( int i=0;i<3;i++)
 				{
-					int col = ( ((int)cache->Pixels[ y * bitmap.bmWidth + x ]) >> ( i * 8 ) ) & 0xFF;
+					int col = ( ((int)cache->Pixels[ y * cache->Width + x ]) >> ( i * 8 ) ) & 0xFF;
 					int min = (int)col - NewTolerance;
 					int max = (int)col + NewTolerance;
 					if( min < 0 )
 						min = 0;
 					if( max > 255 )
 						max = 255;
-					cache->MinMap[i][ y * bitmap.bmWidth + x ] = min;
-					cache->MaxMap[i][ y * bitmap.bmWidth + x ] = max;
+					cache->MinMap[i][ y * cache->Width + x ] = min;
+					cache->MaxMap[i][ y * cache->Width + x ] = max;
 				}
 			}
 		}

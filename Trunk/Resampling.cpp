@@ -170,7 +170,7 @@ void WINAPI ResizeScreenshot( int NewWidth, int NewHeight )
 		FileDebug( "WARNING:Screenshot buffer is null when trying to resize it!" );
 		return;
 	}
-	LPCOLORREF new_Pixels = (COLORREF*)malloc( NewWidth * NewHeight * sizeof( COLORREF ) );
+	LPCOLORREF new_Pixels = (COLORREF*)malloc( NewWidth * NewHeight * sizeof( COLORREF ) + SSE_PADDING );
 	int Width = CurScreenshot->Right - CurScreenshot->Left;
 	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
 	ResampleRGBLiniar4ByteDownsample( (unsigned char *)CurScreenshot->Pixels, (unsigned char *)new_Pixels, Width, Height, NewWidth, NewHeight );

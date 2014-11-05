@@ -10,7 +10,7 @@ void WINAPI BlurrImage( int HalfKernelSize )
 	}
 	int Width = CurScreenshot->Right - CurScreenshot->Left;
 	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
-	LPCOLORREF new_Pixels = (COLORREF*)malloc( Width * Height * sizeof( COLORREF ) );
+	LPCOLORREF new_Pixels = (COLORREF*)malloc( Width * Height * sizeof( COLORREF ) + SSE_PADDING );
 	if( new_Pixels == NULL )
 	{
 		FileDebug( "Error:Could not allocate buffer for blur!" );

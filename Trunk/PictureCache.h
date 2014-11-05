@@ -8,6 +8,7 @@ struct CachedPicture
 	char			FileName[ DEFAULT_STR_BUFFER_SIZE ];
 	HBITMAP			LoadedPicture;
 	LPCOLORREF		Pixels;
+	int				Width,Height;
 	//there is a large chance that we will do the same searches over and over for these images. Maybe we can afford to prepare a cache
 	int				MinMaxMapTolerance,TransparentColor;
 	unsigned char	*MinMap[3];
