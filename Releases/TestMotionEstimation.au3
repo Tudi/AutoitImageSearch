@@ -14,6 +14,10 @@ while( $FoundMotion == 0 )
 wend
 DllCall( $dllhandle, "NONE", "SaveDiffMap" )
 DllCall( $dllhandle, "NONE", "SaveScreenshotDiffMask","int",0 )
+; errode removes small change regions and will make existing ones more "round". Errode is good for us because diffmask precision is a 4x4 pixel
+DllCall( $dllhandle, "NONE", "ErrodeDiffMap","int",5 )
+DllCall( $dllhandle, "NONE", "SaveDiffMap" )
+DllCall( $dllhandle, "NONE", "SaveScreenshotDiffMask","int",0 )
 
 DllClose ( $dllhandle )
 
