@@ -64,5 +64,6 @@
 #include "InputProcess.h"
 #include "debug.h"
 #include "SaveImages.h"
+#include "ImageFilters.h"
 
 // TODO: reference additional headers your program requires here

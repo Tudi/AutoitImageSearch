@@ -1,6 +1,4 @@
-#include <ImageSearch.au3>
-
-$dllhandle = DllOpen ( "ImageSearchDLL/Release/ImageSearchDLL.dll" )
+$dllhandle = DllOpen ( "Release/ImageSearchDLL.dll" )
 
 $result = DllCall( $dllhandle,"str","TakeScreenshot","int",0,"int",0,"int",800,"int",800)
 $result = DllCall( $dllhandle,"str","SaveScreenshot")

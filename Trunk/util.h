@@ -27,14 +27,8 @@ GNU General Public License for more details.
 #define CLR_NONE 0xFFFFFFFF
 #define IS_SPACE_OR_TAB(c) (c == ' ' || c == '\t')
 
-HBITMAP LoadPicture(char *aFilespec, int aWidth, int aHeight, int &aImageType, int aIconNumber
-	, bool aUseGDIPlusIfAvailable);
-
+HBITMAP LoadPicture(char *aFilespec, int aWidth, int aHeight, int &aImageType, int aIconNumber, bool aUseGDIPlusIfAvailable);
 LPCOLORREF getbits(HBITMAP ahImage, HDC hdc, LONG &aWidth, LONG &aHeight, bool &aIs16Bit, int aMinColorDepth = 8);
-
 char* WINAPI ImageSearch(int aLeft, int aTop, int aRight, int aBottom, char *aImageFile);
-
-void WINAPI BlurrImage( int HalfKernelSize );
-char* WINAPI ImageSearchOnScreenshot( char *aImageFile, int TransparentColor, int AcceptedColorDiff, int AcceptedErrorCount, int StopAfterNMatches );
 
 #endif

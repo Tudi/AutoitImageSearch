@@ -1,0 +1,6 @@
+- initialize the DLL once in your autoit script
+	$dllhandle = DllOpen ( "Release/ImageSearchDLL.dll" )
+
+- Screenshots get cached. Take one screenshot and process it more than once if you can
+
+- Image used for searches get cached for same search parameters ( tolerance and transparency ). Maybe use global transparency color. Use same tolerance for same image

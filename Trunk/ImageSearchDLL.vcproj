@@ -185,6 +185,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ImageFilters.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\ImageFilters.h"
+				>
+			</File>
+			<File
 				RelativePath=".\ImageSearchDLL.cpp"
 				>
 			</File>

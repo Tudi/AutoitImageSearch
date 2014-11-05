@@ -55,3 +55,55 @@ CachedPicture *CachePicture( char *aFilespec )
 
 	return &PictureCache[NrPicturesCached-1];
 }
+
+void CheckPrepareToleranceMaps( CachedPicture *cache, int NewTolerance, int TransparentColor )
+{
+	if( cache == NULL )
+		return;
+
+	if( NewTolerance == cache->MinMaxMapTolerance && TransparentColor == cache->TransparentColor )
+		return;
+
+	cache->MinMaxMapTolerance = NewTolerance;
+	cache->TransparentColor = TransparentColor;
+
+	BITMAP bitmap;
+	GetObject( cache->LoadedPicture, sizeof(BITMAP), &bitmap); // Realistically shouldn't fail at this stage.
+
+	if( cache->MinMap[0] == NULL )
+	{
+		for( int i = 0;i<3;i++)
+		{
+			cache->MinMap[i] = (unsigned char *)malloc( bitmap.bmWidth * bitmap.bmHeight );
+			cache->MaxMap[i] = (unsigned char *)malloc( bitmap.bmWidth * bitmap.bmHeight );
+		}
+	}
+
+	for( int y = 0; y < bitmap.bmHeight; y +=1 )
+		for( int x = 0; x < bitmap.bmWidth; x += 1 )
+		{
+			if( ( cache->Pixels[ y * bitmap.bmWidth + x ] & 0x00FFFFFF ) == TransparentColor )
+			{
+				for( int i=0;i<3;i++)
+				{
+					cache->MinMap[i][ y * bitmap.bmWidth + x ] = 0;
+					cache->MaxMap[i][ y * bitmap.bmWidth + x ] = 255;
+				}
+			}
+			else
+			{
+				for( int i=0;i<3;i++)
+				{
+					int col = ( ((int)cache->Pixels[ y * bitmap.bmWidth + x ]) >> ( i * 8 ) ) & 0xFF;
+					int min = (int)col - NewTolerance;
+					int max = (int)col + NewTolerance;
+					if( min < 0 )
+						min = 0;
+					if( max > 255 )
+						max = 255;
+					cache->MinMap[i][ y * bitmap.bmWidth + x ] = min;
+					cache->MaxMap[i][ y * bitmap.bmWidth + x ] = max;
+				}
+			}
+		}
+}
