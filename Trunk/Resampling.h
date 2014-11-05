@@ -10,5 +10,7 @@
 void ResampleRGBLiniar( unsigned char *src, unsigned char *dst, int SrcW, int SrcH, int DestW, int DestH, bool KeepAspectRatio  );
 void ResampleRGBLiniar4ByteDownsample( unsigned char *psrc, unsigned char *pdst, int SrcW, int SrcH, int DestW, int DestH, int SrcStride = 0, int DestStride = 0 );
 
+void WINAPI ResizeScreenshot( int NewWidth, int NewHeight );
+
 #endif
 

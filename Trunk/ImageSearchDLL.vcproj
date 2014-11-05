@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;IMAGESEARCHDLL_EXPORTS"
+				PreprocessorDefinitions="LIBRARY_EXPORTS&apos;WIN32;_DEBUG;_WINDOWS;_USRDLL;IMAGESEARCHDLL_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -117,7 +117,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;IMAGESEARCHDLL_EXPORTS"
+				PreprocessorDefinitions="LIBRARY_EXPORTS;WIN32;NDEBUG;_WINDOWS;_USRDLL;IMAGESEARCHDLL_EXPORTS"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="2"
 				WarningLevel="3"
@@ -177,6 +177,14 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\debug.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\debug.h"
+				>
+			</File>
+			<File
 				RelativePath=".\ImageSearchDLL.cpp"
 				>
 			</File>
@@ -185,11 +193,31 @@
 				>
 			</File>
 			<File
+				RelativePath=".\InputProcess.h"
+				>
+			</File>
+			<File
+				RelativePath=".\PictureCache.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\PictureCache.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Resampling.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\Resampling.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SaveImages.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\SaveImages.h"
 				>
 			</File>
 			<File

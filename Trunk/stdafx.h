@@ -50,7 +50,19 @@
 #include <tchar.h>
 #include <atlimage.h>
 
+#ifdef LIBRARY_EXPORTS
+#    define LIBRARY_API __declspec(dllexport)
+#else
+#    define LIBRARY_API __declspec(dllimport)
+#endif
+
+#define DEFAULT_STR_BUFFER_SIZE 1024
+
+#include "PictureCache.h"
 #include "util.h"
 #include "resampling.h"
+#include "InputProcess.h"
+#include "debug.h"
+#include "SaveImages.h"
 
 // TODO: reference additional headers your program requires here

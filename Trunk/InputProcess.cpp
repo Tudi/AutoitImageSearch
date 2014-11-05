@@ -1,20 +1,9 @@
 #include "StdAfx.h"
 
-#define MAX_PICTURE_CACHE_COUNT 500
-
-__declspec(dllexport) LPCOLORREF ScreenshotPixels = NULL;
-__declspec(dllexport) int ScreenshotLeft, ScreenshotTop, ScreenshotRight, ScreenshotBottom;
-__declspec(dllexport) CachedPicture PictureCache[MAX_PICTURE_CACHE_COUNT];
-__declspec(dllexport) int NrPicturesCached = 0;
-
-void FileDebug( char *what )
-{
-#ifdef _DEBUG
-	FILE *f = fopen( "debug.txt", "at" );
-	fprintf( f, "%s\n", what );
-	fclose( f );
-#endif
-}
+LIBRARY_API LPCOLORREF ScreenshotPixels = NULL;
+LIBRARY_API int ScreenshotLeft, ScreenshotTop, ScreenshotRight, ScreenshotBottom;
+LIBRARY_API CachedPicture PictureCache[MAX_PICTURE_CACHE_COUNT];
+LIBRARY_API int NrPicturesCached = 0;
 
 void WINAPI ReleaseScreenshot()
 {
@@ -105,61 +94,6 @@ void WINAPI TakeScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 	return ;
 }
 
-static int ImageFileAutoIncrement = 0;
-void WINAPI SaveScreenshot()
-{
-	FileDebug( "Started saving the screenshot" );
-
-	if( ScreenshotPixels == NULL )
-	{
-		FileDebug( "WARNING:Screenshot buffer is null when trying to save it to file!" );
-		return;
-	}
-	int Width = ScreenshotRight - ScreenshotLeft;
-	int Height = ScreenshotBottom - ScreenshotTop;
-	//find an available file name
-	char MyFileName[DEFAULT_STR_BUFFER_SIZE];
-	BOOL FileExists;
-	do {
-		sprintf_s( MyFileName, DEFAULT_STR_BUFFER_SIZE, "%s_%04d_%04d_%04d.bmp", "Screenshot", ImageFileAutoIncrement, Width, Height );
-		FileExists = ( _access( MyFileName, 0 ) == 0 );
-		ImageFileAutoIncrement++;
-	}while( FileExists == TRUE );
-
-	FileDebug( "chosen filename is :" );
-	FileDebug( MyFileName );
-
-	//create a bitmap and populate pixels on it
-	CImage Img;
-	Img.Create( Width, Height, 32 );
-	for( int y = 0; y < Height; y +=1 )
-		for( int x = 0; x < Width; x += 1 )
-//			Img.SetPixel( x, y, ScreenshotPixels[ y * Width + x ] );
-			Img.SetPixel( x, y, RGB( GetBValue( ScreenshotPixels[ y * Width + x ] ), GetGValue( ScreenshotPixels[ y * Width + x ] ), GetRValue( ScreenshotPixels[ y * Width + x ] ) ) );
-
-	Img.Save( MyFileName );
-}
-
-void WINAPI ResizeScreenshot( int NewWidth, int NewHeight )
-{
-	FileDebug( "Started resizing the screenshot" );
-	if( ScreenshotPixels == NULL )
-	{
-		FileDebug( "WARNING:Screenshot buffer is null when trying to resize it!" );
-		return;
-	}
-	LPCOLORREF new_ScreenshotPixels = (COLORREF*)malloc( NewWidth * NewHeight * sizeof( COLORREF ) );
-	int Width = ScreenshotRight - ScreenshotLeft;
-	int Height = ScreenshotBottom - ScreenshotTop;
-	ResampleRGBLiniar4ByteDownsample( (unsigned char *)ScreenshotPixels, (unsigned char *)new_ScreenshotPixels, Width, Height, NewWidth, NewHeight );
-	ScreenshotLeft = 0;
-	ScreenshotTop = 0;
-	ScreenshotRight = NewWidth;
-	ScreenshotBottom = NewHeight;
-	free( ScreenshotPixels );
-	ScreenshotPixels = new_ScreenshotPixels;
-}
-
 void WINAPI BlurrImage( int HalfKernelSize )
 {
 	FileDebug( "Started bluring screenshot" );
@@ -197,128 +131,6 @@ void WINAPI BlurrImage( int HalfKernelSize )
 	free( ScreenshotPixels );
 	ScreenshotPixels = new_ScreenshotPixels;
 	FileDebug( "Finished bluring screenshot" );
-}
-
-int GetCacheIndex( char *aFilespec )
-{
-	for( int i=0;i<NrPicturesCached;i++)
-		if( strstr( PictureCache[i].FileName, aFilespec ) )
-			return i;
-	return -1;
-}
-
-CachedPicture *CachePicture( char *aFilespec )
-{
-	FileDebug( "Started caching image" );
-	int ExistingCacheIndex = GetCacheIndex( aFilespec );
-	if( ExistingCacheIndex != -1 )
-	{
-		FileDebug( "Skipped caching image as it's already cached" );
-		return &PictureCache[NrPicturesCached];
-	}
-
-	if( NrPicturesCached >= MAX_PICTURE_CACHE_COUNT )
-	{
-		FileDebug( "Skipped caching image as no more cache slots available" );
-		return NULL; 
-	}
-	HDC hdc = GetDC(NULL);
-	if (!hdc)
-	{
-		FileDebug( "Skipped caching image as failed to lock DC" );
-		return NULL; 
-	}
-
-	strcpy_s( PictureCache[NrPicturesCached].FileName, DEFAULT_STR_BUFFER_SIZE, aFilespec );
-
-	int ImgType;
-	PictureCache[NrPicturesCached].LoadedPicture = LoadPicture( aFilespec, 0, 0, ImgType, 0, false );
-	if( PictureCache[NrPicturesCached].LoadedPicture == NULL )
-	{
-		FileDebug( "Skipped caching image as it could not be loaded" );
-		ReleaseDC(NULL, hdc);
-		return NULL;
-	}
-
-	bool image_is_16bit;
-	LONG image_width, image_height;
-	PictureCache[NrPicturesCached].Pixels = getbits( PictureCache[NrPicturesCached].LoadedPicture, hdc, image_width, image_height, image_is_16bit );
-	if( PictureCache[NrPicturesCached].Pixels == NULL )
-	{
-		FileDebug( "Skipped caching image as it could not be converted to pixel map" );
-		ReleaseDC(NULL, hdc);
-		return NULL;
-	}
-	NrPicturesCached++;
-	ReleaseDC(NULL, hdc);
-
-	return &PictureCache[NrPicturesCached-1];
-}
-
-void DumpAsPPM( unsigned char *R,unsigned char *G,unsigned char *B, int Width, int Height )
-{
-	//find an available file name
-	char MyFileName[DEFAULT_STR_BUFFER_SIZE];
-	BOOL FileExists;
-	int ImageFileAutoIncrement = 0;
-	do {
-		sprintf_s( MyFileName, DEFAULT_STR_BUFFER_SIZE, "%s_%04d_%04d_%04d.ppm", "dump", ImageFileAutoIncrement, Width, Height );
-		FileExists = ( _access( MyFileName, 0 ) == 0 );
-		ImageFileAutoIncrement++;
-	}while( FileExists == TRUE );
-
-	char Black = 0;
-	FILE *fp = fopen( MyFileName, "wb");
-	fprintf(fp, "P6\n%d %d\n255\n", Width, Height );
-	for( int i=0;i<Width*Height;i++)
-	{
-		if( R )
-			fwrite( &R[i], 1, 1, fp);
-		else
-			fwrite( &Black, 1, 1, fp);
-		if( G )
-			fwrite( &G[i], 1, 1, fp);
-		else
-			fwrite( &Black, 1, 1, fp);
-		if( B )
-			fwrite( &B[i], 1, 1, fp);
-		else
-			fwrite( &Black, 1, 1, fp);
-	}
-	fclose(fp);
-}
-
-void DumpAsPPM( LPCOLORREF RGB, int Width, int Height )
-{
-	DumpAsPPM( RGB, Width, Height, Width );
-}
-
-void DumpAsPPM( LPCOLORREF RGB, int Width, int Height, int Stride )
-{
-	//find an available file name
-	char MyFileName[DEFAULT_STR_BUFFER_SIZE];
-	BOOL FileExists;
-	int ImageFileAutoIncrement = 0;
-	do {
-		sprintf_s( MyFileName, DEFAULT_STR_BUFFER_SIZE, "%s_%04d_%04d_%04d.ppm", "dump", ImageFileAutoIncrement, Width, Height );
-		FileExists = ( _access( MyFileName, 0 ) == 0 );
-		ImageFileAutoIncrement++;
-	}while( FileExists == TRUE );
-
-	char Black = 0;
-	FILE *fp = fopen( MyFileName, "wb");
-	fprintf(fp, "P6\n%d %d\n255\n", Width, Height );
-	for( int y=0;y<Height;y++)
-		for( int x=0;x<Height;x++)
-	{
-		int R = GetRValue( RGB[ y * Stride + x ] );
-		int G = GetGValue( RGB[ y * Stride + x ] );
-		int B = GetBValue( RGB[ y * Stride + x ] );
-		fwrite( &R, 1, 1, fp);
-		fwrite( &G, 1, 1, fp);
-		fwrite( &B, 1, 1, fp);
-	}
-	fclose(fp);
 }
 
 char ReturnBuff[DEFAULT_STR_BUFFER_SIZE*10];

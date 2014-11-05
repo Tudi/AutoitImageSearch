@@ -12,8 +12,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
                        LPVOID lpReserved
 					 )
 {
-//	screen_pixel = NULL;
-//	ScreenshotLeft = ScreenshotTop = ScreenshotRight = ScreenshotBottom = 0;
+	memset( PictureCache, 0, sizeof( PictureCache ) );
     return TRUE;
 }
 

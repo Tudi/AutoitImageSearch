@@ -161,3 +161,23 @@ void ResampleRGBLiniar( unsigned char *src, unsigned char *dst, int SrcW, int Sr
 		ResampleRGBLiniar4ByteDownsample( src, dst, SrcW, SrcH, DestW, DestH );
 	}
 }
+
+void WINAPI ResizeScreenshot( int NewWidth, int NewHeight )
+{
+	FileDebug( "Started resizing the screenshot" );
+	if( ScreenshotPixels == NULL )
+	{
+		FileDebug( "WARNING:Screenshot buffer is null when trying to resize it!" );
+		return;
+	}
+	LPCOLORREF new_ScreenshotPixels = (COLORREF*)malloc( NewWidth * NewHeight * sizeof( COLORREF ) );
+	int Width = ScreenshotRight - ScreenshotLeft;
+	int Height = ScreenshotBottom - ScreenshotTop;
+	ResampleRGBLiniar4ByteDownsample( (unsigned char *)ScreenshotPixels, (unsigned char *)new_ScreenshotPixels, Width, Height, NewWidth, NewHeight );
+	ScreenshotLeft = 0;
+	ScreenshotTop = 0;
+	ScreenshotRight = NewWidth;
+	ScreenshotBottom = NewHeight;
+	free( ScreenshotPixels );
+	ScreenshotPixels = new_ScreenshotPixels;
+}
