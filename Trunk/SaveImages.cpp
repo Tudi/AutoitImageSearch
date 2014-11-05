@@ -5,13 +5,13 @@ void WINAPI SaveScreenshot()
 {
 	FileDebug( "Started saving the screenshot" );
 
-	if( ScreenshotPixels == NULL )
+	if( CurScreenshot->Pixels == NULL )
 	{
 		FileDebug( "WARNING:Screenshot buffer is null when trying to save it to file!" );
 		return;
 	}
-	int Width = ScreenshotRight - ScreenshotLeft;
-	int Height = ScreenshotBottom - ScreenshotTop;
+	int Width = CurScreenshot->Right - CurScreenshot->Left;
+	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
 	//find an available file name
 	char MyFileName[DEFAULT_STR_BUFFER_SIZE];
 	BOOL FileExists;
@@ -29,8 +29,8 @@ void WINAPI SaveScreenshot()
 	Img.Create( Width, Height, 32 );
 	for( int y = 0; y < Height; y +=1 )
 		for( int x = 0; x < Width; x += 1 )
-//			Img.SetPixel( x, y, ScreenshotPixels[ y * Width + x ] );
-			Img.SetPixel( x, y, RGB( GetBValue( ScreenshotPixels[ y * Width + x ] ), GetGValue( ScreenshotPixels[ y * Width + x ] ), GetRValue( ScreenshotPixels[ y * Width + x ] ) ) );
+//			Img.SetPixel( x, y, CurScreenshot->Pixels[ y * Width + x ] );
+			Img.SetPixel( x, y, RGB( GetBValue( CurScreenshot->Pixels[ y * Width + x ] ), GetGValue( CurScreenshot->Pixels[ y * Width + x ] ), GetRValue( CurScreenshot->Pixels[ y * Width + x ] ) ) );
 
 	Img.Save( MyFileName );
 }

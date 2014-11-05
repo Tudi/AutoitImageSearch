@@ -4,3 +4,7 @@
 - Screenshots get cached. Take one screenshot and process it more than once if you can
 
 - Image used for searches get cached for same search parameters ( tolerance and transparency ). Maybe use global transparency color. Use same tolerance for same image
+
+- When you want to cut out an image portion you want to search later, best is to make the screenshot using "SaveScreenshot" function. That way you can make sure you will search the same thing autoit sees
+
+- when resizing input. Maybe blurr the input before resize. It will preserve a lot more features than simple resize

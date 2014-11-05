@@ -7,8 +7,8 @@
 #define FLOAT_PRECISSION_ROUNUPER	( FLOAT_PRECISSION - 1 ) //add this before division for roundup effect
 #define RGB_BYTE_COUNT 4
 
-void ResampleRGBLiniar( unsigned char *src, unsigned char *dst, int SrcW, int SrcH, int DestW, int DestH, bool KeepAspectRatio  );
-void ResampleRGBLiniar4ByteDownsample( unsigned char *psrc, unsigned char *pdst, int SrcW, int SrcH, int DestW, int DestH, int SrcStride = 0, int DestStride = 0 );
+void ResampleRGBLiniar( unsigned char *src, unsigned char *dst, unsigned int SrcW, unsigned int SrcH, unsigned int DestW, unsigned int DestH, bool KeepAspectRatio  );
+void ResampleRGBLiniar4ByteDownsample( unsigned char *psrc, unsigned char *pdst, unsigned int SrcW, unsigned int SrcH, unsigned int DestW, unsigned int DestH, unsigned int SrcStride = 0, unsigned int DestStride = 0 );
 
 void WINAPI ResizeScreenshot( int NewWidth, int NewHeight );
 

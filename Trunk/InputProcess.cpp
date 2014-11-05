@@ -1,23 +1,29 @@
 #include "StdAfx.h"
 
-LIBRARY_API LPCOLORREF ScreenshotPixels = NULL;
-LIBRARY_API int ScreenshotLeft, ScreenshotTop, ScreenshotRight, ScreenshotBottom;
-LIBRARY_API CachedPicture PictureCache[MAX_PICTURE_CACHE_COUNT];
-LIBRARY_API int NrPicturesCached = 0;
+LIBRARY_API ScreenshotStruct	ScreenshotCache[ NR_SCREENSHOTS_CACHED ];
+LIBRARY_API ScreenshotStruct	*CurScreenshot, *PrevScreenshot;
+LIBRARY_API int					ScreenshotStoreIndex;
+
+void CycleScreenshots()
+{
+	PrevScreenshot = CurScreenshot;
+	ScreenshotStoreIndex = ( ScreenshotStoreIndex + 1 ) % NR_SCREENSHOTS_CACHED;
+	CurScreenshot = &ScreenshotCache[ ScreenshotStoreIndex ];
+}
 
 void WINAPI ReleaseScreenshot()
 {
-	if( ScreenshotPixels )
-		free( ScreenshotPixels );
-	ScreenshotPixels = NULL;
+	if( CurScreenshot->Pixels )
+		free( CurScreenshot->Pixels );
+	CurScreenshot->Pixels = NULL;
 }
 
 void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 {
-	ScreenshotLeft = aLeft;
-	ScreenshotTop = aTop;
-	ScreenshotRight = aRight;
-	ScreenshotBottom = aBottom;
+	CurScreenshot->Left = aLeft;
+	CurScreenshot->Top = aTop;
+	CurScreenshot->Right = aRight;
+	CurScreenshot->Bottom = aBottom;
 
 	HDC sdc = NULL;
 	HBITMAP hbitmap_screen = NULL;
@@ -46,18 +52,18 @@ void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 
 	LONG screen_width, screen_height;
 	bool screen_is_16bit;
-	if( !(ScreenshotPixels = getbits(hbitmap_screen, sdc, screen_width, screen_height, screen_is_16bit)) )
+	if( !(CurScreenshot->Pixels = getbits(hbitmap_screen, sdc, screen_width, screen_height, screen_is_16bit)) )
 		goto end;
 
-	LONG ScreenshotPixels_count = screen_width * screen_height;
+	LONG Pixels_count = screen_width * screen_height;
 
 	// If either is 16-bit, convert *both* to the 16-bit-compatible 32-bit format:
 	if( screen_is_16bit )
 	{
 		if (trans_color != CLR_NONE)
 			trans_color &= 0x00F8F8F8; // Convert indicated trans-color to be compatible with the conversion below.
-		for (int i = 0; i < ScreenshotPixels_count; ++i)
-			ScreenshotPixels[i] &= 0x00F8F8F8; // Highest order byte must be masked to zero for consistency with use of 0x00FFFFFF below.
+		for (int i = 0; i < Pixels_count; ++i)
+			CurScreenshot->Pixels[i] &= 0x00F8F8F8; // Highest order byte must be masked to zero for consistency with use of 0x00FFFFFF below.
 	}
 
 end:
@@ -77,18 +83,18 @@ end:
 void WINAPI TakeScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 {
 	FileDebug( "Started taking the screenshot" );
-	if( ScreenshotPixels != NULL )
+	if( CurScreenshot->Pixels != NULL )
 	{
 		ReleaseScreenshot();
-		ScreenshotPixels = NULL;
+		CurScreenshot->Pixels = NULL;
 	}
-	if( ScreenshotPixels == NULL )
+	if( CurScreenshot->Pixels == NULL )
 	{
 		TakeNewScreenshot( aLeft, aTop, aRight, aBottom );
 	}
 
 	FileDebug( "Finished taking the screenshot" );
-//	if( ScreenshotPixels == NULL )
+//	if( CurScreenshot->Pixels == NULL )
 //		FileDebug( "WARNING:Screenshot buffer is null when taking the screenshot!" );
 
 	return ;
@@ -106,7 +112,17 @@ char* WINAPI ImageSearchOnScreenshot( char *aFilespec, int TransparentColor, int
 		FileDebug( "Skipping Image search as image could not be loaded" );
 		return "";
 	}
-	if( ScreenshotPixels == NULL )
+	if( cache->Pixels == NULL )
+	{
+		FileDebug( "Skipping Image search as image pixels are missing" );
+		return "";
+	}
+	if( cache->LoadedPicture == NULL )
+	{
+		FileDebug( "Skipping Image search as image is missing" );
+		return "";
+	}
+	if( CurScreenshot->Pixels == NULL )
 	{
 		FileDebug( "Skipping Image search no screenshot is available" );
 		return "";
@@ -115,13 +131,13 @@ char* WINAPI ImageSearchOnScreenshot( char *aFilespec, int TransparentColor, int
 	BITMAP bitmap;
 	GetObject( cache->LoadedPicture, sizeof(BITMAP), &bitmap); // Realistically shouldn't fail at this stage.
 
-	int Width = ScreenshotRight - ScreenshotLeft;
-	int Height = ScreenshotBottom - ScreenshotTop;
+	int Width = CurScreenshot->Right - CurScreenshot->Left;
+	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
 	if( AcceptedColorDiff > 0 )
 	{
 		CheckPrepareToleranceMaps( cache, AcceptedColorDiff, TransparentColor );
 //DumpAsPPM( MinMap[0], MinMap[1], MinMap[2], bitmap.bmWidth, bitmap.bmHeight );
-//DumpAsPPM( &ScreenshotPixels[ 40 * Width + 40 ], 40, 40, Width );
+//DumpAsPPM( &CurScreenshot->Pixels[ 40 * Width + 40 ], 40, 40, Width );
 //DumpAsPPM( MaxMap[0], MaxMap[1], MaxMap[2], bitmap.bmWidth, bitmap.bmHeight );
 		for( int y = 0; y < Height; y +=1 )
 			for( int x = 0; x < Width; x += 1 )
@@ -134,7 +150,7 @@ char* WINAPI ImageSearchOnScreenshot( char *aFilespec, int TransparentColor, int
 					{
 						int PixelIndexDst = ( 0 + y2 ) * bitmap.bmWidth + 0 + x2;
 						int PixelIndexSrc = ( y + y2 ) * Width + x + x2;
-						COLORREF BGRSrc = ScreenshotPixels[ PixelIndexSrc ];
+						COLORREF BGRSrc = CurScreenshot->Pixels[ PixelIndexSrc ];
 						int Cols[3];
 						Cols[0] = ( (int)BGRSrc >> 0 ) & 0xFF;
 						if( cache->MinMap[0][PixelIndexDst] <= Cols[0] && Cols[0] <= cache->MaxMap[0][PixelIndexDst] )
@@ -179,6 +195,8 @@ docleanupandreturn:
 	}
 	else
 	{
+//DumpAsPPM( &CurScreenshot->Pixels[ 40 * Width + 40 ], 40, 40, Width );
+//DumpAsPPM( &cache->Pixels[ 0 ], 40, 40 );
 		for( int y = 0; y < Height; y +=1 )
 			for( int x = 0; x < Width; x += 1 )
 			{
@@ -190,7 +208,7 @@ docleanupandreturn:
 					{
 						int PixelIndexSrc = ( y + y2 ) * Width + x + x2;
 						int PixelIndexDst = ( 0 + y2 ) * bitmap.bmWidth + 0 + x2;
-						COLORREF BGRSrc = ScreenshotPixels[ PixelIndexSrc ];
+						COLORREF BGRSrc = CurScreenshot->Pixels[ PixelIndexSrc ];
 						COLORREF BGRDst = cache->Pixels[ PixelIndexDst ];
 						if( BGRDst == TransparentColor || BGRSrc == BGRDst )
 						{

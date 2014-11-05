@@ -1,5 +1,8 @@
 #include "StdAfx.h"
 
+LIBRARY_API CachedPicture PictureCache[MAX_PICTURE_CACHE_COUNT];
+LIBRARY_API int NrPicturesCached = 0;
+
 int GetCacheIndex( char *aFilespec )
 {
 	for( int i=0;i<NrPicturesCached;i++)
@@ -15,7 +18,7 @@ CachedPicture *CachePicture( char *aFilespec )
 	if( ExistingCacheIndex != -1 )
 	{
 		FileDebug( "Skipped caching image as it's already cached" );
-		return &PictureCache[NrPicturesCached];
+		return &PictureCache[ExistingCacheIndex];
 	}
 
 	if( NrPicturesCached >= MAX_PICTURE_CACHE_COUNT )
@@ -23,6 +26,7 @@ CachedPicture *CachePicture( char *aFilespec )
 		FileDebug( "Skipped caching image as no more cache slots available" );
 		return NULL; 
 	}
+
 	HDC hdc = GetDC(NULL);
 	if (!hdc)
 	{
@@ -50,6 +54,7 @@ CachedPicture *CachePicture( char *aFilespec )
 		ReleaseDC(NULL, hdc);
 		return NULL;
 	}
+
 	NrPicturesCached++;
 	ReleaseDC(NULL, hdc);
 

@@ -10,7 +10,7 @@
 
 
 //note that this is mostly tested when in/out size is dividable by 16. Using Odd numbers might give issues at rounding
-void ResampleRGBLiniar4ByteDownsample( unsigned char *psrc, unsigned char *pdst, int SrcW, int SrcH, int DestW, int DestH, int SrcStride, int DestStride )
+void ResampleRGBLiniar4ByteDownsample( unsigned char *psrc, unsigned char *pdst, unsigned int SrcW, unsigned int SrcH, unsigned int DestW, unsigned int DestH, unsigned int SrcStride, unsigned int DestStride )
 {
 	unsigned int int_conv_y = (unsigned int)( SrcH * FLOAT_PRECISSION / DestH );
 	unsigned int int_conv_x = (unsigned int)( SrcW * FLOAT_PRECISSION / DestW );
@@ -29,7 +29,7 @@ void ResampleRGBLiniar4ByteDownsample( unsigned char *psrc, unsigned char *pdst,
 		DestStride = DestW;
 
 	unsigned int stacking_precission_y = 0;
-	for( int y=0;y<DestH;y++)
+	for( unsigned int y=0;y<DestH;y++)
 	{
 		unsigned int	stacking_precission_x = 0;
 
@@ -46,7 +46,7 @@ void ResampleRGBLiniar4ByteDownsample( unsigned char *psrc, unsigned char *pdst,
 
 		for( unsigned int x=start;x<end;x++)
 		{
-			int converted_col_index = stacking_precission_x >> FLOAT_PRECISSION_BITS;
+			unsigned int converted_col_index = stacking_precission_x >> FLOAT_PRECISSION_BITS;
 #ifdef _DEBUG
 			assert( converted_col_index <= SrcW );
 #endif
@@ -56,7 +56,7 @@ void ResampleRGBLiniar4ByteDownsample( unsigned char *psrc, unsigned char *pdst,
 	}
 }
 
-void ResampleRGBLiniarInbox4ByteDownSample( unsigned char *psrc, unsigned char *pdst, int SrcW, int SrcH, int SrcStride, int DestW, int DestH, int DestBuffStride, int DestBuffHeight, int DestSartX, int DestStartY )
+void ResampleRGBLiniarInbox4ByteDownSample( unsigned char *psrc, unsigned char *pdst, unsigned int SrcW, unsigned int SrcH, unsigned int SrcStride, unsigned int DestW, unsigned int DestH, unsigned int DestBuffStride, int DestBuffHeight, int DestSartX, int DestStartY )
 {
 	unsigned int int_conv_y = (unsigned int)( SrcH * FLOAT_PRECISSION / DestH );
 	unsigned int int_conv_x = (unsigned int)( SrcW * FLOAT_PRECISSION / DestW );
@@ -71,7 +71,7 @@ void ResampleRGBLiniarInbox4ByteDownSample( unsigned char *psrc, unsigned char *
 #endif
 
 	unsigned int stacking_precission_y = 0;
-	for( int y=0;y<DestH;y++)
+	for( unsigned int y=0;y<DestH;y++)
 	{
 		unsigned int stacking_precission_x = 0;
 
@@ -88,7 +88,7 @@ void ResampleRGBLiniarInbox4ByteDownSample( unsigned char *psrc, unsigned char *
 
 		for( unsigned int x=start;x<end;x++)
 		{
-			int converted_col_index = stacking_precission_x >> FLOAT_PRECISSION_BITS;
+			unsigned int converted_col_index = stacking_precission_x >> FLOAT_PRECISSION_BITS;
 #ifdef _DEBUG
 			assert( converted_col_index <= SrcW );
 #endif
@@ -165,19 +165,19 @@ void ResampleRGBLiniar( unsigned char *src, unsigned char *dst, int SrcW, int Sr
 void WINAPI ResizeScreenshot( int NewWidth, int NewHeight )
 {
 	FileDebug( "Started resizing the screenshot" );
-	if( ScreenshotPixels == NULL )
+	if( CurScreenshot->Pixels == NULL )
 	{
 		FileDebug( "WARNING:Screenshot buffer is null when trying to resize it!" );
 		return;
 	}
-	LPCOLORREF new_ScreenshotPixels = (COLORREF*)malloc( NewWidth * NewHeight * sizeof( COLORREF ) );
-	int Width = ScreenshotRight - ScreenshotLeft;
-	int Height = ScreenshotBottom - ScreenshotTop;
-	ResampleRGBLiniar4ByteDownsample( (unsigned char *)ScreenshotPixels, (unsigned char *)new_ScreenshotPixels, Width, Height, NewWidth, NewHeight );
-	ScreenshotLeft = 0;
-	ScreenshotTop = 0;
-	ScreenshotRight = NewWidth;
-	ScreenshotBottom = NewHeight;
-	free( ScreenshotPixels );
-	ScreenshotPixels = new_ScreenshotPixels;
+	LPCOLORREF new_Pixels = (COLORREF*)malloc( NewWidth * NewHeight * sizeof( COLORREF ) );
+	int Width = CurScreenshot->Right - CurScreenshot->Left;
+	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
+	ResampleRGBLiniar4ByteDownsample( (unsigned char *)CurScreenshot->Pixels, (unsigned char *)new_Pixels, Width, Height, NewWidth, NewHeight );
+	CurScreenshot->Left = 0;
+	CurScreenshot->Top = 0;
+	CurScreenshot->Right = NewWidth;
+	CurScreenshot->Bottom = NewHeight;
+	free( CurScreenshot->Pixels );
+	CurScreenshot->Pixels = new_Pixels;
 }

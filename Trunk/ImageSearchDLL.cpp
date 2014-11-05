@@ -13,6 +13,9 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 					 )
 {
 	memset( PictureCache, 0, sizeof( PictureCache ) );
+	ScreenshotStoreIndex = 0;
+	CurScreenshot = &ScreenshotCache[ 0 ];
+	PrevScreenshot = &ScreenshotCache[ 1 ];
     return TRUE;
 }
 
