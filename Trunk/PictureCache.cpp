@@ -5,8 +5,12 @@ LIBRARY_API int NrPicturesCached = 0;
 
 int GetCacheIndex( char *aFilespec )
 {
+//	for( int i=0;i<NrPicturesCached;i++)
+//		if( strstr( PictureCache[i].FileName, aFilespec ) )
+//			return i;
+	int ThisHash = GetStrHash( aFilespec );
 	for( int i=0;i<NrPicturesCached;i++)
-		if( strstr( PictureCache[i].FileName, aFilespec ) )
+		if( ThisHash == PictureCache[i].NameHash )
 			return i;
 	return -1;
 }
@@ -35,6 +39,7 @@ CachedPicture *CachePicture( char *aFilespec )
 	}
 
 	strcpy_s( PictureCache[NrPicturesCached].FileName, DEFAULT_STR_BUFFER_SIZE, aFilespec );
+	PictureCache[NrPicturesCached].NameHash = GetStrHash( aFilespec );
 
 	int ImgType;
 	PictureCache[NrPicturesCached].LoadedPicture = LoadPicture( aFilespec, 0, 0, ImgType, 0, false );

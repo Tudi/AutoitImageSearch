@@ -14,10 +14,12 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 {
 	memset( PictureCache, 0, sizeof( PictureCache ) );
 	memset( &MotionDiff, 0, sizeof( MotionDiff ) );
+	MotionDiff.IsDiffMap = true;
 	ScreenshotStoreIndex = 0;
 	CurScreenshot = &ScreenshotCache[ 0 ];
 	PrevScreenshot = &ScreenshotCache[ 1 ];
 	NrPicturesCached = 0;
+	FileDebug( "=================================================" );
     return TRUE;
 }
 

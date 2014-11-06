@@ -420,3 +420,26 @@ docleanupandreturn2:
 	sprintf_s( ReturnBuff, DEFAULT_STR_BUFFER_SIZE*10, "%d%s", MatchesFound, ReturnBuff2 );
 	return ReturnBuff;
 }
+
+void WINAPI GetImageSize( char *aImageFile, int &RetWidth, int &RetHeight )
+{
+	CachedPicture *cache = CachePicture( aImageFile );
+	if( cache == NULL )
+	{
+		FileDebug( "Skipping Image info as image could not be loaded" );
+		return;
+	}
+	if( cache->Pixels == NULL )
+	{
+		FileDebug( "Skipping Image info as image pixels are missing" );
+		return;
+	}
+	if( cache->LoadedPicture == NULL )
+	{
+		FileDebug( "Skipping Image info as image is missing" );
+		return;
+	}
+
+	RetWidth = cache->Width;
+	RetHeight = cache->Height;
+}

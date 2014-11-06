@@ -7,13 +7,16 @@ char* WINAPI ImageSearchOnScreenshot( char *aImageFile, int TransparentColor, in
 // mask value 0 = screenshot pixel is hidden and should not be searched
 // mask value 1 = screenshot pixel is visible and should be searched
 char* WINAPI ImageSearchOnScreenshotMasked( char *ImageFile, char *MaskFile, int TransparentColor, int AcceptedColorDiff, int AcceptedErrorCount, int StopAfterNMatches );
+void WINAPI GetImageSize( char *aImageFile, int &RetWidth, int &RetHeight );
 
 void CycleScreenshots();
 
 struct ScreenshotStruct
 {
-	LPCOLORREF Pixels;
-	int Left, Top, Right, Bottom;
+	LPCOLORREF		Pixels;
+	int				Left, Top, Right, Bottom;
+	bool			IsDiffMap;	//width and height needs to be divided by 4
+	SimilarSearch	*SSCache;
 };
 
 #define NR_SCREENSHOTS_CACHED	2

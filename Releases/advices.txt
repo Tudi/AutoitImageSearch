@@ -8,3 +8,7 @@
 - When you want to cut out an image portion you want to search later, best is to make the screenshot using "SaveScreenshot" function. That way you can make sure you will search the same thing autoit sees
 
 - when resizing input. Maybe blurr the input before resize. It will preserve a lot more features than simple resize
+
+- sometimes it's better to search for a smaller image with good info than searching a large image that contains variable info. Ex when searching for a circle, maybe cut out a square inside the circle and not outside of it
+
+- if you need to search for a lot of images. Maybe check if screenshot changed at all. You can try using "GenerateDiffMap"

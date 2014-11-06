@@ -3,9 +3,12 @@
 
 #define MAX_PICTURE_CACHE_COUNT 500
 
+class SimilarSearch;
+
 struct CachedPicture
 {
 	char			FileName[ DEFAULT_STR_BUFFER_SIZE ];
+	int				NameHash;
 	HBITMAP			LoadedPicture;
 	LPCOLORREF		Pixels;
 	int				Width,Height;
@@ -13,6 +16,7 @@ struct CachedPicture
 	int				MinMaxMapTolerance,TransparentColor;
 	unsigned char	*MinMap[3];
 	unsigned char	*MaxMap[3];
+	SimilarSearch	*SSCache;
 };
 
 int GetCacheIndex( char *aFilespec );

@@ -17,14 +17,14 @@ $ExitAfterNMatchesFound=1
 $result = DllCall( $dllhandle,"str","ImageSearchOnScreenshot","str","tosearch.bmp","int",$SkipSearchOnColor,"int",$colorTolerance,"int",$ColorToleranceFaultsAccepted,"int",$ExitAfterNMatchesFound)
 HandleResult( $result )
 $colorTolerance = 0
-$result = DllCall( $dllhandle,"str","ImageSearchOnScreenshot","str","tosearch.bmp","int",$SkipSearchOnColor,"int",$colorTolerance,"int",$ColorToleranceFaultsAccepted,"int",$ExitAfterNMatchesFound)
-$result = DllCall( $dllhandle,"str","ImageSearchOnScreenshot","str","tosearchTrans.bmp","int",$SkipSearchOnColor,"int",$colorTolerance,"int",$ColorToleranceFaultsAccepted,"int",$ExitAfterNMatchesFound)
+;$result = DllCall( $dllhandle,"str","ImageSearchOnScreenshot","str","tosearch.bmp","int",$SkipSearchOnColor,"int",$colorTolerance,"int",$ColorToleranceFaultsAccepted,"int",$ExitAfterNMatchesFound)
+;$result = DllCall( $dllhandle,"str","ImageSearchOnScreenshot","str","tosearchTrans.bmp","int",$SkipSearchOnColor,"int",$colorTolerance,"int",$ColorToleranceFaultsAccepted,"int",$ExitAfterNMatchesFound)
 
 DllClose ( $dllhandle )
 
 func HandleResult( $result )
 	$array = StringSplit($result[0],"|")
-	$resCount = Number( $array[0] )
+	$resCount = Number( $array[1] )
 	MsgBox( $MB_SYSTEMMODAL, "", "res count " & $resCount )
 	if( $resCount > 0 ) then
 		$x=Int(Number($array[2]))

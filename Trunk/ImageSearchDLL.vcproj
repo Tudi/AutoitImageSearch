@@ -221,6 +221,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\PiramidSearch.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\PiramidSearch.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Resampling.cpp"
 				>
 			</File>
@@ -234,6 +242,14 @@
 			</File>
 			<File
 				RelativePath=".\SaveImages.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SimilarSearch.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\SimilarSearch.h"
 				>
 			</File>
 			<File
@@ -257,7 +273,23 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\stdafx.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Tools.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Tools.h"
+				>
+			</File>
+			<File
 				RelativePath=".\util.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\util.h"
 				>
 			</File>
 		</Filter>
@@ -266,14 +298,6 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
-			<File
-				RelativePath=".\stdafx.h"
-				>
-			</File>
-			<File
-				RelativePath=".\util.h"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"

@@ -49,6 +49,7 @@
 #include <memory.h>
 #include <tchar.h>
 #include <atlimage.h>
+#include <math.h>
 
 #ifdef LIBRARY_EXPORTS
 #    define LIBRARY_API __declspec(dllexport)
@@ -68,5 +69,8 @@
 #include "SaveImages.h"
 #include "ImageFilters.h"
 #include "MotionEstimation.h"
+#include "Tools.h"
+#include "PiramidSearch.h"
+#include "SimilarSearch.h"
 
 // TODO: reference additional headers your program requires here

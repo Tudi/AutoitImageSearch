@@ -13,5 +13,7 @@ EXPORTS
 	SaveScreenshotDiffMask
 	ErrodeDiffMap
 	ImageSearchOnScreenshotMasked
+	GetImageSize
+	SearchSimilarOnScreenshot
 	
 	
