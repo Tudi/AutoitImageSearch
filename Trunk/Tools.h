@@ -2,5 +2,7 @@
 #define _TOOLS_H_
 
 int GetStrHash( const char *str );
+int sqrt1( int N );
+__int64 sqrt1( __int64 N );
 
 #endif

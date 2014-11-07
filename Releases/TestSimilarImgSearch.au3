@@ -5,8 +5,11 @@
 
 global $MB_SYSTEMMODAL = 4096
 
-$dllhandle = DllOpen ( "Release/ImageSearchDLL.dll" )
-;$dllhandle = DllOpen ( "Debug/ImageSearchDLL.dll" )
+;$dllhandle = DllOpen ( "Release/ImageSearchDLL.dll" )
+$dllhandle = DllOpen ( "Debug/ImageSearchDLL.dll" )
+
+; you might want to resize screenshot to be able to process it somewhat real time
+DllCall( $dllhandle,"NONE","SetupSimilarSearch","int",0,"int",2,"int",3)
 
 ;taking a chunk out of the screen to test if img search is working
 ;$result = DllCall( $dllhandle,"NONE","TakeScreenshot","int",40,"int",40,"int",80,"int",80)	//takes 5 seconds / search

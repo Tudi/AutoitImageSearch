@@ -14,6 +14,7 @@ EXPORTS
 	ErrodeDiffMap
 	ImageSearchOnScreenshotMasked
 	GetImageSize
+	SetupSimilarSearch
 	SearchSimilarOnScreenshot
 	
 	

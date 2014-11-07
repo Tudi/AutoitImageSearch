@@ -76,3 +76,47 @@ int GetStrHash( const char *str )
 		return 0;
 	return crc32((const unsigned char*)str, (unsigned int)strlen(str));
 }
+
+//this IS 20x SLOWER than std::sqrt !
+int sqrt1( int N )
+{
+//	int a = 1;
+//	int b = N;
+
+	int b = N / 1;
+	int a = ( 1 + b ) / 2;
+
+THELOOP:
+	if( b - a > 1 )
+	{
+		b = N / a;
+		a = (a + b) / 2;
+	}
+	if( a - b > 1 )
+	{
+		b = N / a;
+		a = (a + b) / 2;
+		goto THELOOP;
+	}
+	return a;
+}
+
+__int64 sqrt1( __int64 N )
+{
+	__int64 b = N / 1;
+	__int64 a = ( 1 + b ) / 2;
+
+THELOOP:
+	if( b - a > 1 )
+	{
+		b = N / a;
+		a = (a + b) / 2;
+	}
+	if( a - b > 1 )
+	{
+		b = N / a;
+		a = (a + b) / 2;
+		goto THELOOP;
+	}
+	return a;
+}

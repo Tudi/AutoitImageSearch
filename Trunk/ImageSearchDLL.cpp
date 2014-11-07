@@ -12,14 +12,20 @@ BOOL APIENTRY DllMain( HMODULE hModule,
                        LPVOID lpReserved
 					 )
 {
-	memset( PictureCache, 0, sizeof( PictureCache ) );
-	memset( &MotionDiff, 0, sizeof( MotionDiff ) );
-	MotionDiff.IsDiffMap = true;
-	ScreenshotStoreIndex = 0;
-	CurScreenshot = &ScreenshotCache[ 0 ];
-	PrevScreenshot = &ScreenshotCache[ 1 ];
-	NrPicturesCached = 0;
-	FileDebug( "=================================================" );
+	if( ul_reason_for_call == DLL_PROCESS_ATTACH )
+	{
+		memset( PictureCache, 0, sizeof( PictureCache ) );
+		memset( &MotionDiff, 0, sizeof( MotionDiff ) );
+		MotionDiff.IsDiffMap = true;
+		ScreenshotStoreIndex = 0;
+		CurScreenshot = &ScreenshotCache[ 0 ];
+		PrevScreenshot = &ScreenshotCache[ 1 ];
+		NrPicturesCached = 0;
+		FileDebug( "=================================================" );
+	}
+	else if( ul_reason_for_call == DLL_PROCESS_DETACH )
+	{
+	}
     return TRUE;
 }
 
@@ -28,6 +34,10 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 #endif
 
 
-void _tmain()
+void main()
 {
+//	RunSQRTBenchmark(); //fact : sqrt( double) rocks
+	SetupSimilarSearch( 0, 1, 3 );
+	TakeScreenshot( 0, 0, 800, 800 );
+	SearchSimilarOnScreenshot( "tosearch10.bmp" );
 }

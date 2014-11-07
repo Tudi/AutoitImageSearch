@@ -3,6 +3,22 @@
 //lagest number so that it will be smaller than our cached image width / height
 LIBRARY_API int SimilarSearchGroupingSizeX = 1024;
 LIBRARY_API int SimilarSearchGroupingSizeY = 1024;
+LIBRARY_API int SimilarSearchResizeStep = 1;
+LIBRARY_API int SimilarSearchSearchType = SS_SEARCH_TYPE_LINKED_SUMMED_PIXELS;
+
+void WINAPI SetupSimilarSearch( int MaxImageSize, int DownScale, int SearchType )
+{
+	if( MaxImageSize > 1 && SimilarSearchGroupingSizeX > MaxImageSize )
+		SimilarSearchGroupingSizeX = MaxImageSize;
+	if( MaxImageSize > 1 && SimilarSearchGroupingSizeY > MaxImageSize )
+		SimilarSearchGroupingSizeY = MaxImageSize;
+
+	if( DownScale > 0 )
+		SimilarSearchResizeStep = DownScale;
+
+	if( SearchType > SS_SEARCH_TYPE_START && SearchType < SS_SEARCH_TYPE_END )
+		SimilarSearchSearchType = SearchType;
+}
 
 SimilarSearch::SimilarSearch()
 {
@@ -15,34 +31,80 @@ SimilarSearch::~SimilarSearch()
 	if( R != NULL )
 	{
 		free( R );
+#if !( defined( SS_SUM_RGB ) || defined( ADD_COLOR_LOCALIZATION_DIAG3RGB ) || defined( ADD_COLOR_LOCALIZATION_MULBUGRGB ) || defined( ADD_COLOR_LOCALIZATION_2MULBUGRGB ) )
 		free( G );
 		free( B );
+#endif
 		R = G = B = NULL;
 	}
 }
 
-int sqrt1( int N )
-{
-//	int a = 1;
-//	int b = N;
-
-	int b = N / 1;
-	int a = ( 1 + b ) / 2;
-
-//	int b = N / ( ( 1 + N ) / 2 );
-//	int a = ( ( 1 + N ) / 2 + N / ( ( 1 + N ) / 2 ) ) / 2;
-
-	while( b > 1 + a )
-	{
-		b = N / a;
-		a = (a + b) / 2;
-	}
-	return a;
-}
-
 void GetPictureSumAtLoc( LPCOLORREF Pixels, int Width, int Height, int Stride, int *R, int *G, int *B )
 {
-	*R = *G = *B = 0;
+	*R = 0;
+#if !( defined( SS_SUM_RGB ) || defined( ADD_COLOR_LOCALIZATION_DIAG3RGB ) || defined( ADD_COLOR_LOCALIZATION_MULBUGRGB ) || defined( ADD_COLOR_LOCALIZATION_2MULBUGRGB ) )
+	*G = *B = 0;
+#endif
+
+	int Step = Height;
+	if( Width < Step )
+		Step = Width;
+	Step = Step / 3;
+
+	if( SimilarSearchSearchType == SS_SEARCH_TYPE_BUGGED_LINKED_PIXELS )
+	{
+		//this makes no sense for similarity test. Links 2 pixels to be 1 pixel but you can not use SAD to guess if it is better or not
+		for( int y=0;y<Height-Step;y+=SimilarSearchResizeStep)
+			for( int x=0;x<Width-Step;x+=SimilarSearchResizeStep)
+			{
+				double MyMul = (double)( 0x00010101 | Pixels[ (y + 0 ) * Stride + ( x + 0 ) ] );
+				MyMul *= (double)( 0x00010101 | Pixels[ ( y + Step ) * Stride + ( x + Step ) ] );
+				R[0] += (int)sqrt( MyMul );
+			}/**/
+	}
+	else if( SimilarSearchSearchType == SS_SEARCH_TYPE_SUMMED_PIXELS )
+	{
+		// can not differentiate textures, only luminosity of a pixel
+		for( int y=0;y<Height-3;y+=SimilarSearchResizeStep)
+			for( int x=0;x<Width-3;x+=SimilarSearchResizeStep)
+			{
+#define GetRGBSumFromPixel( Pixel ) ( 1 + ( ( Pixel >> 0 ) & 0xFF ) + ( ( Pixel >> 8 ) & 0xFF ) + ( ( Pixel >> 16 ) & 0xFF ) )
+				int t;
+				t = 1;
+				for( int i=0;i<3;i++)
+					t *= GetRGBSumFromPixel( Pixels[ ( y + i ) * Stride + x + i ] );
+				R[0] += t;
+				t = 1;
+				for( int i=0;i<3;i++)
+					t *= GetRGBSumFromPixel( Pixels[ ( y + i ) * Stride + x + 3 - 1 - i ] );
+				R[0] += t;
+				t = GetRGBSumFromPixel( Pixels[ ( y + 0 ) * Stride + x + 1 ] );
+				t *= GetRGBSumFromPixel( Pixels[ ( y + 2 ) * Stride + x + 1 ] );
+				R[0] += t;
+				t = GetRGBSumFromPixel( Pixels[ ( y + 1 ) * Stride + x + 0 ] );
+				t *= GetRGBSumFromPixel( Pixels[ ( y + 1 ) * Stride + x + 2 ] );
+				R[0] += t;
+			}
+	}
+	else if( SimilarSearchSearchType == SS_SEARCH_TYPE_LINKED_SUMMED_PIXELS )
+	{
+		//this makes no sense for similarity test. Links 2 pixels to be 1 pixel but you can not use SAD to guess if it is better or not
+		for( int y=0;y<Height-Step;y+=SimilarSearchResizeStep)
+			for( int x=0;x<Width-Step;x+=SimilarSearchResizeStep)
+			{
+				int Pixel, r1,g1,b1,r2,g2,b2;
+				Pixel = 0x00010101 | Pixels[ (y + 0 ) * Stride + ( x + 0 ) ];
+				r1 = ( Pixel >> 0 ) & 0xFF;
+				g1 = ( Pixel >> 8 ) & 0xFF;
+				b1 = ( Pixel >> 16 ) & 0xFF;
+				Pixel = 0x00010101 | Pixels[ ( y + Step ) * Stride + ( x + Step ) ];
+				r2 = ( Pixel >> 0 ) & 0xFF;
+				g2 = ( Pixel >> 8 ) & 0xFF;
+				b2 = ( Pixel >> 16 ) & 0xFF;
+				R[0] += (int)( r1 * r2 + g1 * g2 + b1 * b2 );
+			}/**/
+	}
+
 #if defined( ADD_COLOR_LOCALIZATION_4x4 )
 
 	for( int y=0;y<Height;y+=2)
@@ -295,20 +357,48 @@ void GetPictureSumAtLoc( LPCOLORREF Pixels, int Width, int Height, int Stride, i
 			B[0] += (( Pixel >> 16 ) & 0xFF );
 		}
 	}
-#elif defined( ADD_COLOR_LOCALIZATION_MULBUGRGB )
-	for( int y=0;y<Height;y+=1)
+#elif defined( ADD_COLOR_LOCALIZATION_2MULBUGRGB )
+	//this makes no sense for similarity test
+	int MinSize = Height;
+	if( Width < MinSize )
+		MinSize = Width;
+	for( int k = 0; k < MinSize; k++ )
 	{
-//		for( int x=0;x<Width-2;x+=2)
-		for( int x=0;x<Width-3;x+=3)
+		double MyMul1 = 1;
+		double MyMul2 = 1;
+		for( int i=0;i<MinSize-k;i++)
 		{
-//			int sub1 = sqrt( (double)( Pixels[ y * Stride + x + 0 ] * Pixels[ y * Stride + x + 1 ] ) );
-//			int sub1 = sqrt1( Pixels[ y * Stride + x + 0 ] * Pixels[ y * Stride + x + 1 ] );	//release version is 2x faster than STD
-			int sub1 = sqrt1( 0x00010101 | Pixels[ y * Stride + x + 0 ] * 0x00010101 | Pixels[ y * Stride + x + 1 ] );	//release version is 2x faster than STD
-//			int sub1 = sqrt1( 0x00010101 | Pixels[ y * Stride + x + 0 ] * 0x00010101 | Pixels[ y * Stride + x + 1 ] * 0x00010101 | Pixels[ y * Stride + x + 3 ] );	//release version is 2x faster than STD
-			R[0] += sub1;
+			MyMul1 *= (double)( 0x00010101 | Pixels[ ( k + i ) * Stride + 0 + i ] );
+			MyMul2 *= (double)( 0x00010101 | Pixels[ ( 0 + i ) * Stride + k + i ] );
+		}
+		R[0] += (int)sqrt( MyMul1 );
+		R[0] += (int)sqrt( MyMul2 );
+	}
+	for( int y=0;y<Height;y+=3)
+	{
+		for( int x=0;x<Width;x+=1)
+		{
+			double MyMul = 1;
+			for( int i=0;i<3;i++)
+				MyMul *= (double)( 0x00010101 | Pixels[ ( y + i ) * Stride + x + i ] );
+			R[0] += (int)sqrt( MyMul );
 		}
 	}
-#else
+#elif defined( ADD_COLOR_LOCALIZATION_MULBUGRGB )
+	//this makes no sense for similarity test
+	int MinSize = Height;
+	if( Width < MinSize )
+		MinSize = Width;
+	MinSize = MinSize / 3;
+	int StepY = MinSize,StepX = MinSize;
+	for( int y=0;y<Height-StepY;y+=SimilarSearchResizeStep)
+		for( int x=0;x<Width-StepX;x+=SimilarSearchResizeStep)
+		{
+			double MyMul = (double)( 0x00010101 | Pixels[ (y + 0 ) * Stride + ( x + 0 ) ] );
+			MyMul *= (double)( 0x00010101 | Pixels[ ( y + StepY ) * Stride + ( x + StepX ) ] );
+			R[0] += (int)sqrt( MyMul );
+		}/**/
+#elif defined( ADD_COLOR_LOCALIZATION_SIMPLESUM )
 	for( int y=0;y<Height;y++)
 		for( int x=0;x<Width;x++)
 		{
@@ -324,8 +414,10 @@ void SimilarSearch::BuildFromImg( LPCOLORREF Pixels, int pWidth, int pHeight, in
 	if( R != NULL && ( pWidth != Width || pHeight != Height || SimilarSearchGroupingSizeX != BlockWidth || BlockHeight != SimilarSearchGroupingSizeY ) )
 	{
 		free( R );
+#if !( defined( SS_SUM_RGB ) || defined( ADD_COLOR_LOCALIZATION_DIAG3RGB ) || defined( ADD_COLOR_LOCALIZATION_MULBUGRGB ) || defined( ADD_COLOR_LOCALIZATION_2MULBUGRGB ) )
 		free( G );
 		free( B );
+#endif
 		R = G = B = NULL;
 	}
 	if( R == NULL )
@@ -335,17 +427,19 @@ void SimilarSearch::BuildFromImg( LPCOLORREF Pixels, int pWidth, int pHeight, in
 		Height = pHeight;
 
 #ifndef IMPLEMENTING_MULTI_BLOCKS
-		if( Width < SimilarSearchGroupingSizeX )
+		if( Width <= SimilarSearchGroupingSizeX )
 			SimilarSearchGroupingSizeX = Width - 1;
-		if( Height < SimilarSearchGroupingSizeY )
+		if( Height <= SimilarSearchGroupingSizeY )
 			SimilarSearchGroupingSizeY = Height - 1;
 #endif
 
 		BlockWidth = SimilarSearchGroupingSizeX;
 		BlockHeight = SimilarSearchGroupingSizeY;
 		R = (int*)malloc( Width * Height * sizeof( int ) );
+#if !( defined( SS_SUM_RGB ) || defined( ADD_COLOR_LOCALIZATION_DIAG3RGB ) || defined( ADD_COLOR_LOCALIZATION_MULBUGRGB ) || defined( ADD_COLOR_LOCALIZATION_2MULBUGRGB ) )
 		G = (int*)malloc( Width * Height * sizeof( int ) );
 		B = (int*)malloc( Width * Height * sizeof( int ) );
+#endif
 
 #ifndef IMPLEMENTING_MULTI_BLOCKS
 		for( int y=0;y<Height - BlockHeight;y++)
@@ -356,14 +450,17 @@ void SimilarSearch::BuildFromImg( LPCOLORREF Pixels, int pWidth, int pHeight, in
 	}
 }
 
-double GetImageScoreAtLoc( SimilarSearch *SearchIn, SimilarSearch *SearchFor, int x, int y )
+#if defined( SS_SUM_RGB ) || defined( ADD_COLOR_LOCALIZATION_DIAG3RGB ) || defined( ADD_COLOR_LOCALIZATION_MULBUGRGB ) || defined( ADD_COLOR_LOCALIZATION_2MULBUGRGB )
+int GetImageScoreAtLoc( SimilarSearch *SearchIn, SimilarSearch *SearchFor, int x, int y )
 {
-#if defined( ADD_COLOR_LOCALIZATION_DIAG3RGB ) || defined( ADD_COLOR_LOCALIZATION_MULBUGRGB )
 	int RGBDiff = SearchIn->R[ y * SearchIn->Width + x ] - SearchFor->R[ 0 ];
 	if( RGBDiff < 0 )
 		RGBDiff = -RGBDiff;
 	return RGBDiff;
-#endif
+}
+#else
+double GetImageScoreAtLoc( SimilarSearch *SearchIn, SimilarSearch *SearchFor, int x, int y )
+{
 #ifndef IMPLEMENTING_MULTI_BLOCKS
 	int RDiff = SearchIn->R[ y * SearchIn->Width + x ] - SearchFor->R[ 0 ];
 	int GDiff = SearchIn->G[ y * SearchIn->Width + x ] - SearchFor->G[ 0 ];
@@ -377,6 +474,7 @@ double GetImageScoreAtLoc( SimilarSearch *SearchIn, SimilarSearch *SearchFor, in
 		diff = -diff;
 	return diff;
 }
+#endif
 
 int GetNextBestMatch( SimilarSearch *SearchIn, SimilarSearch *SearchFor, int &retx, int &rety )
 {

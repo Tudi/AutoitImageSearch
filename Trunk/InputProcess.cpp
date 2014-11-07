@@ -421,25 +421,26 @@ docleanupandreturn2:
 	return ReturnBuff;
 }
 
-void WINAPI GetImageSize( char *aImageFile, int &RetWidth, int &RetHeight )
+char* WINAPI GetImageSize( char *aImageFile )
 {
 	CachedPicture *cache = CachePicture( aImageFile );
 	if( cache == NULL )
 	{
 		FileDebug( "Skipping Image info as image could not be loaded" );
-		return;
+		return "0|0";
 	}
 	if( cache->Pixels == NULL )
 	{
 		FileDebug( "Skipping Image info as image pixels are missing" );
-		return;
+		return "0|0";
 	}
 	if( cache->LoadedPicture == NULL )
 	{
 		FileDebug( "Skipping Image info as image is missing" );
-		return;
+		return "0|0";
 	}
 
-	RetWidth = cache->Width;
-	RetHeight = cache->Height;
+	sprintf_s( ReturnBuff, DEFAULT_STR_BUFFER_SIZE*10, "%d|%d", cache->Width, cache->Height );
+
+	return ReturnBuff;
 }

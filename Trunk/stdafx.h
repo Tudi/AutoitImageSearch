@@ -54,7 +54,8 @@
 #ifdef LIBRARY_EXPORTS
 #    define LIBRARY_API __declspec(dllexport)
 #else
-#    define LIBRARY_API __declspec(dllimport)
+//#    define LIBRARY_API __declspec(dllimport)
+#    define LIBRARY_API 
 #endif
 
 #define DEFAULT_STR_BUFFER_SIZE 1024
@@ -72,5 +73,9 @@
 #include "Tools.h"
 #include "PiramidSearch.h"
 #include "SimilarSearch.h"
+
+#ifdef _CONSOLE
+	#include "Benchmarks/Benchmarks.h"
+#endif
 
 // TODO: reference additional headers your program requires here
