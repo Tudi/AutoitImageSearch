@@ -8,6 +8,7 @@ EXPORTS
 	ResizeScreenshot
 	BlurrImage
 	ImageSearchOnScreenshot
+	IsAnythingChanced
 	GenerateDiffMap
 	SaveDiffMap
 	SaveScreenshotDiffMask

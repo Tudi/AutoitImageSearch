@@ -38,7 +38,7 @@ void WINAPI SaveScreenshot()
 void WINAPI SaveDiffMap()
 {
 	FileDebug( "Started saving diffmap" );
-	DumpAsPPM( (unsigned char *)MotionDiff.Pixels, (unsigned char *)MotionDiff.Pixels, (unsigned char *)MotionDiff.Pixels, ( MotionDiff.Right - MotionDiff.Left ) / 4, ( MotionDiff.Bottom - MotionDiff.Top ) / 4 );
+	DumpAsPPM( (unsigned char *)MotionDiff.Pixels, (unsigned char *)MotionDiff.Pixels, (unsigned char *)MotionDiff.Pixels, MotionDiff.GetWidth(), MotionDiff.GetHeight() );
 	FileDebug( "\tFinished saving diffmap" );
 }
 

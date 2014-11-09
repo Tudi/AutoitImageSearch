@@ -8,6 +8,7 @@ char* WINAPI ImageSearchOnScreenshot( char *aImageFile, int TransparentColor, in
 // mask value 1 = screenshot pixel is visible and should be searched
 char* WINAPI ImageSearchOnScreenshotMasked( char *ImageFile, char *MaskFile, int TransparentColor, int AcceptedColorDiff, int AcceptedErrorCount, int StopAfterNMatches );
 char* WINAPI GetImageSize( char *aImageFile );
+char* WINAPI IsAnythingChanced( int StartX, int StartY, int EndX, int EndY );
 
 void CycleScreenshots();
 
@@ -17,6 +18,31 @@ struct ScreenshotStruct
 	int				Left, Top, Right, Bottom;
 	bool			IsDiffMap;	//width and height needs to be divided by 4
 	SimilarSearch	*SSCache;
+
+	int				GetWidth()
+	{
+		if( IsDiffMap == true )
+			return ( Right - Left ) / 4;
+		return Right - Left;
+	}
+
+	int				GetHeight()
+	{
+		if( IsDiffMap == true )
+			return ( Bottom - Top ) / 4;
+		return Bottom - Top;
+	}
+
+	//probably much better if it is handled on site :P
+	__forceinline COLORREF	GetPixel( int x, int y )
+	{
+		if( IsDiffMap == true )
+		{
+			unsigned char *MDMask = (unsigned char *)Pixels;
+			return MDMask[ y / 4 * ( Right - Left ) / 4 + x / 4 ];
+		}
+		return Pixels[ y * ( Right - Left ) + x ];
+	}
 };
 
 #define NR_SCREENSHOTS_CACHED	2

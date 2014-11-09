@@ -37,7 +37,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 void main()
 {
 //	RunSQRTBenchmark(); //fact : sqrt( double) rocks
-	SetupSimilarSearch( 0, 1, 3 );
+	SetupSimilarSearch( 0, 1, 3, 0 );
 	TakeScreenshot( 0, 0, 800, 800 );
 	SearchSimilarOnScreenshot( "tosearch10.bmp" );
 }

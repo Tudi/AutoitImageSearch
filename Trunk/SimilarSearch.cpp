@@ -5,8 +5,9 @@ LIBRARY_API int SimilarSearchGroupingSizeX = 1024;
 LIBRARY_API int SimilarSearchGroupingSizeY = 1024;
 LIBRARY_API int SimilarSearchResizeStep = 1;
 LIBRARY_API int SimilarSearchSearchType = SS_SEARCH_TYPE_LINKED_SUMMED_PIXELS;
+LIBRARY_API int SimilarSearchOnlySearchOnDiffMask = 0;
 
-void WINAPI SetupSimilarSearch( int MaxImageSize, int DownScale, int SearchType )
+void WINAPI SetupSimilarSearch( int MaxImageSize, int DownScale, int SearchType, int OnlyAtDiffMask )
 {
 	if( MaxImageSize > 1 && SimilarSearchGroupingSizeX > MaxImageSize )
 		SimilarSearchGroupingSizeX = MaxImageSize;
@@ -18,11 +19,13 @@ void WINAPI SetupSimilarSearch( int MaxImageSize, int DownScale, int SearchType 
 
 	if( SearchType > SS_SEARCH_TYPE_START && SearchType < SS_SEARCH_TYPE_END )
 		SimilarSearchSearchType = SearchType;
+
+	SimilarSearchOnlySearchOnDiffMask = OnlyAtDiffMask;
 }
 
 SimilarSearch::SimilarSearch()
 {
-	Width = Height = BlockWidth = BlockHeight = 0;
+	Width = Height = BlockWidth = BlockHeight = SearchType = SearchDownScale = 0;
 	R = G = B = NULL;
 }
 
@@ -411,7 +414,7 @@ void GetPictureSumAtLoc( LPCOLORREF Pixels, int Width, int Height, int Stride, i
 
 void SimilarSearch::BuildFromImg( LPCOLORREF Pixels, int pWidth, int pHeight, int pStride )
 {
-	if( R != NULL && ( pWidth != Width || pHeight != Height || SimilarSearchGroupingSizeX != BlockWidth || BlockHeight != SimilarSearchGroupingSizeY ) )
+	if( R != NULL && ( pWidth != Width || pHeight != Height || SimilarSearchGroupingSizeX != BlockWidth || BlockHeight != SimilarSearchGroupingSizeY || SearchType != SimilarSearchSearchType || SearchDownScale != SimilarSearchResizeStep ) )
 	{
 		free( R );
 #if !( defined( SS_SUM_RGB ) || defined( ADD_COLOR_LOCALIZATION_DIAG3RGB ) || defined( ADD_COLOR_LOCALIZATION_MULBUGRGB ) || defined( ADD_COLOR_LOCALIZATION_2MULBUGRGB ) )
@@ -442,9 +445,25 @@ void SimilarSearch::BuildFromImg( LPCOLORREF Pixels, int pWidth, int pHeight, in
 #endif
 
 #ifndef IMPLEMENTING_MULTI_BLOCKS
-		for( int y=0;y<Height - BlockHeight;y++)
-			for( int x=0;x<Width - BlockWidth;x++)
-				GetPictureSumAtLoc( &Pixels[y*pStride+x], BlockWidth, BlockHeight, pStride, &R[ y * Width + x ], &G[ y * Width + x ], &B[ y * Width + x ] );
+		if( SimilarSearchOnlySearchOnDiffMask == 0 || Pixels != CurScreenshot->Pixels )
+		{
+			for( int y=0;y<Height - BlockHeight;y++)
+				for( int x=0;x<Width - BlockWidth;x++)
+					GetPictureSumAtLoc( &Pixels[y*pStride+x], BlockWidth, BlockHeight, pStride, &R[ y * Width + x ], &G[ y * Width + x ], &B[ y * Width + x ] );
+		}
+		else
+		{
+			if( MotionDiff.GetWidth() != CurScreenshot->GetWidth() || MotionDiff.GetHeight() != CurScreenshot->GetHeight() )
+			{
+				FileDebug( "\t WARNING : Diff map seems to be outdated compared to screenshot" );
+			}
+			int MotionDiffStride = MotionDiff.GetWidth();
+			unsigned char *MDMask = (unsigned char *)MotionDiff.Pixels;
+			for( int y=0;y<Height - BlockHeight;y++)
+				for( int x=0;x<Width - BlockWidth;x++)
+					if( MDMask[ y / 4 * MotionDiffStride + x / 4 ] )
+						GetPictureSumAtLoc( &Pixels[y*pStride+x], BlockWidth, BlockHeight, pStride, &R[ y * Width + x ], &G[ y * Width + x ], &B[ y * Width + x ] );
+		}
 #endif
 		FileDebug( "\t Finished building Similar search cache" );
 	}
@@ -478,33 +497,67 @@ double GetImageScoreAtLoc( SimilarSearch *SearchIn, SimilarSearch *SearchFor, in
 
 int GetNextBestMatch( SimilarSearch *SearchIn, SimilarSearch *SearchFor, int &retx, int &rety )
 {
-	double BestScore = 1.e+60;
-	retx = rety = -1;
-	for( int y=0;y<SearchIn->Height-SearchFor->Height;y++)
+	if( SimilarSearchOnlySearchOnDiffMask == 0 )
 	{
-		for( int x=0;x<SearchIn->Width-SearchFor->Width;x++)
+		double BestScore = 1.e+60;
+		retx = rety = -1;
+		for( int y=0;y<SearchIn->Height-SearchFor->Height;y++)
 		{
-			double ScoreHere = GetImageScoreAtLoc( SearchIn, SearchFor, x, y );
-/*
-//if( y % 5 == 0 && x % 5 == 0 )
-if( ScoreHere == 0 )
-{
-char debugbuff[500];
-//sprintf_s( debugbuff, 500, "SS at loc %d %d out of %d %d, score %f, sum ref %d sum img %d", x, y, SearchIn->Width-SearchFor->Width, SearchIn->Height-SearchFor->Height, (float)ScoreHere, SearchIn->R[ y * SearchIn->Width + x ], SearchFor->R[ 0 ] );
-sprintf_s( debugbuff, 500, "SS at loc %d %d sums %d - %d / %d - %d / %d - %d, score %f", x, y, SearchIn->R[ y * SearchIn->Width + x ], SearchFor->R[ 0 ], SearchIn->G[ y * SearchIn->Width + x ], SearchFor->G[ 0 ], SearchIn->B[ y * SearchIn->Width + x ], SearchFor->B[ 0 ], (float)ScoreHere );
-FileDebug( debugbuff );
-}
-/**/
-			if( ScoreHere < BestScore )
+			for( int x=0;x<SearchIn->Width-SearchFor->Width;x++)
 			{
-//FileDebug( "\tNew Best" );
-				BestScore = ScoreHere;
-				retx = x;
-				rety = y;
+				double ScoreHere = GetImageScoreAtLoc( SearchIn, SearchFor, x, y );
+	/*
+	//if( y % 5 == 0 && x % 5 == 0 )
+	if( ScoreHere == 0 )
+	{
+	char debugbuff[500];
+	//sprintf_s( debugbuff, 500, "SS at loc %d %d out of %d %d, score %f, sum ref %d sum img %d", x, y, SearchIn->Width-SearchFor->Width, SearchIn->Height-SearchFor->Height, (float)ScoreHere, SearchIn->R[ y * SearchIn->Width + x ], SearchFor->R[ 0 ] );
+	sprintf_s( debugbuff, 500, "SS at loc %d %d sums %d - %d / %d - %d / %d - %d, score %f", x, y, SearchIn->R[ y * SearchIn->Width + x ], SearchFor->R[ 0 ], SearchIn->G[ y * SearchIn->Width + x ], SearchFor->G[ 0 ], SearchIn->B[ y * SearchIn->Width + x ], SearchFor->B[ 0 ], (float)ScoreHere );
+	FileDebug( debugbuff );
+	}
+	/**/
+				if( ScoreHere < BestScore )
+				{
+	//FileDebug( "\tNew Best" );
+					BestScore = ScoreHere;
+					retx = x;
+					rety = y;
+					if( ScoreHere == 0 )
+					{
+						y = SearchIn->Height;
+						break;
+					}
+				}
 			}
 		}
+		return (int)( BestScore / (double)SearchFor->Height / (double)SearchFor->Width );
 	}
-	return (int)( BestScore / (double)SearchFor->Height / (double)SearchFor->Width );
+	else if( SimilarSearchOnlySearchOnDiffMask == 0 )
+	{
+		double BestScore = 1.e+60;
+		retx = rety = -1;
+		int MotionDiffStride = MotionDiff.GetWidth();
+		unsigned char *MDMask = (unsigned char *)MotionDiff.Pixels;
+		for( int y=0;y<SearchIn->Height-SearchFor->Height;y++)
+			for( int x=0;x<SearchIn->Width-SearchFor->Width;x++)
+				if( MDMask[ y / 4 * MotionDiffStride + x / 4 ] )
+				{
+					double ScoreHere = GetImageScoreAtLoc( SearchIn, SearchFor, x, y );
+					if( ScoreHere < BestScore )
+					{
+						BestScore = ScoreHere;
+						retx = x;
+						rety = y;
+						if( ScoreHere == 0 )
+						{
+							y = SearchIn->Height;
+							break;
+						}
+					}
+				}
+		return (int)( BestScore / (double)SearchFor->Height / (double)SearchFor->Width );
+	}
+	return 0;
 }
 
 char SSReturnBuff[DEFAULT_STR_BUFFER_SIZE*10];

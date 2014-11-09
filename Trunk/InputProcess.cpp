@@ -444,3 +444,32 @@ char* WINAPI GetImageSize( char *aImageFile )
 
 	return ReturnBuff;
 }
+
+char* WINAPI IsAnythingChanced( int StartX, int StartY, int EndX, int EndY )
+{
+	if( CurScreenshot->Pixels == NULL )
+	{
+		FileDebug( "Skipping change search as no screenshot is available" );
+		return "0|0|0";
+	}
+	if( PrevScreenshot->Pixels == NULL )
+	{
+		FileDebug( "Skipping change search as no secondary screenshot is available" );
+		return "0|0|0";
+	}
+	if( CurScreenshot->Left != PrevScreenshot->Left || CurScreenshot->Right != PrevScreenshot->Right || CurScreenshot->Top != PrevScreenshot->Top || CurScreenshot->Bottom != PrevScreenshot->Bottom )
+	{
+		FileDebug( "Screenshots were not taken from same place. Can't compare" );
+		return "0|0|0";
+	}
+	int Width = CurScreenshot->Right - CurScreenshot->Left;
+	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
+	for( int y = StartY; y < EndY; y++ )
+		for( int x = StartX; x < EndX; x++ )
+			if( CurScreenshot->Pixels[ y * Width + x ] != PrevScreenshot->Pixels[ y * Width + x ] )
+			{
+				sprintf_s( ReturnBuff, DEFAULT_STR_BUFFER_SIZE*10, "1|%d|%d", x, y );
+				return ReturnBuff;
+			}
+	return "0|0|0";
+}

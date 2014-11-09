@@ -48,8 +48,8 @@ void WINAPI ErrodeDiffMap( int HalfKernelSize )
 		FileDebug( "WARNING:Screenshot buffer is null when trying to blur it!" );
 		return;
 	}
-	int Width = ( MotionDiff.Right - MotionDiff.Left );
-	int Height = ( MotionDiff.Bottom - MotionDiff.Top );
+	int Width = MotionDiff.GetWidth();
+	int Height = MotionDiff.GetHeight();
 	int AllocSize = Width * Height * sizeof( COLORREF ) + SSE_PADDING;
 	LPCOLORREF new_Pixels = (COLORREF*)malloc( AllocSize );
 	if( new_Pixels == NULL )
@@ -61,8 +61,7 @@ void WINAPI ErrodeDiffMap( int HalfKernelSize )
 
 	unsigned char *Mask = (unsigned char *)MotionDiff.Pixels;
 	unsigned char *Dst = (unsigned char *)new_Pixels;
-	Width = Width / 4;
-	Height = Height / 4;
+
 	int KernelPixelCount = ( HalfKernelSize * 2 + 1 ) * ( HalfKernelSize * 2 + 1 );
 
 	for( int y = HalfKernelSize; y < Height-HalfKernelSize; y +=1 )

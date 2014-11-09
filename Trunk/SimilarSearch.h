@@ -35,6 +35,8 @@ public:
 	void BuildFromImg( LPCOLORREF Pixels, int pWidth, int pHeight, int pStride );
 	int Width, Height;
 	int	*R,*G,*B;
+	int SearchType;
+	int SearchDownScale;
 #ifndef IMPLEMENTING_MULTI_BLOCKS
 	int BlockWidth,BlockHeight;
 #endif
@@ -42,7 +44,7 @@ public:
 
 int GetNextBestMatch( SimilarSearch *SearchIn, SimilarSearch *SearchFor, int &retx, int &rety );
 char * WINAPI SearchSimilarOnScreenshot( char *aImageFile );
-void WINAPI SetupSimilarSearch( int MaxImageSize, int DownScale, int SearchType );
+void WINAPI SetupSimilarSearch( int MaxImageSize, int DownScale, int SearchType, int OnlyAtDiffMask );
 
 enum SS_SEARCH_TYPES
 {
@@ -57,5 +59,6 @@ extern LIBRARY_API int SimilarSearchGroupingSizeX;
 extern LIBRARY_API int SimilarSearchGroupingSizeY;
 extern LIBRARY_API int SimilarSearchResizeStep;
 extern LIBRARY_API int SimilarSearchSearchType;
+extern LIBRARY_API int SimilarSearchOnlySearchOnDiffMask;
 
 #endif
