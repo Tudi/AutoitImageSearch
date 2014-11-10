@@ -1,0 +1,12 @@
+Doing benchmarks is not a simple thing. It depends on PC load, it depends on HW instruction set, it depends on build, it depends on integration.....
+Because all of this, i'm not even mentioning in what conditions i ran the tests. Numbers should be purely informative just to let you compare if something is faster than other in generic case.
+You sould benchmark your specific build / specific image sizes / specific problem to know what is best for you
+
+- "TakeScreenshot()" : 350 FPS at 640k pixels
+- "TakeScreenshot()" + "ResizeScreenshot()" : 346 FPS resize 640k pixels to 64k pixels
+- "BlurrImage(1)" : 24 FPS at 640k pixels
+- "GenerateDiffMap()" : 704 FPS at 640k pixels
+- "ErrodeDiffMap(1)" : 66 FPS at 640k pixels
+- "ImageSearchOnScreenshot()" : 106 FPS at 640k pixels good case scenario with 2.5k pixels ( 1 match ) - 0.052 FPS at 640k pixels worst case scenario with 2.5k pixels ( image match at every position search all results )
+- "IsAnythingChanced()" : 587 FPS at 640k pixels
+- "SearchSimilarOnScreenshot()" : 188 FPS at 2.5k pixels. ! does not include setup !

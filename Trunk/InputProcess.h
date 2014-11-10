@@ -17,6 +17,7 @@ struct ScreenshotStruct
 	LPCOLORREF		Pixels;
 	int				Left, Top, Right, Bottom;
 	bool			IsDiffMap;	//width and height needs to be divided by 4
+	bool			NeedsSScache;
 	SimilarSearch	*SSCache;
 
 	int				GetWidth()

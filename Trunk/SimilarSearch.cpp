@@ -470,7 +470,7 @@ void SimilarSearch::BuildFromImg( LPCOLORREF Pixels, int pWidth, int pHeight, in
 }
 
 #if defined( SS_SUM_RGB ) || defined( ADD_COLOR_LOCALIZATION_DIAG3RGB ) || defined( ADD_COLOR_LOCALIZATION_MULBUGRGB ) || defined( ADD_COLOR_LOCALIZATION_2MULBUGRGB )
-int GetImageScoreAtLoc( SimilarSearch *SearchIn, SimilarSearch *SearchFor, int x, int y )
+__forceinline int GetImageScoreAtLoc( SimilarSearch *SearchIn, SimilarSearch *SearchFor, int x, int y )
 {
 	int RGBDiff = SearchIn->R[ y * SearchIn->Width + x ] - SearchFor->R[ 0 ];
 	if( RGBDiff < 0 )
@@ -499,13 +499,21 @@ int GetNextBestMatch( SimilarSearch *SearchIn, SimilarSearch *SearchFor, int &re
 {
 	if( SimilarSearchOnlySearchOnDiffMask == 0 )
 	{
+#if defined( SS_SUM_RGB ) || defined( ADD_COLOR_LOCALIZATION_DIAG3RGB ) || defined( ADD_COLOR_LOCALIZATION_MULBUGRGB ) || defined( ADD_COLOR_LOCALIZATION_2MULBUGRGB )
+		int BestScore = 0x7FFFFFFF;
+#else
 		double BestScore = 1.e+60;
+#endif
 		retx = rety = -1;
 		for( int y=0;y<SearchIn->Height-SearchFor->Height;y++)
 		{
 			for( int x=0;x<SearchIn->Width-SearchFor->Width;x++)
 			{
+#if defined( SS_SUM_RGB ) || defined( ADD_COLOR_LOCALIZATION_DIAG3RGB ) || defined( ADD_COLOR_LOCALIZATION_MULBUGRGB ) || defined( ADD_COLOR_LOCALIZATION_2MULBUGRGB )
+				int ScoreHere = GetImageScoreAtLoc( SearchIn, SearchFor, x, y );
+#else
 				double ScoreHere = GetImageScoreAtLoc( SearchIn, SearchFor, x, y );
+#endif
 	/*
 	//if( y % 5 == 0 && x % 5 == 0 )
 	if( ScoreHere == 0 )
@@ -578,11 +586,6 @@ char * WINAPI SearchSimilarOnScreenshot( char *aImageFile )
 		FileDebug( "Skipping Image search as image pixels are missing" );
 		return "";
 	}
-	if( cache->LoadedPicture == NULL )
-	{
-		FileDebug( "Skipping Image search as image is missing" );
-		return "";
-	}
 
 	if( CurScreenshot->Pixels == NULL )
 	{
@@ -596,7 +599,12 @@ char * WINAPI SearchSimilarOnScreenshot( char *aImageFile )
 		CurScreenshot->SSCache = new SimilarSearch;
 
 	cache->SSCache->BuildFromImg( cache->Pixels, cache->Width, cache->Height, cache->Width );
-	CurScreenshot->SSCache->BuildFromImg( CurScreenshot->Pixels, CurScreenshot->Right - CurScreenshot->Left, CurScreenshot->Bottom - CurScreenshot->Top, CurScreenshot->Right - CurScreenshot->Left );
+	if( CurScreenshot->NeedsSScache == true )
+	{
+		CurScreenshot->SSCache->BlockWidth = 0;
+		CurScreenshot->SSCache->BuildFromImg( CurScreenshot->Pixels, CurScreenshot->Right - CurScreenshot->Left, CurScreenshot->Bottom - CurScreenshot->Top, CurScreenshot->Right - CurScreenshot->Left );
+		CurScreenshot->NeedsSScache = false;
+	}
 
 	if( cache->SSCache->BlockHeight != CurScreenshot->SSCache->BlockHeight || cache->SSCache->BlockWidth != CurScreenshot->SSCache->BlockWidth )
 	{

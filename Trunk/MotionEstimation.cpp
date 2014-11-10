@@ -51,7 +51,7 @@ unsigned int RetSAD = 0;
 int WINAPI GenerateDiffMap()
 {
 	FileDebug( "Started motion estimation" );
-	if( CurScreenshot->Pixels == NULL || PrevScreenshot->Pixels == NULL )
+	if( CurScreenshot->Pixels == NULL || PrevScreenshot == NULL || PrevScreenshot->Pixels == NULL )
 	{
 		FileDebug( "Can not motion estimate as there are not enough screenshots" );
 		return 0;

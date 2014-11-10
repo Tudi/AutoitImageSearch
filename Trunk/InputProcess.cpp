@@ -29,6 +29,7 @@ void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 	CurScreenshot->Top = aTop;
 	CurScreenshot->Right = aRight;
 	CurScreenshot->Bottom = aBottom;
+	CurScreenshot->NeedsSScache = true;
 
 	HDC sdc = NULL;
 	HBITMAP hbitmap_screen = NULL;
@@ -118,11 +119,6 @@ char* WINAPI ImageSearchOnScreenshot( char *aFilespec, int TransparentColor, int
 		FileDebug( "Skipping Image search as image pixels are missing" );
 		return "";
 	}
-	if( cache->LoadedPicture == NULL )
-	{
-		FileDebug( "Skipping Image search as image is missing" );
-		return "";
-	}
 	if( CurScreenshot->Pixels == NULL )
 	{
 		FileDebug( "Skipping Image search no screenshot is available" );
@@ -188,7 +184,8 @@ AbandonIMageInImageSearch:
 				if( ImageMatched == 1 )
 				{
 					FileDebug( "Image search found a match" );
-					sprintf_s( ReturnBuff2, DEFAULT_STR_BUFFER_SIZE*10, "%s|%d|%d", ReturnBuff2, CurScreenshot->Left + x, CurScreenshot->Top + y );
+					if( strlen( ReturnBuff2 ) < DEFAULT_STR_BUFFER_SIZE*10 - 2 * 10 )	//is this even supposed to crash with sprintf_s ?
+						sprintf_s( ReturnBuff2, DEFAULT_STR_BUFFER_SIZE*10, "%s|%d|%d", ReturnBuff2, CurScreenshot->Left + x, CurScreenshot->Top + y );
 					FileDebug( ReturnBuff2 );
 					MatchesFound++;
 					if( MatchesFound >= StopAfterNMatches )
@@ -452,7 +449,7 @@ char* WINAPI IsAnythingChanced( int StartX, int StartY, int EndX, int EndY )
 		FileDebug( "Skipping change search as no screenshot is available" );
 		return "0|0|0";
 	}
-	if( PrevScreenshot->Pixels == NULL )
+	if( PrevScreenshot == NULL || PrevScreenshot->Pixels == NULL )
 	{
 		FileDebug( "Skipping change search as no secondary screenshot is available" );
 		return "0|0|0";

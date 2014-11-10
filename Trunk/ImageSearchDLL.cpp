@@ -37,7 +37,17 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 void main()
 {
 //	RunSQRTBenchmark(); //fact : sqrt( double) rocks
-	SetupSimilarSearch( 0, 1, 3, 0 );
-	TakeScreenshot( 0, 0, 800, 800 );
-	SearchSimilarOnScreenshot( "tosearch10.bmp" );
+
+//	RunSCreenCaptureBenchmark(); // 350 fps on my pc
+//	RunCheckChangeBenchmark(); // 587 fps on my pc
+//	RunResizeBenchmark(); // 346 fps on my pc
+//	RunBlurrBenchmark(); // 24 fps on my pc
+//	RunDiffBenchmark(); // 704 fps on my pc
+//	RunImgSearchBenchmark(); // 0.05 - 109 fps on my pc
+//	RunErrodeBenchmark(); // 66 fps on my pc
+	RunSimilarSearchBenchmark(); // 418 fps is the setup and 188 fps is the search on my pc
+
+//	SetupSimilarSearch( 0, 1, 3, 0 );
+//	TakeScreenshot( 0, 0, 800, 800 );
+//	SearchSimilarOnScreenshot( "tosearch10.bmp" );
 }

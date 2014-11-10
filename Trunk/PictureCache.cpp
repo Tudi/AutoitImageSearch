@@ -122,3 +122,37 @@ void CheckPrepareToleranceMaps( CachedPicture *cache, int NewTolerance, int Tran
 			}
 		}
 }
+
+void WINAPI MoveScreenshotToCache( char *Name )
+{
+	if( CurScreenshot->Pixels == NULL )
+	{
+		FileDebug( "Can not move screenshot to cache because there are no screenshots" );
+		return;
+	}
+
+
+	if( NrPicturesCached >= MAX_PICTURE_CACHE_COUNT )
+	{
+		FileDebug( "Skipped caching image as no more cache slots available" );
+		return; 
+	}
+
+	FileDebug( "Started caching screenshot" );
+
+	strcpy_s( PictureCache[NrPicturesCached].FileName, DEFAULT_STR_BUFFER_SIZE, Name );
+	PictureCache[NrPicturesCached].NameHash = GetStrHash( Name );
+
+	PictureCache[ NrPicturesCached ].LoadedPicture = NULL;
+
+	int PixelsByteSize = CurScreenshot->GetWidth() * CurScreenshot->GetHeight() * sizeof( COLORREF );
+	PictureCache[ NrPicturesCached ].Pixels = (LPCOLORREF) malloc( PixelsByteSize );
+	memcpy(	PictureCache[ NrPicturesCached ].Pixels, CurScreenshot->Pixels, PixelsByteSize );
+
+	PictureCache[ NrPicturesCached ].Width = CurScreenshot->GetWidth();
+	PictureCache[ NrPicturesCached ].Height = CurScreenshot->GetHeight();
+
+	NrPicturesCached++;
+
+	FileDebug( "\tFinished caching screenshot" );
+}
