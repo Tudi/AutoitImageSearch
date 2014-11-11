@@ -125,6 +125,7 @@ void PiramidImage::BuildFromImg( LPCOLORREF BGRPixels, int Width, int Height, in
 			g2 = ( Pixel >> 8 ) & 0xFF;
 			b2 = ( Pixel >> 16 ) & 0xFF;
 			ImageLayers[RED_LAYER_INDEX][0][ y * ImageLayersX[ 0 ] + x ] = (int)( r1 * r2 + g1 * g2 + b1 * b2 );
+//			ImageLayers[RED_LAYER_INDEX][0][ y * ImageLayersX[ 0 ] + x ] = (int)sqrt((double)( r1 * r2 + g1 * g2 + b1 * b2 ) );
 #elif defined( MERGE_RGB_INTO_R ) || defined( GENERATE_ONLY_R )
 			int Pixel, r1,g1,b1;
 			Pixel = RGBRowStart1[ x ];
@@ -132,6 +133,7 @@ void PiramidImage::BuildFromImg( LPCOLORREF BGRPixels, int Width, int Height, in
 			g1 = ( Pixel >> 8 ) & 0xFF;
 			b1 = ( Pixel >> 16 ) & 0xFF;
 			ImageLayers[RED_LAYER_INDEX][0][ y * ImageLayersX[ 0 ] + x ] = (int)( r1 + g1 + b1 );
+//			ImageLayers[RED_LAYER_INDEX][0][ y * ImageLayersX[ 0 ] + x ] = (int)sqrt((double)( r1 * r1 + g1 * g1 + b1 * b1 ));
 #else
 			int Pixel, r1,g1,b1;
 			Pixel = RGBRowStart1[ x ];
@@ -270,6 +272,7 @@ int PiramidSearch( PiramidImage *Big, PiramidImage *Small, int *RetX, int *RetY,
 					GSadNow = GetLocalSad( &Big->ImageLayers[1][Layer][ y * Big->ImageLayersX[Layer] + x ], &Small->ImageLayers[1][Layer][ 0 ], Big->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersY[Layer] );
 					BSadNow = GetLocalSad( &Big->ImageLayers[2][Layer][ y * Big->ImageLayersX[Layer] + x ], &Small->ImageLayers[2][Layer][ 0 ], Big->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersY[Layer] );
 					if( RSadNow + GSadNow + BSadNow <= BestRSad + BestGSad + BestBSad )
+//					if( RSadNow * RSadNow + GSadNow * GSadNow + BSadNow * BSadNow <= BestRSad * BestRSad + BestGSad * BestGSad + BestBSad * BestBSad )
 #endif
 					{
 						//check if 
@@ -377,6 +380,9 @@ char * WINAPI SearchPiramidOnScreenshot( char *aImageFile )
 	int retx, rety, retrsad, retgsad, retbsad;
 	PiramidSearch( CurScreenshot->PSCache, cache->PSCache, &retx, &rety, &retrsad, &retgsad, &retbsad, 0 );
 //	PiramidSearch( CurScreenshot->PSCache, cache->PSCache, &retx, &rety, &retrsad, &retgsad, &retbsad, 0, 0 );	//image to image search
+
+//	TakeScreenshot( retx, rety, retx + 150 , rety + 150 );	//for me this is black box on black screen search ... worst case
+//	SaveScreenshot();
 
 	sprintf_s( PSReturnBuff, DEFAULT_STR_BUFFER_SIZE*10, "1|%d|%d|%d", retx+cache->Width / 2, rety + cache->Height / 2, retrsad );
 	return PSReturnBuff;

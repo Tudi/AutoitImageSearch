@@ -281,7 +281,7 @@ void RunPiramidSearchBenchmark()
 {
 	int Start,End,AntiOptimizer;
 #ifdef _DEBUG
-	int LoopCount = 2;
+	int LoopCount = 1;
 #else
 	int LoopCount = 1000;
 #endif
@@ -295,7 +295,7 @@ void RunPiramidSearchBenchmark()
 	printf("Make that huge console window smaller or else search will exit very quickly making benchmark irelevant...Press any key to start\n");
 	_getch();
 
-	TakeScreenshot( EndX - SearchWidth - 1, EndY - SearchHeight - 1, EndX - 1 , EndY - 1 );	//for me this is black box on black screen search ... worst case
+	TakeScreenshot( EndX / 2 - 1 - SearchWidth, EndY / 2 - 1 - SearchHeight, EndX / 2 - 1 , EndY / 2 - 1 );	//for me this is black box on black screen search ... worst case
 //	TakeScreenshot( 0, 0, SearchWidth , SearchHeight );	//for me this is black box on black screen search ... worst case
 //	TakeScreenshot( 1, 1, SearchWidth + 1 , SearchHeight + 1 );	//for me this is black box on black screen search ... worst case
 //	SaveScreenshot();

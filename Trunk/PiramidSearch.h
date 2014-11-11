@@ -1,6 +1,8 @@
 #ifndef _PIRAMID_IMAGE_SEARCH_H_
 #define _PIRAMID_IMAGE_SEARCH_H_
 
+// ! Piramid search is unreliable !!! It find bad or no matches even if there are better versions
+
 // The ods that numbers will overflow are :
 // if screenshot size is 2024*2024 that is 4096576 pixels. Max sad / pixel is 3*255 => 2024*2024*3*255 = 3133880640
 // if we want to compare texture as RS * GS * BS instead RS+GS+BS than we need 93 bits just to be safe.
@@ -18,7 +20,7 @@
 #define MERGE_RGB_INTO_R
 // !do not panic that SAD will not be 0. Last 2 columns and rows of the small image will be 0 that is why there will always be a difference !
 // data locality might improve some search results in some cases
-#define USE_DATA_LOCALITY_ON_MERGE
+//#define USE_DATA_LOCALITY_ON_MERGE
 
 class PiramidImage
 {
