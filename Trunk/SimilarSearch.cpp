@@ -598,12 +598,17 @@ char * WINAPI SearchSimilarOnScreenshot( char *aImageFile )
 	if( CurScreenshot->SSCache == NULL )
 		CurScreenshot->SSCache = new SimilarSearch;
 
-	cache->SSCache->BuildFromImg( cache->Pixels, cache->Width, cache->Height, cache->Width );
-	if( CurScreenshot->NeedsSScache == true )
+	if( cache->NeedsSSCache == true )
+	{
+		cache->SSCache->BlockWidth = 0;
+		cache->SSCache->BuildFromImg( cache->Pixels, cache->Width, cache->Height, cache->Width );
+		cache->NeedsSSCache = false;
+	}
+	if( CurScreenshot->NeedsSSCache == true )
 	{
 		CurScreenshot->SSCache->BlockWidth = 0;
 		CurScreenshot->SSCache->BuildFromImg( CurScreenshot->Pixels, CurScreenshot->Right - CurScreenshot->Left, CurScreenshot->Bottom - CurScreenshot->Top, CurScreenshot->Right - CurScreenshot->Left );
-		CurScreenshot->NeedsSScache = false;
+		CurScreenshot->NeedsSSCache = false;
 	}
 
 	if( cache->SSCache->BlockHeight != CurScreenshot->SSCache->BlockHeight || cache->SSCache->BlockWidth != CurScreenshot->SSCache->BlockWidth )

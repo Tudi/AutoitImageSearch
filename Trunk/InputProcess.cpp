@@ -29,7 +29,8 @@ void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 	CurScreenshot->Top = aTop;
 	CurScreenshot->Right = aRight;
 	CurScreenshot->Bottom = aBottom;
-	CurScreenshot->NeedsSScache = true;
+	CurScreenshot->NeedsSSCache = true;
+	CurScreenshot->NeedsPSCache = true;
 
 	HDC sdc = NULL;
 	HBITMAP hbitmap_screen = NULL;

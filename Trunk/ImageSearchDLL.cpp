@@ -45,7 +45,8 @@ void main()
 //	RunDiffBenchmark(); // 704 fps on my pc
 //	RunImgSearchBenchmark(); // 0.05 - 109 fps on my pc
 //	RunErrodeBenchmark(); // 66 fps on my pc
-	RunSimilarSearchBenchmark(); // 418 fps is the setup and 188 fps is the search on my pc
+//	RunSimilarSearchBenchmark(); // 168 fps is the setup and 188 fps is the search on my pc
+	RunPiramidSearchBenchmark(); // 151 fps is the setup and 600 fps is the search on my pc
 
 //	SetupSimilarSearch( 0, 1, 3, 0 );
 //	TakeScreenshot( 0, 0, 800, 800 );

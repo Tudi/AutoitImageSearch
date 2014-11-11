@@ -4,6 +4,7 @@
 #define MAX_PICTURE_CACHE_COUNT 500
 
 class SimilarSearch;
+class PiramidImage;
 
 struct CachedPicture
 {
@@ -17,11 +18,15 @@ struct CachedPicture
 	unsigned char	*MinMap[3];
 	unsigned char	*MaxMap[3];
 	SimilarSearch	*SSCache;
+	PiramidImage	*PSCache;
+	bool			NeedsSSCache;
+	bool			NeedsPSCache;
 };
 
 int GetCacheIndex( char *aFilespec );
 CachedPicture *CachePicture( char *aFilespec );
 void CheckPrepareToleranceMaps( CachedPicture *cache, int NewTolerance, int TransparentColor );
+void WINAPI MoveScreenshotToCache( char *Name );
 
 extern LIBRARY_API CachedPicture PictureCache[MAX_PICTURE_CACHE_COUNT];
 extern LIBRARY_API int NrPicturesCached;

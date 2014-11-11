@@ -1,7 +1,7 @@
 #include "StdAfx.h"
 
 //disabled as i never finished / tested it
-#if 0
+#if 1
 PiramidImage::PiramidImage()
 {
 	memset( ImageLayers, NULL, sizeof( ImageLayers ) );
@@ -14,13 +14,30 @@ PiramidImage::~PiramidImage()
 	for( int i=0;i<MAX_IMAGE_LAYERS;i++ )
 		if( ImageLayers[0][i] )
 		{
-			free( ImageLayers[0][i] );
+			free( ImageLayers[RED_LAYER_INDEX][i] );
+#if !defined( GENERATE_ONLY_R ) && !defined( MERGE_RGB_INTO_R )
 			free( ImageLayers[1][i] );
 			free( ImageLayers[2][i] );
+#endif
 		}
 	memset( ImageLayers, NULL, sizeof( ImageLayers ) );
 }
 
+int GetPixelsInPixel( int LayerDepth )
+{
+	int PixelsInPixel = 1;
+	for( int i = 0; i < LayerDepth; i++ )
+		PixelsInPixel *= PIXEL_STEPDOWN_LAYER * PIXEL_STEPDOWN_LAYER;
+	return PixelsInPixel;
+}
+
+int GetPixelsInPixel1D( int LayerDepth )
+{
+	int PixelsInPixel = 1;
+	for( int i = 0; i < LayerDepth; i++ )
+		PixelsInPixel *= PIXEL_STEPDOWN_LAYER;
+	return PixelsInPixel;
+}
 
 void PiramidImage::InitBuffersToNewSize(int Width, int Height)
 {
@@ -39,33 +56,37 @@ void PiramidImage::InitBuffersToNewSize(int Width, int Height)
 				ImageLayers[2][i] = NULL;
 #endif
 			}
-	}
+		ImageLayersX[0] = Width;
+		ImageLayersY[0] = Height;
 
-	ImageLayersX[0] = Width;
-	ImageLayersY[0] = Height;
-
-	LayersAvailable = 0;
-	for( int i=0;i<MAX_IMAGE_LAYERS;i++ )
-		if( ImageLayers[0][i] == NULL )
+		LayersAvailable = 0;
+		for( int i=0;i<MAX_IMAGE_LAYERS;i++ )
 		{
-			if( i > 0 )
-			{
-				ImageLayersX[ i ] = ( ImageLayersX[ i - 1 ] ) / PIXEL_STEPDOWN_LAYER;	//round down
-				ImageLayersY[ i ] = ( ImageLayersY[ i - 1 ] ) / PIXEL_STEPDOWN_LAYER;	//round down
-			}
-			if( ImageLayersX[ i ] <= MIN_SIZE_FOR_SEARCH || ImageLayersY[ i ] <= MIN_SIZE_FOR_SEARCH )
-				break;
+				if( i > 0 )
+				{
+					ImageLayersX[ i ] = ( ImageLayersX[ i - 1 ] ) / PIXEL_STEPDOWN_LAYER;	//round down
+					ImageLayersY[ i ] = ( ImageLayersY[ i - 1 ] ) / PIXEL_STEPDOWN_LAYER;	//round down
+				}
 
-			ImageLayers[0][i] = (int*)malloc( ImageLayersX[i] * ImageLayersY[i] * sizeof( signed int ) + SSE_PADDING );
+				if( ImageLayersX[ i ] <= MIN_SIZE_FOR_SEARCH || ImageLayersY[ i ] <= MIN_SIZE_FOR_SEARCH )
+					break;
+
+				if( GetPixelsInPixel( i ) > MAX_PIXEL_COUNT_IN_PIXEL )
+					break;
+
+				int ImagePlaneSize = ImageLayersX[i] * ImageLayersY[i] * sizeof( signed int ) + SSE_PADDING;
+				ImageLayers[0][i] = (int*)malloc( ImagePlaneSize );
+				memset( ImageLayers[0][i], 0, ImagePlaneSize );
 #if !defined( GENERATE_ONLY_R ) && !defined( MERGE_RGB_INTO_R )
-			ImageLayers[1][i] = (int*)malloc( ImageLayersX[i] * ImageLayersY[i] * sizeof( signed int ) + SSE_PADDING );
-			ImageLayers[2][i] = (int*)malloc( ImageLayersX[i] * ImageLayersY[i] * sizeof( signed int ) + SSE_PADDING );
+				ImageLayers[1][i] = (int*)malloc( ImagePlaneSize );
+				ImageLayers[2][i] = (int*)malloc( ImagePlaneSize );
 #endif
-			LayersAvailable++;
+				LayersAvailable++;
 		}
+	}
 }
 
-void PiramidImage::BuildPiramid( LPCOLORREF BGRPixels, int Width, int Height, int Stride )
+void PiramidImage::BuildFromImg( LPCOLORREF BGRPixels, int Width, int Height, int Stride )
 {
 	if( BGRPixels == NULL )
 	{
@@ -73,35 +94,53 @@ void PiramidImage::BuildPiramid( LPCOLORREF BGRPixels, int Width, int Height, in
 		return;
 	}
 
+	if( Stride == 0 )
+		Stride = Width;
+
 	//alloc layers
 	InitBuffersToNewSize( Width, Height );
 
 	//copy the bitmap to our buffer
-	BYTE* byteptr = (unsigned char*)BGRPixels;
-	for( int y = 0; y < ImageLayersY[ 0 ]; y += 1 )
+#ifdef USE_DATA_LOCALITY_ON_MERGE
+	int LinkPixelStep = 1;
+#else
+	int LinkPixelStep = 0;
+#endif
+	for( int y = 0; y < ImageLayersY[ 0 ] - LinkPixelStep; y += 1 )
 	{
-//		int MirrorY = ImageLayersY[ 0 ] - 1 - y;
-		int MirrorY = y;
-	    int rowBase = y * Stride;
-		for( int x = 0; x < ImageLayersX[ 0 ]; x += 1 )
+		LPCOLORREF RGBRowStart1 = &BGRPixels[ ( y + 0 ) * Stride ];
+#ifdef USE_DATA_LOCALITY_ON_MERGE
+		LPCOLORREF RGBRowStart2 = &BGRPixels[ ( y + LinkPixelStep ) * Stride ];
+#endif
+		for( int x = 0; x < ImageLayersX[ 0 ] - LinkPixelStep; x += 1 )
 		{
-			//pointer arithmetics to find (i,j) pixel colors:
-			int R = *( byteptr + rowBase + x * 4 + 2 );
-			ImageLayers[0][0][ MirrorY * ImageLayersX[ 0 ] + x ] = R;
-#ifdef MERGE_RGB_INTO_R
-			int G = *( byteptr + rowBase + x * 4 + 1 );
-			int B = *( byteptr + rowBase + x * 4 + 0 ); 
-			ImageLayers[0][0][ MirrorY * ImageLayersX[ 0 ] + x ] += G;
-			ImageLayers[0][0][ MirrorY * ImageLayersX[ 0 ] + x ] += B;
-#endif
-#ifndef GENERATE_ONLY_R
-			int G = *( byteptr + rowBase + x * 4 + 1 );
-			int B = *( byteptr + rowBase + x * 4 + 0 ); 
-			ImageLayers[1][0][ MirrorY * ImageLayersX[ 0 ] + x ] = G;
-			ImageLayers[2][0][ MirrorY * ImageLayersX[ 0 ] + x ] = B;
-#endif
-#ifdef DEBUG_WRITEBACK_WHAT_PIXELS_WE_READ
-			Src->SetPixel( x, MirrorY, RGB( R, G, B ) );
+#ifdef USE_DATA_LOCALITY_ON_MERGE
+			int Pixel, r1,g1,b1,r2,g2,b2;
+			Pixel = 0x00010101 | RGBRowStart1[ ( x + 0 ) ];
+			r1 = ( Pixel >> 0 ) & 0xFF;
+			g1 = ( Pixel >> 8 ) & 0xFF;
+			b1 = ( Pixel >> 16 ) & 0xFF;
+			Pixel = 0x00010101 | RGBRowStart2[ ( x + LinkPixelStep ) ];
+			r2 = ( Pixel >> 0 ) & 0xFF;
+			g2 = ( Pixel >> 8 ) & 0xFF;
+			b2 = ( Pixel >> 16 ) & 0xFF;
+			ImageLayers[RED_LAYER_INDEX][0][ y * ImageLayersX[ 0 ] + x ] = (int)( r1 * r2 + g1 * g2 + b1 * b2 );
+#elif defined( MERGE_RGB_INTO_R ) || defined( GENERATE_ONLY_R )
+			int Pixel, r1,g1,b1;
+			Pixel = RGBRowStart1[ x ];
+			r1 = ( Pixel >> 0 ) & 0xFF;
+			g1 = ( Pixel >> 8 ) & 0xFF;
+			b1 = ( Pixel >> 16 ) & 0xFF;
+			ImageLayers[RED_LAYER_INDEX][0][ y * ImageLayersX[ 0 ] + x ] = (int)( r1 + g1 + b1 );
+#else
+			int Pixel, r1,g1,b1;
+			Pixel = RGBRowStart1[ x ];
+			r1 = ( Pixel >> 0 ) & 0xFF;
+			g1 = ( Pixel >> 8 ) & 0xFF;
+			b1 = ( Pixel >> 16 ) & 0xFF;
+			ImageLayers[RED_LAYER_INDEX][0][ y * ImageLayersX[ 0 ] + x ] = (int)( r1 );
+			ImageLayers[1][0][ y * ImageLayersX[ 0 ] + x ] = (int)( g1 );
+			ImageLayers[2][0][ y * ImageLayersX[ 0 ] + x ] = (int)( b1 );
 #endif
 		}
 	}
@@ -131,70 +170,13 @@ void PiramidImage::BuildFromImgOtherLevels()
 							int SumPrevLayer = BigImg[ y1 * ImageLayersX[ BigerLayer ] + x1 ];
 							Sum += SumPrevLayer;
 						}
-//assert( y / PIXEL_STEPDOWN_LAYER < ImageLayersY[ Layer ] );
-//assert( x / PIXEL_STEPDOWN_LAYER < ImageLayersX[ Layer ] );
 					ImageLayers[ RGB ][ Layer ][ y * ImageLayersX[ Layer ] + x ] = Sum;
 				}
 		}
 	}
 }
 
-void PiramidImage::SaveLayersToFile( char *BaseName, int x, int y, int w, int h )
-{
-	for( int Layer=0;Layer<MAX_IMAGE_LAYERS;Layer++)
-	{
-		if( ImageLayersY[Layer] <= MIN_SIZE_FOR_SEARCH || ImageLayersX[Layer] <= MIN_SIZE_FOR_SEARCH )
-			continue;
-
-		int PixelsInPixel = 1;
-		int PixelsInPixel1D = 1;
-		for( int i = 0; i < Layer; i++ )
-		{
-			PixelsInPixel *= PIXEL_STEPDOWN_LAYER * PIXEL_STEPDOWN_LAYER;
-			PixelsInPixel1D *= PIXEL_STEPDOWN_LAYER;
-		}
-
-		int width = ImageLayersX[Layer];
-		int height = ImageLayersY[Layer];
-
-		int StartX = x / PixelsInPixel1D;
-		int StartY = y / PixelsInPixel1D;
-		if( w != -1 )
-		{
-			width = min( w / PixelsInPixel1D, width );
-			height = min( h / PixelsInPixel1D, height );
-		}
-
-		CImage img;
-		img.Create( width + 1, height + 1, 24 /* bpp */, 0 /* No alpha channel */);
-
-		for(int row = StartY; row < StartY + height; row++)
-		{
-			int nPixel = row * ImageLayersX[Layer] + StartX;
-			for(int col = StartX; col < StartX + width; col++)
-			{
-				BYTE r = ImageLayers[0][Layer][nPixel] / PixelsInPixel;
-#ifdef MERGE_RGB_INTO_R
-				r = r / 3;
-#endif
-#ifndef GENERATE_ONLY_R
-				BYTE g = ImageLayers[1][Layer][nPixel] / PixelsInPixel;
-				BYTE b = ImageLayers[2][Layer][nPixel] / PixelsInPixel;
-				img.SetPixel( col - StartX, row - StartY, RGB( r, g, b ) );
-#else
-				img.SetPixel( col - StartX, row - StartY, RGB( r, r, r ) );
-#endif
-				nPixel++;
-			}
-		}
-		char FileName[500];
-		sprintf_s( FileName, 500, "%s%d.bmp", BaseName, Layer );
-		img.Save( FileName );
-	}
-}
-
-
-int GetLocalSad( int *a, int *b, int stride1, int stride2, int w, int h )
+__forceinline int GetLocalSad( int *a, int *b, int stride1, int stride2, int w, int h )
 {
 	int RetSad = 0;
 	for( int y1 = 0; y1 < h; y1++ )
@@ -208,83 +190,6 @@ int GetLocalSad( int *a, int *b, int stride1, int stride2, int w, int h )
 #endif
 		}
 	return RetSad;
-}
-
-//only search one layer and see if it can improve the search on next layer
-int PiramidSearchCanRefine( int Layer, PiramidImage *Big, PiramidImage *Small, int atX, int atY, int RSadPrev, int GSadPrev, int BSadPrev, int &RetX, int &RetY, int &RetRSad, int &RetGSad, int &RetBSad  )
-{
-	if( Layer < 0 )
-	{
-		RetRSad = RSadPrev;
-#ifndef GENERATE_ONLY_R
-		RetGSad = GSadPrev;
-		RetBSad = BSadPrev;
-#endif
-		RetX = atX;
-		RetY = atY;
-		return 0;
-	}
-
-	//too small to sample this layer ?
-	if( Layer >= Small->LayersAvailable || Layer >= Big->LayersAvailable )
-		return 0;
-
-	int BestRSad = MAX_INT;
-	int BestGSad = MAX_INT;
-	int BestBSad = MAX_INT;
-
-	int PixelsInPixel = 1;
-	for( int i = 0; i < Layer; i++ )
-		PixelsInPixel *= PIXEL_STEPDOWN_LAYER;
-
-	int StartX = atX / PixelsInPixel - PIXEL_STEPDOWN_LAYER;
-	int EndX = atX / PixelsInPixel + PIXEL_STEPDOWN_LAYER;
-	int StartY = atY / PixelsInPixel - PIXEL_STEPDOWN_LAYER;
-	int EndY = atY / PixelsInPixel + PIXEL_STEPDOWN_LAYER;
-
-	if( StartX < 0 )
-		StartX = 0;
-	if( EndX > Big->ImageLayersX[Layer] - Small->ImageLayersX[Layer] - 1 )
-		EndX = Big->ImageLayersX[Layer] - Small->ImageLayersX[Layer] - 1;
-
-	if( StartY < 0 )
-		StartY = 0;
-	if( EndY > Big->ImageLayersY[Layer] - Small->ImageLayersY[Layer] - 1 )
-		EndY = Big->ImageLayersY[Layer] - Small->ImageLayersY[Layer] - 1;
-
-	for( int y = StartY; y <= EndY; y++ )
-		for( int x = StartX; x < EndX; x++ )
-		{
-			int RSadNow = GetLocalSad( &Big->ImageLayers[0][Layer][ ( y + 0 ) * Big->ImageLayersX[Layer] + ( x + 0 ) ], &Small->ImageLayers[0][Layer][ ( 0 + 0 ) * Small->ImageLayersX[Layer] + ( 0 + 0 ) ], Big->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersY[Layer] );
-			if( RSadNow < BestRSad )
-			{
-#ifndef GENERATE_ONLY_R
-				int GSadNow = GetLocalSad( &Big->ImageLayers[1][Layer][ ( y + 0 ) * Big->ImageLayersX[Layer] + ( x + 0 ) ], &Small->ImageLayers[1][Layer][ ( 0 + 0 ) * Small->ImageLayersX[Layer] + ( 0 + 0 ) ], Big->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersY[Layer] );
-				int BSadNow = GetLocalSad( &Big->ImageLayers[2][Layer][ ( y + 0 ) * Big->ImageLayersX[Layer] + ( x + 0 ) ], &Small->ImageLayers[2][Layer][ ( 0 + 0 ) * Small->ImageLayersX[Layer] + ( 0 + 0 ) ], Big->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersY[Layer] );
-				// (r1-r2) + (g1-g2) + (b1-b2) close to (r1+g1+b1) - ( r2+g2+b2) => Not good it is equal as we would merge all 3 into 1, like a luminosity search
-				// an improvement could be to check if values are above or below our target ( RSADNew < RSADOld && abs( TextureNew(R+G+B) ) > abs( TextureOld(R+G+B) )
-				if( RSadNow + GSadNow + BSadNow < BestRSad + BestGSad + BestBSad )
-#endif
-				{
-					BestRSad = RSadNow;
-#ifndef GENERATE_ONLY_R
-					BestGSad = GSadNow;
-					BestBSad = BSadNow;
-#endif
-					RetX = x * PixelsInPixel;
-					RetY = y * PixelsInPixel;
-				}
-			}
-		}
-#ifndef GENERATE_ONLY_R
-	RetRSad = BestRSad;
-	RetGSad = BestGSad;
-	RetBSad = BestBSad;
-	return ( ( BestRSad - RSadPrev ) + ( BestGSad - GSadPrev ) + ( BestBSad - BSadPrev ) );
-#else
-	RetRSad = BestRSad;
-	return ( BestRSad - RSadPrev );
-#endif
 }
 
 //search all layers
@@ -301,9 +206,9 @@ int PiramidSearch( PiramidImage *Big, PiramidImage *Small, int *RetX, int *RetY,
 	int BestRefine = MAX_INT;
 
 	//search in worst version only in R
-	int LayerStart = MAX_IMAGE_LAYERS-1;
+	int LayerStart = Small->LayersAvailable - 1;
 	int LayerEnd = -1;
-	if( AtX != -1 )
+	if( pLayer != -1 )
 	{
 		LayerStart = pLayer;
 		LayerEnd = pLayer-1;
@@ -311,132 +216,170 @@ int PiramidSearch( PiramidImage *Big, PiramidImage *Small, int *RetX, int *RetY,
 			LayerEnd = -1;
 	}
 	if( LayerStart >= Big->LayersAvailable )
-		LayerStart = Big->LayersAvailable;
+		LayerStart = Big->LayersAvailable - 1;
 	if( LayerStart >= Small->LayersAvailable )
-		LayerStart = Small->LayersAvailable;
-	if( LayerEnd >= Big->LayersAvailable )
-		LayerEnd = Big->LayersAvailable;
-	if( LayerEnd >= Small->LayersAvailable )
-		LayerEnd = Small->LayersAvailable;
+		LayerStart = Small->LayersAvailable - 1;
 
-	int FirstSearchedLayer = 1;
+	int SearchRadiusX = Big->ImageLayersX[ LayerStart ] / 2 + 1;
+	int SearchRadiusY = Big->ImageLayersY[ LayerStart ] / 2 + 1;
+	if( AtX == - 1 )
+	{
+		AtX = Big->ImageLayersX[ 0 ] / 2;
+		AtY = Big->ImageLayersY[ 0 ] / 2;
+	}
+	else
+	{
+		SearchRadiusX = PIXEL_STEPDOWN_LAYER;
+		SearchRadiusY = PIXEL_STEPDOWN_LAYER;
+	}
+
 	int CanSkipNextLayer = 0;
 
 	for( int Layer=LayerStart; Layer>LayerEnd; Layer = Layer - 1 - CanSkipNextLayer )
 	{
 		CanSkipNextLayer = 0;
 
-		int PixelsInPixel = 1;
-		for( int i = 0; i < Layer; i++ )
-			PixelsInPixel *= PIXEL_STEPDOWN_LAYER;
+		int PixelsInPixel = GetPixelsInPixel1D( Layer );
 
 		int StartX, EndX, StartY, EndY;
-		if( AtX != -1 )
-		{
-			StartX = AtX / PixelsInPixel - PIXEL_STEPDOWN_LAYER;
-			EndX = AtX / PixelsInPixel + PIXEL_STEPDOWN_LAYER;
-			StartY = AtY / PixelsInPixel - PIXEL_STEPDOWN_LAYER;
-			EndY = AtY / PixelsInPixel + PIXEL_STEPDOWN_LAYER;
-		}
-		else if( FirstSearchedLayer == 0 && BestRSad != MAX_INT )
-		{
-			StartX = *RetX / PixelsInPixel - PIXEL_STEPDOWN_LAYER;
-			EndX = *RetX / PixelsInPixel + PIXEL_STEPDOWN_LAYER;
-			StartY = *RetY / PixelsInPixel - PIXEL_STEPDOWN_LAYER;
-			EndY = *RetY / PixelsInPixel + PIXEL_STEPDOWN_LAYER;
-		}
-		else
-		{
-			StartX = 0;
-			EndX = Big->ImageLayersX[Layer] - Small->ImageLayersX[Layer] - 1;
-			StartY = 0;
-			EndY = Big->ImageLayersY[Layer] - Small->ImageLayersY[Layer] - 1;
-		}
-
+		StartX = AtX / PixelsInPixel - SearchRadiusX;
+		EndX = AtX / PixelsInPixel + SearchRadiusX;
+		StartY = AtY / PixelsInPixel - SearchRadiusY;
+		EndY = AtY / PixelsInPixel + SearchRadiusY;
 		if( StartX < 0 )
 			StartX = 0;
-		if( EndX > Big->ImageLayersX[Layer] - Small->ImageLayersX[Layer] - 1 )
-			EndX = Big->ImageLayersX[Layer] - Small->ImageLayersX[Layer] - 1;
-
+		if( EndX > Big->ImageLayersX[Layer] - Small->ImageLayersX[Layer] )
+			EndX = Big->ImageLayersX[Layer] - Small->ImageLayersX[Layer];
 		if( StartY < 0 )
 			StartY = 0;
-		if( EndY > Big->ImageLayersY[Layer] - Small->ImageLayersY[Layer] - 1 )
-			EndY = Big->ImageLayersY[Layer] - Small->ImageLayersY[Layer] - 1;
+		if( EndY > Big->ImageLayersY[Layer] - Small->ImageLayersY[Layer] )
+			EndY = Big->ImageLayersY[Layer] - Small->ImageLayersY[Layer];
 
-		printf("Starting search layer %d from %d %d to %d %d or %d %d to %d %d. Recursion %d. Small img %d %d\n",Layer, StartX, StartY, EndX, EndY, StartX * PixelsInPixel, StartY * PixelsInPixel, EndX * PixelsInPixel, EndY * PixelsInPixel, RecCount, Small->ImageLayersX[Layer], Small->ImageLayersY[Layer] );
-		for( int y = StartY; y <= EndY; y++ )
-			for( int x = StartX; x <= EndX; x++ )
+//		printf("Starting search layer %d from %d %d to %d %d or %d %d to %d %d. Recursion %d. Small img %d %d\n",Layer, StartX, StartY, EndX, EndY, StartX * PixelsInPixel, StartY * PixelsInPixel, EndX * PixelsInPixel, EndY * PixelsInPixel, RecCount, Small->ImageLayersX[Layer], Small->ImageLayersY[Layer] );
+		for( int y = StartY; y < EndY; y++ )
+			for( int x = StartX; x < EndX; x++ )
 			{
-//if( y * PixelsInPixel <= 69 && ( y + 1 ) * PixelsInPixel >= 69 && x * PixelsInPixel <= 9 && ( x + 1 ) * PixelsInPixel >= 9 )
-//if( y * PixelsInPixel <= 69 && ( y + 1 ) * PixelsInPixel >= 69 && x * PixelsInPixel <= 9 && ( x + 1 ) * PixelsInPixel >= 9 && Layer == 2 )
-//if( y == 69 && x == 9 && Layer == 0 )
-//	printf( "1903471923");
-				int RSadNow = GetLocalSad( &Big->ImageLayers[0][Layer][ ( y + 0 ) * Big->ImageLayersX[Layer] + ( x + 0 ) ], &Small->ImageLayers[0][Layer][ ( 0 + 0 ) * Small->ImageLayersX[Layer] + ( 0 + 0 ) ], Big->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersY[Layer] );
+				int RSadNow = GetLocalSad( &Big->ImageLayers[RED_LAYER_INDEX][Layer][ y * Big->ImageLayersX[Layer] + x ], &Small->ImageLayers[RED_LAYER_INDEX][Layer][ 0 ], Big->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersY[Layer] );
 				int GSadNow = 0;
 				int BSadNow = 0;
 #ifdef MERGE_RGB_INTO_R
 				if( RSadNow <= BestRSad )
 #endif
 				{
-#ifndef GENERATE_ONLY_R
-					GSadNow = GetLocalSad( &Big->ImageLayers[1][Layer][ ( y + 0 ) * Big->ImageLayersX[Layer] + ( x + 0 ) ], &Small->ImageLayers[1][Layer][ ( 0 + 0 ) * Small->ImageLayersX[Layer] + ( 0 + 0 ) ], Big->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersY[Layer] );
-					BSadNow = GetLocalSad( &Big->ImageLayers[2][Layer][ ( y + 0 ) * Big->ImageLayersX[Layer] + ( x + 0 ) ], &Small->ImageLayers[2][Layer][ ( 0 + 0 ) * Small->ImageLayersX[Layer] + ( 0 + 0 ) ], Big->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersY[Layer] );
+#if !defined( GENERATE_ONLY_R ) && !defined( MERGE_RGB_INTO_R )
+					GSadNow = GetLocalSad( &Big->ImageLayers[1][Layer][ y * Big->ImageLayersX[Layer] + x ], &Small->ImageLayers[1][Layer][ 0 ], Big->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersY[Layer] );
+					BSadNow = GetLocalSad( &Big->ImageLayers[2][Layer][ y * Big->ImageLayersX[Layer] + x ], &Small->ImageLayers[2][Layer][ 0 ], Big->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersY[Layer] );
 					if( RSadNow + GSadNow + BSadNow <= BestRSad + BestGSad + BestBSad )
 #endif
 					{
 						//check if 
 						int BetterX, BetterY, BetterRSad, BetterGSad, BetterBSad;
 						int RefineAmt = 0;
-						if( Layer > 0 )
-							RefineAmt = PiramidSearchCanRefine( Layer - 1, Big, Small, x * PixelsInPixel, y * PixelsInPixel, RSadNow, GSadNow, BSadNow, BetterX, BetterY, BetterRSad, BetterGSad, BetterBSad );
+						if( Layer > 0 && pLayer == -1 )
+						{
+							PiramidSearch( Big, Small, &BetterX, &BetterY, &BetterRSad, &BetterGSad, &BetterBSad, 0, Layer - 1, x * PixelsInPixel, y * PixelsInPixel, RecCount + 1 );
+							RefineAmt = BetterRSad - RSadNow;
+						}
 						else
 						{
 							BetterX = x * PixelsInPixel;
 							BetterY = y * PixelsInPixel;
 							BetterRSad = RSadNow;
+#if !defined( GENERATE_ONLY_R ) && !defined( MERGE_RGB_INTO_R )
 							BetterGSad = GSadNow;
 							BetterBSad = BSadNow;
+#endif
 						}
 						if( RefineAmt <= 0 )
 						{
 							if( Layer > 1 )
 								CanSkipNextLayer = 1;
 
-							BestRSad = BetterRSad;
-#ifndef GENERATE_ONLY_R
-							BestGSad = BetterGSad;
-							BestBSad = BetterBSad;
+							*RSad = BestRSad = BetterRSad;
+#if !defined( GENERATE_ONLY_R ) && !defined( MERGE_RGB_INTO_R )
+							*GSad = BestGSad = BetterGSad;
+							*BSad = BestBSad = BetterBSad;
 #endif
 
 							*RetX = BetterX;
 							*RetY = BetterY;
 
-#ifndef GENERATE_ONLY_R
+#if !defined( GENERATE_ONLY_R ) && !defined( MERGE_RGB_INTO_R )
 							if( BestRSad + BestGSad + BestBSad <= SadLimit )
 #else
 							if( BestRSad <= SadLimit )
 #endif
 							{
-								printf("For Layer %d best sad %d at %d %d \n", Layer, BestRSad, *RetX, *RetY );
-								printf("Perfect match found. Aborting higher layer search\n" );
+//								printf("For Layer %d best sad %d at %d %d \n", Layer, BestRSad, *RetX, *RetY );
+//								printf("Perfect match found. Aborting higher layer search\n" );
 								return 0;
 							}
 						}
 					}
 				}
 			}
-		for( int t=0;t<RecCount;t++)
-			printf("\t");
+//		for( int t=0;t<RecCount;t++)
+//			printf("\t");
 //		printf("For Layer %d best sad %d at %d %d \n", Layer, BestRSad, *RetX, *RetY );
-#ifdef GENERATE_ONLY_R
+#if !defined( GENERATE_ONLY_R ) && !defined( MERGE_RGB_INTO_R )
 		BestGSad = BestBSad = 0;
 #endif
-		printf("For Layer %d best sad %d at %d %d L = %d x = %d y = %d\n", Layer, BestRSad + BestGSad + BestBSad, *RetX, *RetY, pLayer, AtX, AtY );
-		printf("\n");
-
-		FirstSearchedLayer = 0;
+//		printf("For Layer %d best sad %d at %d %d L = %d x = %d y = %d\n", Layer, BestRSad + BestGSad + BestBSad, *RetX, *RetY, pLayer, AtX, AtY );
+//		printf("\n");
+		SearchRadiusX = PIXEL_STEPDOWN_LAYER;
+		SearchRadiusY = PIXEL_STEPDOWN_LAYER;
+		AtX = *RetX;
+		AtY = *RetY;
 	}
 	return 0;
+}
+
+char PSReturnBuff[DEFAULT_STR_BUFFER_SIZE*10];
+char * WINAPI SearchPiramidOnScreenshot( char *aImageFile )
+{
+	int MatchesFound = 0;
+	PSReturnBuff[0]=0;
+	FileDebug( "Started Similar Image search" );
+
+	CachedPicture *cache = CachePicture( aImageFile );
+	if( cache == NULL )
+	{
+		FileDebug( "Skipping Image search as image could not be loaded" );
+		return "";
+	}
+	if( cache->Pixels == NULL )
+	{
+		FileDebug( "Skipping Image search as image pixels are missing" );
+		return "";
+	}
+
+	if( CurScreenshot->Pixels == NULL )
+	{
+		FileDebug( "Skipping Image search no screenshot is available" );
+		return "";
+	}
+
+	if( cache->PSCache == NULL )
+		cache->PSCache = new PiramidImage;
+	if( CurScreenshot->PSCache == NULL )
+		CurScreenshot->PSCache = new PiramidImage;
+
+	if( cache->NeedsPSCache == true )
+	{
+		cache->PSCache->BuildFromImg( cache->Pixels, cache->Width, cache->Height, cache->Width );
+		cache->NeedsPSCache = false;
+	}
+	if( CurScreenshot->NeedsPSCache == true )
+	{
+		CurScreenshot->PSCache->BuildFromImg( CurScreenshot->Pixels, CurScreenshot->Right - CurScreenshot->Left, CurScreenshot->Bottom - CurScreenshot->Top, CurScreenshot->Right - CurScreenshot->Left );
+		CurScreenshot->NeedsPSCache = false;
+	}
+	int retx, rety, retrsad, retgsad, retbsad;
+	PiramidSearch( CurScreenshot->PSCache, cache->PSCache, &retx, &rety, &retrsad, &retgsad, &retbsad, 0 );
+//	PiramidSearch( CurScreenshot->PSCache, cache->PSCache, &retx, &rety, &retrsad, &retgsad, &retbsad, 0, 0 );	//image to image search
+
+	sprintf_s( PSReturnBuff, DEFAULT_STR_BUFFER_SIZE*10, "1|%d|%d|%d", retx+cache->Width / 2, rety + cache->Height / 2, retrsad );
+	return PSReturnBuff;
 }
 
 #endif

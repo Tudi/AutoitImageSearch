@@ -12,14 +12,26 @@ char* WINAPI IsAnythingChanced( int StartX, int StartY, int EndX, int EndY );
 
 void CycleScreenshots();
 
-struct ScreenshotStruct
+class ScreenshotStruct
 {
+public:
 	LPCOLORREF		Pixels;
 	int				Left, Top, Right, Bottom;
 	bool			IsDiffMap;	//width and height needs to be divided by 4
-	bool			NeedsSScache;
+	bool			NeedsSSCache;
+	bool			NeedsPSCache;
 	SimilarSearch	*SSCache;
+	PiramidImage	*PSCache;
 
+	ScreenshotStruct()
+	{
+		Pixels = NULL;
+		SSCache = NULL;
+		PSCache = NULL;
+		Left = Top = Right = Bottom = 0;
+		IsDiffMap = false;
+		NeedsSSCache = NeedsPSCache = true;
+	}
 	int				GetWidth()
 	{
 		if( IsDiffMap == true )

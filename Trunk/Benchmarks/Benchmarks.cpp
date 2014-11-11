@@ -252,6 +252,7 @@ void RunSimilarSearchBenchmark()
 	AntiOptimizer = 0;
 	for( int i = 0; i < LoopCount; i++ )
 	{
+		CurScreenshot->NeedsSSCache = true;
 		CurScreenshot->SSCache->BuildFromImg( CurScreenshot->Pixels, CurScreenshot->Right - CurScreenshot->Left, CurScreenshot->Bottom - CurScreenshot->Top, CurScreenshot->Right - CurScreenshot->Left );
 		AntiOptimizer += i;
 	}
@@ -274,4 +275,63 @@ void RunSimilarSearchBenchmark()
 	printf(" Benchmarking SetupSimilarSearch : %d frames processed in %d ms. Number of pixels stored %d\n", LoopCount, ( End - Start ), ( EndX - StartX ) * ( EndY - StartY ) );
 	printf(" Benchmarking SetupSimilarSearch : %d FPS \n", LoopCount * 1000 / ( End - Start ) );
 	printf(" Pixels Processed Per Second: %d pps \n", ( LoopCount * ( EndX - StartX ) * ( EndY - StartY ) ) / ( End - Start ) );
+}
+
+void RunPiramidSearchBenchmark()
+{
+	int Start,End,AntiOptimizer;
+#ifdef _DEBUG
+	int LoopCount = 2;
+#else
+	int LoopCount = 1000;
+#endif
+	int StartX = 0;
+	int StartY = 0;
+	int EndX = 800;
+	int EndY = 800;
+	int SearchWidth = 50;
+	int SearchHeight = 50;
+
+	printf("Make that huge console window smaller or else search will exit very quickly making benchmark irelevant...Press any key to start\n");
+	_getch();
+
+	TakeScreenshot( EndX - SearchWidth - 1, EndY - SearchHeight - 1, EndX - 1 , EndY - 1 );	//for me this is black box on black screen search ... worst case
+//	TakeScreenshot( 0, 0, SearchWidth , SearchHeight );	//for me this is black box on black screen search ... worst case
+//	TakeScreenshot( 1, 1, SearchWidth + 1 , SearchHeight + 1 );	//for me this is black box on black screen search ... worst case
+//	SaveScreenshot();
+	MoveScreenshotToCache( "ToSearch" );
+	TakeScreenshot( StartX, StartY, EndX, EndY );
+	if( CurScreenshot->PSCache == NULL )
+		CurScreenshot->PSCache = new PiramidImage;
+
+	Start = GetTickCount();
+	AntiOptimizer = 0;
+	for( int i = 0; i < LoopCount; i++ )
+	{
+		CurScreenshot->NeedsPSCache = true;
+		CurScreenshot->PSCache->BuildFromImg( CurScreenshot->Pixels, CurScreenshot->Right - CurScreenshot->Left, CurScreenshot->Bottom - CurScreenshot->Top, CurScreenshot->Right - CurScreenshot->Left );
+		AntiOptimizer += i;
+	}
+	End = GetTickCount();
+	printf( "Ignoreme : %d \n", AntiOptimizer );
+	printf(" Benchmarking SetupPiramidSearch initialize : %d frames processed in %d ms. Number of pixels stored %d\n", LoopCount, ( End - Start ), ( EndX - StartX ) * ( EndY - StartY ) );
+	printf(" Benchmarking SetupPiramidSearch initialize : %d FPS \n", LoopCount * 1000 / ( End - Start + 1 ) );
+	printf(" Pixels Processed Per Second: %d pps \n", ( LoopCount * ( EndX - StartX ) * ( EndY - StartY ) ) / ( End - Start + 1 ) );
+
+	Start = GetTickCount();
+	AntiOptimizer = 0;
+	char *res;
+	for( int i = 0; i < LoopCount; i++ )
+	{
+		res = SearchPiramidOnScreenshot( "ToSearch" );
+		if( res[0] == '1' )
+			AntiOptimizer += i;
+	}
+	End = GetTickCount();
+	printf( "Ignoreme : %d \n", AntiOptimizer );
+	printf(" Benchmarking SearchPiramidOnScreenshot : %d frames processed in %d ms. Number of pixels stored %d\n", LoopCount, ( End - Start ), ( EndX - StartX ) * ( EndY - StartY ) );
+	printf(" Benchmarking SearchPiramidOnScreenshot : %d FPS \n", LoopCount * 1000 / ( End - Start + 1 ) );
+	printf(" Pixels Processed Per Second: %d pps \n", ( LoopCount * ( EndX - StartX ) * ( EndY - StartY ) ) / ( End - Start + 1 ) );
+	printf("Lasts reported search result was %s\n",res);
+	/**/
 }

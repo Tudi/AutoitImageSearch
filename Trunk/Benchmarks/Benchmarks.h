@@ -10,5 +10,6 @@ void RunDiffBenchmark();
 void RunImgSearchBenchmark();
 void RunErrodeBenchmark();
 void RunSimilarSearchBenchmark();
+void RunPiramidSearchBenchmark();
 
 #endif

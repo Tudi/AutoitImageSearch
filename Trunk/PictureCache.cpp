@@ -63,6 +63,8 @@ CachedPicture *CachePicture( char *aFilespec )
 	PictureCache[NrPicturesCached].Width = image_width;
 	PictureCache[NrPicturesCached].Height = image_height;
 
+	PictureCache[NrPicturesCached].NeedsPSCache = true;
+	PictureCache[NrPicturesCached].NeedsSSCache = true;
 
 	NrPicturesCached++;
 	ReleaseDC(NULL, hdc);
@@ -151,6 +153,9 @@ void WINAPI MoveScreenshotToCache( char *Name )
 
 	PictureCache[ NrPicturesCached ].Width = CurScreenshot->GetWidth();
 	PictureCache[ NrPicturesCached ].Height = CurScreenshot->GetHeight();
+
+	PictureCache[NrPicturesCached].NeedsPSCache = true;
+	PictureCache[NrPicturesCached].NeedsSSCache = true;
 
 	NrPicturesCached++;
 
