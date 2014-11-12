@@ -14,7 +14,7 @@ void CycleScreenshots()
 void WINAPI ReleaseScreenshot()
 {
 	if( CurScreenshot->Pixels )
-		free( CurScreenshot->Pixels );
+		_aligned_free( CurScreenshot->Pixels );
 	CurScreenshot->Pixels = NULL;
 }
 
@@ -31,6 +31,7 @@ void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 	CurScreenshot->Bottom = aBottom;
 	CurScreenshot->NeedsSSCache = true;
 	CurScreenshot->NeedsPSCache = true;
+	CurScreenshot->BytesPerPixel = 4;
 
 	HDC sdc = NULL;
 	HBITMAP hbitmap_screen = NULL;

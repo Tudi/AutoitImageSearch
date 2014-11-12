@@ -124,7 +124,7 @@ void RunResizeBenchmark()
 void RunBlurrBenchmark()
 {
 	int Start,End,AntiOptimizer;
-	int LoopCount = 1000;
+	int LoopCount = 500;
 	int StartX = 0;
 	int StartY = 0;
 	int EndX = 800;
@@ -234,15 +234,24 @@ void RunErrodeBenchmark()
 void RunSimilarSearchBenchmark()
 {
 	int Start,End,AntiOptimizer;
+#ifdef _DEBUG
+	int LoopCount = 1;
+#else
 	int LoopCount = 1000;
+#endif
 	int StartX = 0;
 	int StartY = 0;
 	int EndX = 800;
 	int EndY = 800;
 	int SearchWidth = 50;
 	int SearchHeight = 50;
+	int ExpectedResultX = EndX - 10 - SearchWidth + SearchWidth / 2;
+	int ExpectedResultY = EndY - 10 - SearchHeight + SearchHeight / 2;
 
-	TakeScreenshot( EndX - SearchWidth - 1, EndY - SearchHeight - 1, EndX - 1 , EndY - 1 );	//for me this is black box on black screen search ... worst case
+	printf("Make that huge console window smaller or else search will exit very quickly making benchmark irelevant...Press any key to start\n");
+	_getch();
+
+	TakeScreenshot( EndX - 10 - SearchWidth, EndY - 10 - SearchHeight, EndX - 10 , EndY - 10 );	//for me this is black box on black screen search ... worst case
 	MoveScreenshotToCache( "ToSearch" );
 	TakeScreenshot( StartX, StartY, EndX, EndY );
 	if( CurScreenshot->SSCache == NULL )
@@ -259,22 +268,24 @@ void RunSimilarSearchBenchmark()
 	End = GetTickCount();
 	printf( "Ignoreme : %d \n", AntiOptimizer );
 	printf(" Benchmarking SetupSimilarSearch initialize : %d frames processed in %d ms. Number of pixels stored %d\n", LoopCount, ( End - Start ), ( EndX - StartX ) * ( EndY - StartY ) );
-	printf(" Benchmarking SetupSimilarSearch initialize : %d FPS \n", LoopCount * 1000 / ( End - Start ) );
-	printf(" Pixels Processed Per Second: %d pps \n", ( LoopCount * ( EndX - StartX ) * ( EndY - StartY ) ) / ( End - Start ) );
+	printf(" Benchmarking SetupSimilarSearch initialize : %d FPS \n", LoopCount * 1000 / ( End - Start + 1 ) );
+	printf(" Pixels Processed Per Second: %d pps \n", ( LoopCount * ( EndX - StartX ) * ( EndY - StartY ) ) / ( End - Start + 1 ) );
 
 	Start = GetTickCount();
 	AntiOptimizer = 0;
+	char *res;
 	for( int i = 0; i < LoopCount; i++ )
 	{
-		char *res = SearchSimilarOnScreenshot( "ToSearch" );
+		res = SearchSimilarOnScreenshot( "ToSearch" );
 		if( res[0] == '1' )
 			AntiOptimizer += i;
 	}
 	End = GetTickCount();
 	printf( "Ignoreme : %d \n", AntiOptimizer );
 	printf(" Benchmarking SetupSimilarSearch : %d frames processed in %d ms. Number of pixels stored %d\n", LoopCount, ( End - Start ), ( EndX - StartX ) * ( EndY - StartY ) );
-	printf(" Benchmarking SetupSimilarSearch : %d FPS \n", LoopCount * 1000 / ( End - Start ) );
-	printf(" Pixels Processed Per Second: %d pps \n", ( LoopCount * ( EndX - StartX ) * ( EndY - StartY ) ) / ( End - Start ) );
+	printf(" Benchmarking SetupSimilarSearch : %d FPS \n", LoopCount * 1000 / ( End - Start + 1 ) );
+	printf(" Pixels Processed Per Second: %d pps \n", ( LoopCount * ( EndX - StartX ) * ( EndY - StartY ) ) / ( End - Start + 1) );
+	printf("Lasts reported search result was %s was expecting %d %d \n", res, ExpectedResultX, ExpectedResultY );
 }
 
 void RunPiramidSearchBenchmark()
@@ -333,5 +344,49 @@ void RunPiramidSearchBenchmark()
 	printf(" Benchmarking SearchPiramidOnScreenshot : %d FPS \n", LoopCount * 1000 / ( End - Start + 1 ) );
 	printf(" Pixels Processed Per Second: %d pps \n", ( LoopCount * ( EndX - StartX ) * ( EndY - StartY ) ) / ( End - Start + 1 ) );
 	printf("Lasts reported search result was %s\n",res);
+	/**/
+}
+
+void RunEdgeDetectBenchmark()
+{
+	int Start,End,AntiOptimizer;
+#ifdef _DEBUG
+	int LoopCount = 1;
+#else
+	int LoopCount = 1000;
+#endif
+	int StartX = 0;
+	int StartY = 0;
+	int EndX = 800;
+	int EndY = 800;
+
+	TakeScreenshot( StartX, StartY, EndX, EndY );
+
+	Start = GetTickCount();
+	AntiOptimizer = 0;
+	for( int i = 0; i < LoopCount; i++ )
+	{
+		EdgeDetect( 1 );
+		AntiOptimizer += i;
+	}
+	End = GetTickCount();
+	printf( "Ignoreme : %d \n", AntiOptimizer );
+	printf(" Benchmarking EdgeDetect( 1 ) : %d frames processed in %d ms. Number of pixels stored %d\n", LoopCount, ( End - Start ), ( EndX - StartX ) * ( EndY - StartY ) );
+	printf(" Benchmarking EdgeDetect( 1 ) : %d FPS \n", LoopCount * 1000 / ( End - Start + 1 ) );
+	printf(" Pixels Processed Per Second: %d pps \n", ( LoopCount * ( EndX - StartX ) * ( EndY - StartY ) ) / ( End - Start + 1 ) );
+
+	Start = GetTickCount();
+	AntiOptimizer = 0;
+	for( int i = 0; i < LoopCount; i++ )
+	{
+		EdgeDetect( 2 );
+		AntiOptimizer += i;
+	}
+	End = GetTickCount();
+	printf( "Ignoreme : %d \n", AntiOptimizer );
+	printf(" Benchmarking EdgeDetect( 2 ) : %d frames processed in %d ms. Number of pixels stored %d\n", LoopCount, ( End - Start ), ( EndX - StartX ) * ( EndY - StartY ) );
+	printf(" Benchmarking EdgeDetect( 2 ) : %d FPS \n", LoopCount * 1000 / ( End - Start + 1 ) );
+	printf(" Pixels Processed Per Second: %d pps \n", ( LoopCount * ( EndX - StartX ) * ( EndY - StartY ) ) / ( End - Start + 1 ) );
+
 	/**/
 }

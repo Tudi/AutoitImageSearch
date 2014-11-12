@@ -14,10 +14,10 @@ PiramidImage::~PiramidImage()
 	for( int i=0;i<MAX_IMAGE_LAYERS;i++ )
 		if( ImageLayers[0][i] )
 		{
-			free( ImageLayers[RED_LAYER_INDEX][i] );
+			_aligned_free( ImageLayers[RED_LAYER_INDEX][i] );
 #if !defined( GENERATE_ONLY_R ) && !defined( MERGE_RGB_INTO_R )
-			free( ImageLayers[1][i] );
-			free( ImageLayers[2][i] );
+			_aligned_free( ImageLayers[1][i] );
+			_aligned_free( ImageLayers[2][i] );
 #endif
 		}
 	memset( ImageLayers, NULL, sizeof( ImageLayers ) );
@@ -47,12 +47,12 @@ void PiramidImage::InitBuffersToNewSize(int Width, int Height)
 		for( int i=0;i<MAX_IMAGE_LAYERS;i++ )
 			if( ImageLayers[0][i] != NULL )
 			{
-				free( ImageLayers[0][i] );
+				_aligned_free( ImageLayers[0][i] );
 				ImageLayers[0][i] = NULL;
 #if !defined( GENERATE_ONLY_R ) && !defined( MERGE_RGB_INTO_R )
-				free( ImageLayers[1][i] );
+				_aligned_free( ImageLayers[1][i] );
 				ImageLayers[1][i] = NULL;
-				free( ImageLayers[2][i] );
+				_aligned_free( ImageLayers[2][i] );
 				ImageLayers[2][i] = NULL;
 #endif
 			}
@@ -75,11 +75,11 @@ void PiramidImage::InitBuffersToNewSize(int Width, int Height)
 					break;
 
 				int ImagePlaneSize = ImageLayersX[i] * ImageLayersY[i] * sizeof( signed int ) + SSE_PADDING;
-				ImageLayers[0][i] = (int*)malloc( ImagePlaneSize );
+				ImageLayers[0][i] = (int*)_aligned_malloc( ImagePlaneSize, SSE_ALIGNMENT );
 				memset( ImageLayers[0][i], 0, ImagePlaneSize );
 #if !defined( GENERATE_ONLY_R ) && !defined( MERGE_RGB_INTO_R )
-				ImageLayers[1][i] = (int*)malloc( ImagePlaneSize );
-				ImageLayers[2][i] = (int*)malloc( ImagePlaneSize );
+				ImageLayers[1][i] = (int*)_aligned_malloc( ImagePlaneSize, SSE_ALIGNMENT );
+				ImageLayers[2][i] = (int*)_aligned_malloc( ImagePlaneSize, SSE_ALIGNMENT );
 #endif
 				LayersAvailable++;
 		}

@@ -67,7 +67,7 @@ int WINAPI GenerateDiffMap()
 	unsigned int Height = CurScreenshot->Bottom - CurScreenshot->Top;
 	if( ( MotionDiff.Right - MotionDiff.Left ) * ( MotionDiff.Bottom - MotionDiff.Top ) != Width * Height && MotionDiff.Pixels != NULL )
 	{
-		free( MotionDiff.Pixels );
+		_aligned_free( MotionDiff.Pixels );
 		MotionDiff.Pixels = NULL;
 	}
 
@@ -77,7 +77,7 @@ int WINAPI GenerateDiffMap()
 	MotionDiff.Top = CurScreenshot->Top;
 
 	if( MotionDiff.Pixels == NULL )
-		MotionDiff.Pixels = (LPCOLORREF)malloc( Width * Height * sizeof(COLORREF) + SSE_PADDING);
+		MotionDiff.Pixels = (LPCOLORREF)_aligned_malloc( Width * Height * sizeof(COLORREF) + SSE_PADDING, SSE_ALIGNMENT);
 
 //DumpAsPPMBGR( PrevScreenshot->Pixels, Width, Height );
 //DumpAsPPMBGR( CurScreenshot->Pixels, Width, Height );

@@ -4,6 +4,7 @@
 void WINAPI SaveScreenshot();
 void WINAPI SaveDiffMap();
 void WINAPI SaveScreenshotDiffMask( int LowLimit );
+void WINAPI SaveEdgeMap();
 
 void DumpAsPPM( unsigned char *R,unsigned char *G,unsigned char *B, int Width, int Height );
 void DumpAsPPM( LPCOLORREF RGB, int Width, int Height );

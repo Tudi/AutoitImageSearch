@@ -38,15 +38,18 @@ void main()
 {
 //	RunSQRTBenchmark(); //fact : sqrt( double) rocks
 
+#ifdef _CONSOLE
 //	RunSCreenCaptureBenchmark(); // 350 fps on my pc
 //	RunCheckChangeBenchmark(); // 587 fps on my pc
 //	RunResizeBenchmark(); // 346 fps on my pc
-//	RunBlurrBenchmark(); // 24 fps on my pc
+//	RunBlurrBenchmark(); // 37 fps on my pc
 //	RunDiffBenchmark(); // 704 fps on my pc
 //	RunImgSearchBenchmark(); // 0.05 - 109 fps on my pc
 //	RunErrodeBenchmark(); // 66 fps on my pc
-//	RunSimilarSearchBenchmark(); // 168 fps is the setup and 188 fps is the search on my pc
-	RunPiramidSearchBenchmark(); // 151 fps is the setup and 600 fps is the search on my pc
+	RunSimilarSearchBenchmark(); // 302 fps is the setup and 131 fps is the search on my pc
+//	RunPiramidSearchBenchmark(); // 151 fps is the setup and 600 fps is the search on my pc
+//	RunEdgeDetectBenchmark(); // 62 fps / 15 fps 
+#endif
 
 //	SetupSimilarSearch( 0, 1, 3, 0 );
 //	TakeScreenshot( 0, 0, 800, 800 );

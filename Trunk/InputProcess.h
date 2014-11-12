@@ -17,6 +17,7 @@ class ScreenshotStruct
 public:
 	LPCOLORREF		Pixels;
 	int				Left, Top, Right, Bottom;
+	int				BytesPerPixel;	//default is 4, could be 1
 	bool			IsDiffMap;	//width and height needs to be divided by 4
 	bool			NeedsSSCache;
 	bool			NeedsPSCache;

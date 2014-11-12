@@ -60,6 +60,7 @@
 
 #define DEFAULT_STR_BUFFER_SIZE 1024
 
+#define SSE_ALIGNMENT			16
 #define SSE_PADDING				32	//12 bytes would be enough
 
 #include "PictureCache.h"

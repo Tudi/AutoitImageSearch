@@ -9,5 +9,7 @@ You sould benchmark your specific build / specific image sizes / specific proble
 - "ErrodeDiffMap(1)" : 66 FPS at 640k pixels
 - "ImageSearchOnScreenshot()" : 106 FPS at 640k pixels good case scenario with 2.5k pixels ( 1 match ) - 0.052 FPS at 640k pixels worst case scenario with 2.5k pixels ( image match at every position search all results )
 - "IsAnythingChanced()" : 587 FPS at 640k pixels
-- "SearchSimilarOnScreenshot()" : 188 FPS at 2.5k pixels. ! does not include setup ( 416 fps )!
+- "SearchSimilarOnScreenshot()" : 130 FPS at 2.5k pixels. ! does not include setup ( 302 fps )!
 - "SearchPiramidOnScreenshot()" : 600 FPS at 2.5k pixels. ! does not include setup ( 151 fps )!
+- "EdgeDetect(1)" : 62 FPS at 640k pixels
+- "EdgeDetect(2)" : 15 FPS at 640k pixels

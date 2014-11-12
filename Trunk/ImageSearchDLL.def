@@ -18,5 +18,8 @@ EXPORTS
 	GetImageSize
 	SetupSimilarSearch
 	SearchSimilarOnScreenshot
+	SearchPiramidOnScreenshot
+	EdgeDetect
+	SaveEdgeMap
 	
 	

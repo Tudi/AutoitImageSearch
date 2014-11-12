@@ -179,7 +179,7 @@ LPCOLORREF getbits(HBITMAP ahImage, HDC hdc, LONG &aWidth, LONG &aHeight, bool &
 	aHeight = bmi.bmiHeader.biHeight;
 
 	int image_pixel_count = aWidth * aHeight;
-	if (   !(image_pixel = (LPCOLORREF)malloc( image_pixel_count * sizeof(COLORREF) + SSE_PADDING ) )  )
+	if (   !(image_pixel = (LPCOLORREF)_aligned_malloc( image_pixel_count * sizeof(COLORREF) + SSE_PADDING, SSE_ALIGNMENT ) )  )
 		goto end;
 
 	// v1.0.40.10: To preserve compatibility with callers who check for transparency in icons, don't do any
@@ -245,7 +245,7 @@ end:
 	DeleteDC(tdc);
 	if (!success && image_pixel)
 	{
-		free(image_pixel);
+		_aligned_free(image_pixel);
 		image_pixel = NULL;
 	}
 	return image_pixel;
@@ -1075,11 +1075,11 @@ end:
 	if (hbitmap_screen)
 		DeleteObject(hbitmap_screen);
 	if (image_pixel)
-		free(image_pixel);
+		_aligned_free(image_pixel);
 	if (image_mask)
-		free(image_mask);
+		_aligned_free(image_mask);
 	if (screen_pixel)
-		free(screen_pixel);
+		_aligned_free(screen_pixel);
 
 	if (!found) // Let ErrorLevel, which is either "1" or "2" as set earlier, tell the story.
 			return "0";

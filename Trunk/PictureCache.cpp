@@ -91,8 +91,8 @@ void CheckPrepareToleranceMaps( CachedPicture *cache, int NewTolerance, int Tran
 	{
 		for( int i = 0;i<3;i++)
 		{
-			cache->MinMap[i] = (unsigned char *)malloc( cache->Width * cache->Height + SSE_PADDING );
-			cache->MaxMap[i] = (unsigned char *)malloc( cache->Width * cache->Height + SSE_PADDING );
+			cache->MinMap[i] = (unsigned char *)_aligned_malloc( cache->Width * cache->Height + SSE_PADDING, SSE_ALIGNMENT );
+			cache->MaxMap[i] = (unsigned char *)_aligned_malloc( cache->Width * cache->Height + SSE_PADDING, SSE_ALIGNMENT );
 		}
 	}
 
@@ -148,7 +148,7 @@ void WINAPI MoveScreenshotToCache( char *Name )
 	PictureCache[ NrPicturesCached ].LoadedPicture = NULL;
 
 	int PixelsByteSize = CurScreenshot->GetWidth() * CurScreenshot->GetHeight() * sizeof( COLORREF );
-	PictureCache[ NrPicturesCached ].Pixels = (LPCOLORREF) malloc( PixelsByteSize );
+	PictureCache[ NrPicturesCached ].Pixels = (LPCOLORREF) _aligned_malloc( PixelsByteSize, SSE_ALIGNMENT );
 	memcpy(	PictureCache[ NrPicturesCached ].Pixels, CurScreenshot->Pixels, PixelsByteSize );
 
 	PictureCache[ NrPicturesCached ].Width = CurScreenshot->GetWidth();

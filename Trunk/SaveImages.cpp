@@ -27,10 +27,19 @@ void WINAPI SaveScreenshot()
 	//create a bitmap and populate pixels on it
 	CImage Img;
 	Img.Create( Width, Height, 32 );
-	for( int y = 0; y < Height; y +=1 )
-		for( int x = 0; x < Width; x += 1 )
-//			Img.SetPixel( x, y, CurScreenshot->Pixels[ y * Width + x ] );
-			Img.SetPixel( x, y, RGB( GetBValue( CurScreenshot->Pixels[ y * Width + x ] ), GetGValue( CurScreenshot->Pixels[ y * Width + x ] ), GetRValue( CurScreenshot->Pixels[ y * Width + x ] ) ) );
+	if( CurScreenshot->BytesPerPixel == 1 )
+	{
+		unsigned char *Pixels = (unsigned char*)CurScreenshot->Pixels;
+		for( int y = 0; y < Height; y +=1 )
+			for( int x = 0; x < Width; x += 1 )
+				Img.SetPixel( x, y, RGB( Pixels[ y * Width + x ], Pixels[ y * Width + x ], Pixels[ y * Width + x ] ) );
+	}
+	else
+	{
+		for( int y = 0; y < Height; y +=1 )
+			for( int x = 0; x < Width; x += 1 )
+				Img.SetPixel( x, y, RGB( GetBValue( CurScreenshot->Pixels[ y * Width + x ] ), GetGValue( CurScreenshot->Pixels[ y * Width + x ] ), GetRValue( CurScreenshot->Pixels[ y * Width + x ] ) ) );
+	}
 
 	Img.Save( MyFileName );
 }
@@ -39,6 +48,13 @@ void WINAPI SaveDiffMap()
 {
 	FileDebug( "Started saving diffmap" );
 	DumpAsPPM( (unsigned char *)MotionDiff.Pixels, (unsigned char *)MotionDiff.Pixels, (unsigned char *)MotionDiff.Pixels, MotionDiff.GetWidth(), MotionDiff.GetHeight() );
+	FileDebug( "\tFinished saving diffmap" );
+}
+
+void WINAPI SaveEdgeMap()
+{
+	FileDebug( "Started saving diffmap" );
+	DumpAsPPM( (unsigned char *)CurScreenshot->Pixels, (unsigned char *)CurScreenshot->Pixels, (unsigned char *)CurScreenshot->Pixels, CurScreenshot->GetWidth(), CurScreenshot->GetHeight() );
 	FileDebug( "\tFinished saving diffmap" );
 }
 
