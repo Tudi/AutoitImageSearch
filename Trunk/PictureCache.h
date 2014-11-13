@@ -5,12 +5,13 @@
 
 class SimilarSearch;
 class PiramidImage;
+struct OCRStore;
 
 struct CachedPicture
 {
 	char			FileName[ DEFAULT_STR_BUFFER_SIZE ];
 	int				NameHash;
-	HBITMAP			LoadedPicture;
+	HBITMAP			LoadedPicture;	//valid if loaded from bitmap file
 	LPCOLORREF		Pixels;
 	int				Width,Height;
 	//there is a large chance that we will do the same searches over and over for these images. Maybe we can afford to prepare a cache
@@ -21,6 +22,7 @@ struct CachedPicture
 	PiramidImage	*PSCache;
 	bool			NeedsSSCache;
 	bool			NeedsPSCache;
+	OCRStore		*OCRCache;
 };
 
 int GetCacheIndex( char *aFilespec );

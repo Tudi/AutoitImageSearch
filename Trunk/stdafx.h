@@ -50,6 +50,7 @@
 #include <tchar.h>
 #include <atlimage.h>
 #include <math.h>
+#include <set>
 
 #ifdef LIBRARY_EXPORTS
 #    define LIBRARY_API __declspec(dllexport)
@@ -74,6 +75,7 @@
 #include "Tools.h"
 #include "PiramidSearch.h"
 #include "SimilarSearch.h"
+#include "OCR.h"
 
 #ifdef _CONSOLE
 	#include "Benchmarks/Benchmarks.h"

@@ -12,5 +12,6 @@ void RunErrodeBenchmark();
 void RunSimilarSearchBenchmark();
 void RunPiramidSearchBenchmark();
 void RunEdgeDetectBenchmark();
+void RunOCRBenchmark();
 
 #endif

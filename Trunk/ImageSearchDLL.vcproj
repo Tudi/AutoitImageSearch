@@ -365,6 +365,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\OCR.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\OCR.h"
+				>
+			</File>
+			<File
 				RelativePath=".\PictureCache.cpp"
 				>
 			</File>

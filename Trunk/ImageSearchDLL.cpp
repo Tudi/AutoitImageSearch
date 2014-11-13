@@ -46,12 +46,21 @@ void main()
 //	RunDiffBenchmark(); // 704 fps on my pc
 //	RunImgSearchBenchmark(); // 0.05 - 109 fps on my pc
 //	RunErrodeBenchmark(); // 66 fps on my pc
-	RunSimilarSearchBenchmark(); // 302 fps is the setup and 131 fps is the search on my pc
+//	RunSimilarSearchBenchmark(); // 302 fps is the setup and 131 fps is the search on my pc
 //	RunPiramidSearchBenchmark(); // 151 fps is the setup and 600 fps is the search on my pc
 //	RunEdgeDetectBenchmark(); // 62 fps / 15 fps 
 #endif
 
+	_getch();
+	TakeScreenshot( 0, 0, 800, 800 );
+//	TakeScreenshot( 63, 100, 103, 108 );
+//	SaveScreenshot();
+	CachePicture( "OCR_1.bmp" );
+	CachePicture( "OCR_2.bmp" );
+	CachePicture( "OCR_3.bmp" );
+
+	ReadTextFromScreenshot( 53, 98, 107, 117 );
+//	ReadTextFromScreenshot( 63, 100, 103, 108 );
 //	SetupSimilarSearch( 0, 1, 3, 0 );
-//	TakeScreenshot( 0, 0, 800, 800 );
 //	SearchSimilarOnScreenshot( "tosearch10.bmp" );
 }
