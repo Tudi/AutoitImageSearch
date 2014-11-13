@@ -1,3 +1,6 @@
 - font bitmap background should always be transparent
 - font bitmaps should not start with empty rows / columns
 - font bitmaps should not end with empty rows / columns
+- use as few font images as possible. The search is super slow and it gets slower with more images
+- color count and value on fonts do matter. Search will look for exact color matches with mask 0x00F8F8F8
+- if your fonts are colored, you should decide what colors are more important and remove the rest. If font color is detected in the background, you have hight chances that bad results will be returned. Ex: searching black fonts on black background will always return text "aaaaa..."

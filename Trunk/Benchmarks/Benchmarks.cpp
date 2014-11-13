@@ -393,44 +393,4 @@ void RunEdgeDetectBenchmark()
 
 void RunOCRBenchmark()
 {
-	int Start,End,AntiOptimizer;
-#ifdef _DEBUG
-	int LoopCount = 1;
-#else
-	int LoopCount = 1000;
-#endif
-	int StartX = 0;
-	int StartY = 0;
-	int EndX = 800;
-	int EndY = 800;
-
-	TakeScreenshot( StartX, StartY, EndX, EndY );
-
-	Start = GetTickCount();
-	AntiOptimizer = 0;
-	for( int i = 0; i < LoopCount; i++ )
-	{
-		EdgeDetect( 1 );
-		AntiOptimizer += i;
-	}
-	End = GetTickCount();
-	printf( "Ignoreme : %d \n", AntiOptimizer );
-	printf(" Benchmarking EdgeDetect( 1 ) : %d frames processed in %d ms. Number of pixels stored %d\n", LoopCount, ( End - Start ), ( EndX - StartX ) * ( EndY - StartY ) );
-	printf(" Benchmarking EdgeDetect( 1 ) : %d FPS \n", LoopCount * 1000 / ( End - Start + 1 ) );
-	printf(" Pixels Processed Per Second: %d pps \n", ( LoopCount * ( EndX - StartX ) * ( EndY - StartY ) ) / ( End - Start + 1 ) );
-
-	Start = GetTickCount();
-	AntiOptimizer = 0;
-	for( int i = 0; i < LoopCount; i++ )
-	{
-		EdgeDetect( 2 );
-		AntiOptimizer += i;
-	}
-	End = GetTickCount();
-	printf( "Ignoreme : %d \n", AntiOptimizer );
-	printf(" Benchmarking EdgeDetect( 2 ) : %d frames processed in %d ms. Number of pixels stored %d\n", LoopCount, ( End - Start ), ( EndX - StartX ) * ( EndY - StartY ) );
-	printf(" Benchmarking EdgeDetect( 2 ) : %d FPS \n", LoopCount * 1000 / ( End - Start + 1 ) );
-	printf(" Pixels Processed Per Second: %d pps \n", ( LoopCount * ( EndX - StartX ) * ( EndY - StartY ) ) / ( End - Start + 1 ) );
-
-	/**/
 }

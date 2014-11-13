@@ -1,0 +1,101 @@
+
+takes a 24 bpp screenshot. Coordinates mode is absolute
+Screenshots are cached until another screenshot is taken
+void WINAPI TakeScreenshot(int aLeft, int aTop, int aRight, int aBottom);
+
+
+
+will create a new bmp like Screenshot_0001_0053_0021.bmp
+use this BMP if you want to cut out image parts you wish to use later because this image is as the DLL sees the screen. if you take the screenshot with some other software it might compress / filter / convert your image to something different than it really is
+void WINAPI SaveScreenshot();
+
+
+
+works on current screenshot. It has 0 filtering so expect heavy data loss. If you wish to preserve some of the data you probably want to blurr the image before resize
+void WINAPI ResizeScreenshot( int NewWidth, int NewHeight );
+
+
+
+very simple ( p[0]+p[1]+...p[x] )/ x blur formula
+void WINAPI BlurrImage( int HalfKernelSize );
+
+
+
+you can move current screenshot into cache. No idea why you want to do this. maybe for dynamic image detection
+void WINAPI MoveScreenshotToCache( char *Name );
+
+
+
+simple image search. checks pixel by pixel if image matches
+char* WINAPI ImageSearchOnScreenshot( char *aImageFile, int TransparentColor, int AcceptedColorDiff, int AcceptedErrorCount, int StopAfterNMatches );
+
+
+
+compares current screenshot with previous screenshot. If a pixel is not the same in the specified box, it will instantly return
+char* WINAPI IsAnythingChanced( int StartX, int StartY, int EndX, int EndY );
+
+
+
+compares current screenshot to previous screenshot, merges every 4 pixels into 1 to resize the image. New image will be grayscale and have width / 4 , height / 4 size
+int WINAPI GenerateDiffMap();
+
+
+
+dumps the diffmap into a ppm file. Use Irfanview to view ppm files
+void WINAPI SaveDiffMap();
+
+
+
+black out parts on screenshot that did not change since last screenshot. You can use this for dynamic object detection
+void WINAPI SaveScreenshotDiffMask( int LowLimit );
+
+
+
+if you want to reduce the number of false reports you might not want to use edges on textures. Erode should round object corners
+void WINAPI ErrodeDiffMap( int HalfKernelSize );
+
+
+
+Search on screenshot but only locations where movement was detected
+char* WINAPI ImageSearchOnScreenshotMasked( char *ImageFile, char *MaskFile, int TransparentColor, int AcceptedColorDiff, int AcceptedErrorCount, int StopAfterNMatches );
+
+
+
+char* WINAPI GetImageSize( char *aImageFile );
+
+
+
+set the parameters for similar search. Similar search could be used when you are unsure how your search image looks like on the screenshot. 
+void WINAPI SetupSimilarSearch( int MaxImageSize, int DownScale, int SearchType, int OnlyAtDiffMask );
+
+
+
+Similar search will try to find the best match even if it is completely different than what you expect it to be
+It's up to you to accept the return of similarsearch. You probably want to use additional checks on the result of this search
+char * WINAPI SearchSimilarOnScreenshot( char *aImageFile );
+
+
+
+Don't use this. It can return false results even when there are better versions
+char * WINAPI SearchPiramidOnScreenshot( char *aImageFile );
+
+
+
+detect edges of objects. Not precise, but it removes redundant data. You might want to use this when illumination does not allow you to search for images
+void WINAPI EdgeDetect( int HalfKernelSize );
+
+
+
+dump the edgemap into a ppm file to visually inspect it
+void WINAPI SaveEdgeMap();
+
+
+
+map an image to a font. Required for OCR to recognize text
+void WINAPI RegisterOCRFont( char *aFilespec, int Font );
+
+
+
+on the current screenshot, try to convert image into multiple fonts
+coordinates are absolute
+char * WINAPI ReadTextFromScreenshot( int StartX, int StartY, int EndX, int EndY );

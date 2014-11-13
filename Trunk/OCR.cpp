@@ -92,6 +92,27 @@ void GetCharacterSetColorStatistics()
 	}
 }
 
+void WINAPI RegisterOCRFont( char *aFilespec, int Font )
+{
+	CachedPicture *cache = CachePicture( aFilespec );
+	if( cache != NULL && cache->Pixels != NULL )
+	{
+		if( cache->OCRCache == NULL )
+		{
+			cache->OCRCache = new OCRStore;
+			memset( cache->OCRCache, 0, sizeof( OCRStore ) );
+		}
+		GetCacheColorStatistics( cache );
+
+		if( cache->Width > OCRMaxFontWidth )
+			OCRMaxFontWidth = cache->Width;
+		if( cache->Height > OCRMaxFontHeight )
+			OCRMaxFontHeight = cache->Height;
+
+		cache->OCRCache->AssignedChar = Font;
+	}
+}
+
 //binarize image. If there are strong colors
 bool IsColumnEmpty( int X, int StartY, int EndY )
 {
@@ -137,24 +158,27 @@ void GetCacheScoreAtLoc( CachedPicture *cache, int AtX, int AtY, int *HitCount, 
 		}
 }
 
-//return format : [ResultCount][ReadTextUntilX][TextRead]
+char OCRReturnBuff[DEFAULT_STR_BUFFER_SIZE*10];
+//return format : [TextRead]|[ReadTextUntilX]
 char * WINAPI ReadTextFromScreenshot( int StartX, int StartY, int EndX, int EndY )
 {
+	char ReturnBuff[DEFAULT_STR_BUFFER_SIZE*10];
+	int WriteIndex = 0;
 	FileDebug( "Started OCR" );
 	if( NrPicturesCached == 0 )
 	{
 		FileDebug( "\tOCR has not cached images for fonts" );
-		return "0|0|";
+		return "|0";
 	}
 	if( CurScreenshot->Pixels == NULL )
 	{
 		FileDebug( "\tOCR has no screenshot to work on" );
-		return "0|0|";
+		return "|0";
 	}
 	if( EndX < StartX || StartX > CurScreenshot->Right || EndY > CurScreenshot->Bottom )
 	{
 		FileDebug( "\tOCR coordinates are wrong. Can't search outside the screenshot" );
-		return "0|0|";
+		return "|0";
 	}
 
 	StartX = StartX - CurScreenshot->Left;
@@ -171,56 +195,81 @@ char * WINAPI ReadTextFromScreenshot( int StartX, int StartY, int EndX, int EndY
 		StartY = 0;
 	if( EndY > CurScreenshot->Bottom )
 		EndY = CurScreenshot->Bottom;
+/*
+{
+	char td[500];
+	sprintf_s( td, 500, "Searchbox is %d %d %d %d", StartX, StartY, EndX, EndY );
+	FileDebug( td );
+}/**/
 
 	//will only make statistics once per image 
 	GetCharacterSetColorStatistics();
 //printf( "Found %d different font colors\n", OCRTextColors.size() );
 
+	CachedPicture *BestMatch = &PictureCache[ 0 ];
 	for( int x = StartX; x < EndX; x++ )
 	{
 		if( IsColumnEmpty( x, StartY, EndY ) )
 			continue;
-		CachedPicture *BestMatch = &PictureCache[ 0 ];
 		for( int y = StartY; y < EndY; y++ )
 		{
+			BestMatch = NULL;
 			for( int c = 0; c < NrPicturesCached; c++ )
 			{
-				CachedPicture *cache = &PictureCache[ c ];
-				cache->OCRCache->LastSearchHitCount = 0;
-				cache->OCRCache->LastSearchMissCount = MAX_INT;
-				for( int yc = 0; yc < cache->Height * 3 / 2; yc++ )
-					for( int xc = 0; xc < cache->Width * 3 / 2; xc++ )
+				//if this font would be the best match, at what location would it be at ?
+				CachedPicture *FontCache = &PictureCache[ c ];
+				FontCache->OCRCache->LastSearchHitCount = 0;
+				FontCache->OCRCache->LastSearchMissCount = MAX_INT;
+				for( int yc = 0; yc < FontCache->Height * 3 / 2; yc++ )
+					for( int xc = 0; xc < FontCache->Width * 3 / 2; xc++ )
 					{
 						int Hits,Misses;
-						GetCacheScoreAtLoc( cache, x + xc, y + yc, &Hits, &Misses );
-						if( Hits >= cache->OCRCache->LastSearchHitCount && Misses <= cache->OCRCache->LastSearchMissCount )
+						GetCacheScoreAtLoc( FontCache, x + xc, y + yc, &Hits, &Misses );
+						if( Hits >= FontCache->OCRCache->LastSearchHitCount && Misses <= FontCache->OCRCache->LastSearchMissCount )
 						{
-							cache->OCRCache->LastSearchHitCount = Hits;
-							cache->OCRCache->LastSearchMissCount = Misses;
-							cache->OCRCache->LastSearchX = x + xc;
-							cache->OCRCache->LastSearchY = y + yc;
+							FontCache->OCRCache->LastSearchHitCount = Hits;
+							FontCache->OCRCache->LastSearchMissCount = Misses;
+							FontCache->OCRCache->LastSearchX = x + xc;
+							FontCache->OCRCache->LastSearchY = y + yc;
 						}
 					}
 
-				if( cache->OCRCache->LastSearchMissCount * 10000 / ( cache->OCRCache->LastSearchHitCount + 1 ) < BestMatch->OCRCache->LastSearchMissCount * 10000 / ( BestMatch->OCRCache->LastSearchHitCount + 1 ) )
-					BestMatch = cache;
+				//this font, at it's best location, is it better than other fonts at their best location ?
+				if( BestMatch == NULL || FontCache->OCRCache->LastSearchMissCount * 10000 / ( FontCache->OCRCache->LastSearchHitCount + 1 ) < BestMatch->OCRCache->LastSearchMissCount * 10000 / ( BestMatch->OCRCache->LastSearchHitCount + 1 ) )
+					BestMatch = FontCache;
 
-				if( cache->OCRCache->LastSearchMissCount == 0 && cache->OCRCache->LastSearchHitCount > 0 )
+				//if this font matches perfectly in this spot, than stop searching for other candidates
+				if( FontCache->OCRCache->LastSearchMissCount == 0 && FontCache->OCRCache->LastSearchHitCount > 0 )
 				{
 //					FileDebug( "\tOCR Perfect letter match found, aborting other searches" );
-//printf( "Perfect match found, adjusting font start row to %d from %d\n", cache->OCRCache->LastSearchY + cache->Height - OCRMaxFontHeight, StartY );
-					StartY = cache->OCRCache->LastSearchY + cache->Height - OCRMaxFontHeight;
+//printf( "Perfect match found, adjusting font start row to %d from %d\n", FontCache->OCRCache->LastSearchY + FontCache->Height - OCRMaxFontHeight, StartY );
+					StartY = FontCache->OCRCache->LastSearchY + FontCache->Height - OCRMaxFontHeight;
 					y = EndY;
 					break;
 				}
 			}
 		}
-printf( "Best match name is %s with hitcount %d and misscount %d \n", BestMatch->FileName, BestMatch->OCRCache->LastSearchHitCount, BestMatch->OCRCache->LastSearchMissCount );
+/*
+{
+	char td[500];
+	sprintf_s( td, 500, "Best match is %s - %c with hitcount %d and misscount %d at %d %d", BestMatch->FileName, BestMatch->OCRCache->AssignedChar, BestMatch->OCRCache->LastSearchHitCount, BestMatch->OCRCache->LastSearchMissCount, BestMatch->OCRCache->LastSearchX, BestMatch->OCRCache->LastSearchY );
+	FileDebug( td );
+}/**/
 		// best search result is taken even if we are wrong
-		x = BestMatch->OCRCache->LastSearchX + BestMatch->Width;
+		if( BestMatch->OCRCache->LastSearchMissCount * 100 / ( BestMatch->OCRCache->LastSearchHitCount + 1 ) < 50 )
+		{
+//printf( "Best match name is %s - %c with hitcount %d and misscount %d \n", BestMatch->FileName, BestMatch->OCRCache->AssignedChar, BestMatch->OCRCache->LastSearchHitCount, BestMatch->OCRCache->LastSearchMissCount );
+			x = BestMatch->OCRCache->LastSearchX + BestMatch->Width;
+//			sprintf_s( OCRReturnBuff, DEFAULT_STR_BUFFER_SIZE*10, "%s%c", OCRReturnBuff, BestMatch->OCRCache->AssignedChar );
+			if( WriteIndex < DEFAULT_STR_BUFFER_SIZE*10 - 2 )
+				ReturnBuff[ WriteIndex++ ] = BestMatch->OCRCache->AssignedChar;
+		}
 	}
-
+	ReturnBuff[ WriteIndex++ ] = 0;
+//printf( "Final return is %s as number %d \n", OCRReturnBuff, atoi( OCRReturnBuff ) );
+	sprintf_s( OCRReturnBuff, DEFAULT_STR_BUFFER_SIZE*10, "%s|%d", ReturnBuff, BestMatch->OCRCache->LastSearchX + BestMatch->Width );
 	//skip empty columns
+//FileDebug( OCRReturnBuff );
 	FileDebug( "\tFinished  OCR" );
-	return "0|0|";
+	return OCRReturnBuff;
 }

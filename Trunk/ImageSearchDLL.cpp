@@ -51,16 +51,21 @@ void main()
 //	RunEdgeDetectBenchmark(); // 62 fps / 15 fps 
 #endif
 
-	_getch();
-	TakeScreenshot( 0, 0, 800, 800 );
-//	TakeScreenshot( 63, 100, 103, 108 );
-//	SaveScreenshot();
-	CachePicture( "OCR_1.bmp" );
-	CachePicture( "OCR_2.bmp" );
-	CachePicture( "OCR_3.bmp" );
+/*	{
+		RegisterOCRFont( "OCR_1_green.bmp", '1' );
+		RegisterOCRFont( "OCR_2_green.bmp", '2' );
+		RegisterOCRFont( "OCR_3_green.bmp", '3' );
 
-	ReadTextFromScreenshot( 53, 98, 107, 117 );
-//	ReadTextFromScreenshot( 63, 100, 103, 108 );
+		_getch();
+	//	TakeScreenshot( 0, 0, 800, 800 );
+	//	TakeScreenshot( 63, 100, 103, 108 );
+		TakeScreenshot( 218, 95, 271, 116 );
+	//	SaveScreenshot();
+
+	//	ReadTextFromScreenshot( 53, 98, 127, 117 );
+	//	ReadTextFromScreenshot( 63, 100, 103, 108 );
+		ReadTextFromScreenshot( 218, 95, 271, 116 );
+	}/**/
 //	SetupSimilarSearch( 0, 1, 3, 0 );
 //	SearchSimilarOnScreenshot( "tosearch10.bmp" );
 }
