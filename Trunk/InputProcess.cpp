@@ -463,6 +463,11 @@ char* WINAPI IsAnythingChanced( int StartX, int StartY, int EndX, int EndY )
 		FileDebug( "Screenshots were not taken from same place. Can't compare" );
 		return "0|0|0";
 	}
+	if( StartY > EndY || StartX > EndX )
+	{
+		FileDebug( "Third / Fourth parameter does not seem to be width / height" );
+		return "0|0|0";
+	}
 	int Width = CurScreenshot->Right - CurScreenshot->Left;
 	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
 	for( int y = StartY; y < EndY; y++ )
