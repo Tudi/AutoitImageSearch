@@ -72,11 +72,13 @@ void WINAPI SetupSimilarSearch( int MaxImageSize, int DownScale, int SearchType,
 
 Similar search will try to find the best match even if it is completely different than what you expect it to be
 It's up to you to accept the return of similarsearch. You probably want to use additional checks on the result of this search
+Similarsearch is good when you want to search a lot of small images with the same size
 char * WINAPI SearchSimilarOnScreenshot( char *aImageFile );
 
 
 
 Don't use this. It can return false results even when there are better versions
+PiramidSearch is good when you want to search a lot of large images on a large screenshot
 char * WINAPI SearchPiramidOnScreenshot( char *aImageFile );
 
 

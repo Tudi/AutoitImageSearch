@@ -446,6 +446,8 @@ char* WINAPI GetImageSize( char *aImageFile )
 
 char* WINAPI IsAnythingChanced( int StartX, int StartY, int EndX, int EndY )
 {
+	FileDebug( "Started IsAnythingChanced" );
+	ReturnBuff[0] = 0;
 	if( CurScreenshot->Pixels == NULL )
 	{
 		FileDebug( "Skipping change search as no screenshot is available" );
@@ -468,7 +470,9 @@ char* WINAPI IsAnythingChanced( int StartX, int StartY, int EndX, int EndY )
 			if( CurScreenshot->Pixels[ y * Width + x ] != PrevScreenshot->Pixels[ y * Width + x ] )
 			{
 				sprintf_s( ReturnBuff, DEFAULT_STR_BUFFER_SIZE*10, "1|%d|%d", x, y );
+				FileDebug( ReturnBuff );
 				return ReturnBuff;
 			}
+	FileDebug( "\tEnd IsAnythingChanced" );
 	return "0|0|0";
 }
