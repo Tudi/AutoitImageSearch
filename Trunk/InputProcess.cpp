@@ -31,6 +31,7 @@ void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 	CurScreenshot->Bottom = aBottom;
 	CurScreenshot->NeedsSSCache = true;
 	CurScreenshot->NeedsPSCache = true;
+	CurScreenshot->NeedsAlphaRemoved = true;
 	CurScreenshot->BytesPerPixel = 4;
 
 	HDC sdc = NULL;
@@ -42,16 +43,35 @@ void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 	int search_width = aRight - aLeft;
 	int search_height = aBottom - aTop;
 
+	int MaxWidth, MaxHeight;
+	GetMaxDesktopResolution( &MaxWidth, &MaxHeight );
+	if( aLeft + search_width > MaxWidth )
+		search_width = MaxWidth - aLeft;
+	if( aTop + search_height > MaxHeight )
+		search_height = MaxHeight - aTop;
+
+	//make sure we did not capture more than we could. Avoid illegal memory read errors on bad screenshot params
+	if( CurScreenshot->Right - CurScreenshot->Left > search_width )
+		CurScreenshot->Right = CurScreenshot->Left + search_width;
+	if( CurScreenshot->Bottom - CurScreenshot->Top > search_height )
+		CurScreenshot->Bottom = CurScreenshot->Top + search_height;
+
 	HDC hdc = GetDC(NULL);
 	if( !hdc )
 	{
 		return;
 	}
 
-	if( !(sdc = CreateCompatibleDC(hdc)) || !(hbitmap_screen = CreateCompatibleBitmap(hdc, search_width, search_height)) )
+	sdc = CreateCompatibleDC(hdc);
+	if( !sdc )
 		goto end;
 
-	if( !(sdc_orig_select = SelectObject(sdc, hbitmap_screen))   )
+	hbitmap_screen = CreateCompatibleBitmap(hdc, search_width, search_height);
+	if( !hbitmap_screen )
+		goto end;
+
+	sdc_orig_select = SelectObject(sdc, hbitmap_screen);
+	if( !sdc_orig_select )
 		goto end;
 
 	// Copy the pixels in the search-area of the screen into the DC to be searched:
@@ -60,7 +80,8 @@ void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 
 	LONG screen_width, screen_height;
 	bool screen_is_16bit;
-	if( !(CurScreenshot->Pixels = getbits(hbitmap_screen, sdc, screen_width, screen_height, screen_is_16bit)) )
+	CurScreenshot->Pixels = getbits(hbitmap_screen, sdc, screen_width, screen_height, screen_is_16bit);
+	if( !CurScreenshot->Pixels )
 		goto end;
 
 	LONG Pixels_count = screen_width * screen_height;
@@ -201,48 +222,81 @@ docleanupandreturn:
 	}
 	else
 	{
-//DumpAsPPM( &CurScreenshot->Pixels[ 40 * Width + 40 ], 40, 40, Width );
-//DumpAsPPM( &cache->Pixels[ 0 ], 40, 40 );
-		for( int y = 0; y < Height - cache->Height; y +=1 )
-			for( int x = 0; x < Width - cache->Width; x += 1 )
-			{
-				int ImageMatched = 1;
-				int FoundErrors = 0;
-				for( int y2=0;y2<cache->Height;y2++ )
+		RemoveCacheAlphaChannel( cache );
+		RemoveScreenshotAlphaChannel( CurScreenshot );
+		if( TransparentColor > 0x00FFFFFF && AcceptedErrorCount == 0 && StopAfterNMatches == 1 )
+		{
+			for( int y = 0; y < Height - cache->Height; y +=1 )
+				for( int x = 0; x < Width - cache->Width; x += 1 )
 				{
-					for( int x2=0;x2<cache->Width;x2++)
+					for( int y2=0;y2<cache->Height;y2++ )
 					{
-						int PixelIndexSrc = ( y + y2 ) * Width + x + x2;
-						int PixelIndexDst = ( 0 + y2 ) * cache->Width + 0 + x2;
-						COLORREF BGRSrc = CurScreenshot->Pixels[ PixelIndexSrc ];
-						COLORREF BGRDst = cache->Pixels[ PixelIndexDst ];
-						if( BGRDst == TransparentColor || BGRSrc == BGRDst )
+						int PixelIndexSrc = ( y + y2 ) * Width + x;
+						int PixelIndexDst = ( 0 + y2 ) * cache->Width;
+						for( int x2=0;x2<cache->Width;x2++)
 						{
-							//yaay it matches = nothig to do here
-						}
-						else
-							FoundErrors++;
-
-						if( FoundErrors > AcceptedErrorCount )
-						{
-							ImageMatched = 0;
-							goto AbandonIMageInImageSearch2;
+							if( CurScreenshot->Pixels[ PixelIndexSrc++ ] != cache->Pixels[ PixelIndexDst++ ] )
+								goto AbandonIMageInImageSearch3;
 						}
 					}
-				}
-AbandonIMageInImageSearch2:
-				if( ImageMatched == 1 )
-				{
 					FileDebug( "Image search found a match" );
 					sprintf_s( ReturnBuff2, DEFAULT_STR_BUFFER_SIZE*10, "%s|%d|%d", ReturnBuff2, CurScreenshot->Left + x, CurScreenshot->Top + y );
 					FileDebug( ReturnBuff2 );
-					MatchesFound++;
-					if( MatchesFound >= StopAfterNMatches )
-						goto docleanupandreturn2;
+					MatchesFound = 1;
+					goto docleanupandreturn3;
+AbandonIMageInImageSearch3:
+					;
 				}
-			}
+docleanupandreturn3:
+				;
+		}
+		else
+		{
+//DumpAsPPM( &CurScreenshot->Pixels[ 40 * Width + 40 ], 40, 40, Width );
+//DumpAsPPM( &cache->Pixels[ 0 ], 40, 40 );
+			for( int y = 0; y < Height - cache->Height; y +=1 )
+				for( int x = 0; x < Width - cache->Width; x += 1 )
+				{
+					int ImageMatched = 1;
+					int FoundErrors = 0;
+					for( int y2=0;y2<cache->Height;y2++ )
+					{
+						for( int x2=0;x2<cache->Width;x2++)
+						{
+							int PixelIndexSrc = ( y + y2 ) * Width + x + x2;
+							int PixelIndexDst = ( 0 + y2 ) * cache->Width + 0 + x2;
+							COLORREF BGRSrc = CurScreenshot->Pixels[ PixelIndexSrc ];
+							COLORREF BGRDst = cache->Pixels[ PixelIndexDst ];
+							if( BGRDst == TransparentColor || BGRSrc == BGRDst )
+							{
+								//yaay it matches = nothig to do here
+								FoundErrors =  FoundErrors;
+							}
+							else
+							{
+								FoundErrors++;
+								if( FoundErrors > AcceptedErrorCount )
+								{
+									ImageMatched = 0;
+									goto AbandonIMageInImageSearch2;
+								}
+							}
+						}
+					}
+AbandonIMageInImageSearch2:
+					if( ImageMatched == 1 )
+					{
+						FileDebug( "Image search found a match" );
+						sprintf_s( ReturnBuff2, DEFAULT_STR_BUFFER_SIZE*10, "%s|%d|%d", ReturnBuff2, CurScreenshot->Left + x, CurScreenshot->Top + y );
+						FileDebug( ReturnBuff2 );
+						MatchesFound++;
+						if( MatchesFound >= StopAfterNMatches )
+							goto docleanupandreturn2;
+					}
+				}
 docleanupandreturn2:
-			;
+				;
+		}
 	}
 	sprintf_s( ReturnBuff, DEFAULT_STR_BUFFER_SIZE*10, "%d%s", MatchesFound, ReturnBuff2 );
 	FileDebug( "\tImage search finished" );
@@ -444,10 +498,11 @@ char* WINAPI GetImageSize( char *aImageFile )
 	return ReturnBuff;
 }
 
+char ReturnBuffIAC[DEFAULT_STR_BUFFER_SIZE*10];
 char* WINAPI IsAnythingChanced( int StartX, int StartY, int EndX, int EndY )
 {
 	FileDebug( "Started IsAnythingChanced" );
-	ReturnBuff[0] = 0;
+	ReturnBuffIAC[0] = 0;
 	if( CurScreenshot->Pixels == NULL )
 	{
 		FileDebug( "Skipping change search as no screenshot is available" );
@@ -469,15 +524,26 @@ char* WINAPI IsAnythingChanced( int StartX, int StartY, int EndX, int EndY )
 		return "0|0|0";
 	}
 	int Width = CurScreenshot->Right - CurScreenshot->Left;
-	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
+//	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
 	for( int y = StartY; y < EndY; y++ )
 		for( int x = StartX; x < EndX; x++ )
 			if( CurScreenshot->Pixels[ y * Width + x ] != PrevScreenshot->Pixels[ y * Width + x ] )
 			{
-				sprintf_s( ReturnBuff, DEFAULT_STR_BUFFER_SIZE*10, "1|%d|%d", x, y );
-				FileDebug( ReturnBuff );
-				return ReturnBuff;
+				sprintf_s( ReturnBuffIAC, DEFAULT_STR_BUFFER_SIZE*10, "1|%d|%d", x, y );
+				FileDebug( ReturnBuffIAC );
+				return ReturnBuffIAC;
 			}
 	FileDebug( "\tEnd IsAnythingChanced" );
 	return "0|0|0";
+}
+
+void RemoveScreenshotAlphaChannel( ScreenshotStruct *cache )
+{
+	if( cache->NeedsAlphaRemoved == true )
+	{
+		cache->NeedsAlphaRemoved = false;
+		int PixelCount = cache->GetWidth() * cache->GetHeight();
+		for( int i=0;i<PixelCount;i++)
+			cache->Pixels[ i ] = cache->Pixels[ i ] & 0x00FFFFFF;
+	}
 }

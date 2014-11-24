@@ -68,4 +68,32 @@ void main()
 	}/**/
 //	SetupSimilarSearch( 0, 1, 3, 0 );
 //	SearchSimilarOnScreenshot( "tosearch10.bmp" );
+/*	{
+		_getch();
+		TakeScreenshot( 0, 0, 2000, 2000 );
+		//SaveScreenshot();
+		char *res;
+		res = ImageSearchOnScreenshot( "Resync.bmp", 0x01000000, 0, 0, 1 );
+		TakeScreenshot( 1709, 1139, 1709 + 7, 1139 + 23 );
+		//SaveScreenshot();
+	}/**/
+	{
+		_getch();
+		TakeScreenshot( 0, 0, 2000, 2000 );
+		char *res;
+		res = ImageSearchOnScreenshot( "Resync.bmp", 0x01000000, 0, 0, 1 );
+		int Start = GetTickCount();
+		for( int i = 0; i < 1000; i++ )
+		{
+			TakeScreenshot( 1709, 1139, 1709 + 7, 1139 + 23 );
+			res = IsAnythingChanced( 0, 0, 7, 23 );
+			if( res[0] != '0' )
+			{
+				res[0] = '1';
+			}
+		}
+		int End = GetTickCount();
+		printf("result of search benchmarking : %d %d FPS\n", End - Start, 1000 * 1000 / ( End - Start + 1 ) );
+		_getch();
+	}/**/
 }

@@ -694,7 +694,7 @@ int GetNextBestMatch( SimilarSearch *SearchIn, SimilarSearch *SearchFor, int &re
 char SSReturnBuff[DEFAULT_STR_BUFFER_SIZE*10];
 char * WINAPI SearchSimilarOnScreenshot( char *aImageFile )
 {
-	int MatchesFound = 0;
+//	int MatchesFound = 0;
 	SSReturnBuff[0]=0;
 	FileDebug( "Started Similar Image search" );
 

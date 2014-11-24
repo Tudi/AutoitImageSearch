@@ -4,5 +4,6 @@
 int GetStrHash( const char *str );
 int sqrt1( int N );
 __int64 sqrt1( __int64 N );
+void GetMaxDesktopResolution( int *Width, int *Height );
 
 #endif

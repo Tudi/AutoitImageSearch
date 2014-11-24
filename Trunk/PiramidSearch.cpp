@@ -203,9 +203,10 @@ int PiramidSearch( PiramidImage *Big, PiramidImage *Small, int *RetX, int *RetY,
 	*RSad = *GSad = *BSad = MAX_INT;
 
 	int BestRSad = MAX_INT;
+#if !defined( GENERATE_ONLY_R ) && !defined( MERGE_RGB_INTO_R )
 	int BestGSad = MAX_INT;
 	int BestBSad = MAX_INT;
-	int BestRefine = MAX_INT;
+#endif
 
 	//search in worst version only in R
 	int LayerStart = Small->LayersAvailable - 1;
@@ -262,15 +263,13 @@ int PiramidSearch( PiramidImage *Big, PiramidImage *Small, int *RetX, int *RetY,
 			for( int x = StartX; x < EndX; x++ )
 			{
 				int RSadNow = GetLocalSad( &Big->ImageLayers[RED_LAYER_INDEX][Layer][ y * Big->ImageLayersX[Layer] + x ], &Small->ImageLayers[RED_LAYER_INDEX][Layer][ 0 ], Big->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersY[Layer] );
-				int GSadNow = 0;
-				int BSadNow = 0;
 #ifdef MERGE_RGB_INTO_R
 				if( RSadNow <= BestRSad )
 #endif
 				{
 #if !defined( GENERATE_ONLY_R ) && !defined( MERGE_RGB_INTO_R )
-					GSadNow = GetLocalSad( &Big->ImageLayers[1][Layer][ y * Big->ImageLayersX[Layer] + x ], &Small->ImageLayers[1][Layer][ 0 ], Big->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersY[Layer] );
-					BSadNow = GetLocalSad( &Big->ImageLayers[2][Layer][ y * Big->ImageLayersX[Layer] + x ], &Small->ImageLayers[2][Layer][ 0 ], Big->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersY[Layer] );
+					int GSadNow = GetLocalSad( &Big->ImageLayers[1][Layer][ y * Big->ImageLayersX[Layer] + x ], &Small->ImageLayers[1][Layer][ 0 ], Big->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersY[Layer] );
+					int BSadNow = GetLocalSad( &Big->ImageLayers[2][Layer][ y * Big->ImageLayersX[Layer] + x ], &Small->ImageLayers[2][Layer][ 0 ], Big->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersX[Layer], Small->ImageLayersY[Layer] );
 					if( RSadNow + GSadNow + BSadNow <= BestRSad + BestGSad + BestBSad )
 //					if( RSadNow * RSadNow + GSadNow * GSadNow + BSadNow * BSadNow <= BestRSad * BestRSad + BestGSad * BestGSad + BestBSad * BestBSad )
 #endif
@@ -340,7 +339,6 @@ int PiramidSearch( PiramidImage *Big, PiramidImage *Small, int *RetX, int *RetY,
 char PSReturnBuff[DEFAULT_STR_BUFFER_SIZE*10];
 char * WINAPI SearchPiramidOnScreenshot( char *aImageFile )
 {
-	int MatchesFound = 0;
 	PSReturnBuff[0]=0;
 	FileDebug( "Started Similar Image search" );
 

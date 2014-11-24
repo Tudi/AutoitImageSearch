@@ -156,7 +156,7 @@ void DumpAsPPM( LPCOLORREF RGB, int Width, int Height, int Stride )
 		ImageFileAutoIncrement++;
 	}while( FileExists == TRUE );
 
-	char Black = 0;
+//	char Black = 0;
 	FILE *fp = fopen( MyFileName, "wb");
 	fprintf(fp, "P6\n%d %d\n255\n", Width, Height );
 	for( int y=0;y<Height;y++)
@@ -184,7 +184,7 @@ void DumpAsPPMBGR( LPCOLORREF BGR, int Width, int Height )
 		ImageFileAutoIncrement++;
 	}while( FileExists == TRUE );
 
-	char Black = 0;
+//	char Black = 0;
 	FILE *fp = fopen( MyFileName, "wb");
 	fprintf(fp, "P6\n%d %d\n255\n", Width, Height );
 	for( int y=0;y<Height;y++)

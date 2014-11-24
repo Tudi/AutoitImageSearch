@@ -21,6 +21,7 @@ public:
 	bool			IsDiffMap;	//width and height needs to be divided by 4
 	bool			NeedsSSCache;
 	bool			NeedsPSCache;
+	bool			NeedsAlphaRemoved;
 	SimilarSearch	*SSCache;
 	PiramidImage	*PSCache;
 
@@ -64,5 +65,7 @@ public:
 extern LIBRARY_API ScreenshotStruct ScreenshotCache[NR_SCREENSHOTS_CACHED];
 extern LIBRARY_API ScreenshotStruct	*CurScreenshot, *PrevScreenshot;
 extern LIBRARY_API int ScreenshotStoreIndex;
+
+void RemoveScreenshotAlphaChannel( ScreenshotStruct *cache );
 
 #endif

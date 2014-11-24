@@ -179,7 +179,8 @@ LPCOLORREF getbits(HBITMAP ahImage, HDC hdc, LONG &aWidth, LONG &aHeight, bool &
 	aHeight = bmi.bmiHeader.biHeight;
 
 	int image_pixel_count = aWidth * aHeight;
-	if (   !(image_pixel = (LPCOLORREF)_aligned_malloc( image_pixel_count * sizeof(COLORREF) + SSE_PADDING, SSE_ALIGNMENT ) )  )
+	image_pixel = (LPCOLORREF)_aligned_malloc( image_pixel_count * sizeof(COLORREF) + SSE_PADDING, SSE_ALIGNMENT );
+	if( !image_pixel )
 		goto end;
 
 	// v1.0.40.10: To preserve compatibility with callers who check for transparency in icons, don't do any
@@ -591,7 +592,7 @@ HBITMAP LoadPicture(char *aFilespec, int aWidth, int aHeight, int &aImageType, i
 		}
 	}
 
-	;int test=LR_COPYRETURNORG;
+//	;int test=LR_COPYRETURNORG;
 
 	HBITMAP hbitmap_new; // To hold the scaled image (if scaling is needed).
 	if (pic) // IPicture method was used.

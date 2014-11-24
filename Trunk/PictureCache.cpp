@@ -161,3 +161,13 @@ void WINAPI MoveScreenshotToCache( char *Name )
 
 	FileDebug( "\tFinished caching screenshot" );
 }
+
+void RemoveCacheAlphaChannel( CachedPicture *cache )
+{
+	if( ( cache->Pixels[ 0 ] & 0xFF000000 ) != 0 )
+	{
+		int PixelCount = cache->Width * cache->Height;
+		for( int i=0;i<PixelCount;i++)
+			cache->Pixels[ i ] = cache->Pixels[ i ] & 0x00FFFFFF;
+	}
+}

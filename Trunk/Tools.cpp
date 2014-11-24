@@ -120,3 +120,11 @@ THELOOP:
 	}
 	return a;
 }
+
+void GetMaxDesktopResolution( int *Width, int *Height )
+{
+   RECT desktop;
+   GetWindowRect( GetDesktopWindow(), &desktop );
+   *Width = desktop.right;
+   *Height = desktop.bottom;
+}

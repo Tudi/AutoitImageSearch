@@ -29,6 +29,7 @@ int GetCacheIndex( char *aFilespec );
 CachedPicture *CachePicture( char *aFilespec );
 void CheckPrepareToleranceMaps( CachedPicture *cache, int NewTolerance, int TransparentColor );
 void WINAPI MoveScreenshotToCache( char *Name );
+void RemoveCacheAlphaChannel( CachedPicture *cache );
 
 extern LIBRARY_API CachedPicture PictureCache[MAX_PICTURE_CACHE_COUNT];
 extern LIBRARY_API int NrPicturesCached;
