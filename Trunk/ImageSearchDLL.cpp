@@ -49,6 +49,7 @@ void main()
 //	RunSimilarSearchBenchmark(); // 302 fps is the setup and 131 fps is the search on my pc
 //	RunPiramidSearchBenchmark(); // 151 fps is the setup and 600 fps is the search on my pc
 //	RunEdgeDetectBenchmark(); // 62 fps / 15 fps 
+//	_getch();
 #endif
 
 /*	{
@@ -77,7 +78,7 @@ void main()
 		TakeScreenshot( 1709, 1139, 1709 + 7, 1139 + 23 );
 		//SaveScreenshot();
 	}/**/
-	{
+/*	{
 		_getch();
 		TakeScreenshot( 0, 0, 2000, 2000 );
 		char *res;
@@ -86,6 +87,25 @@ void main()
 		for( int i = 0; i < 1000; i++ )
 		{
 			TakeScreenshot( 1709, 1139, 1709 + 7, 1139 + 23 );
+			res = IsAnythingChanced( 0, 0, 7, 23 );
+			if( res[0] != '0' )
+			{
+				res[0] = '1';
+			}
+		}
+		int End = GetTickCount();
+		printf("result of search benchmarking : %d %d FPS\n", End - Start, 1000 * 1000 / ( End - Start + 1 ) );
+		_getch();
+	}/**/
+	{
+		_getch();
+		TakeScreenshot( 100, 100, 1500, 800 );
+		char *res;
+		res = ImageSearchOnScreenshotBest( "bobber_try2.bmp" );
+		int Start = GetTickCount();
+		for( int i = 0; i < 1; i++ )
+		{
+			TakeScreenshot( 100,100, 1500, 800 );
 			res = IsAnythingChanced( 0, 0, 7, 23 );
 			if( res[0] != '0' )
 			{

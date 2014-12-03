@@ -9,7 +9,7 @@
 //what it does : shrinks so image is replicated in every pixel.
 
 #define REMINDER_TO_FINISH_IMPLEMENTING_MULTI_BLOCKS	1
-#define SS_SUM_RGB
+//#define SS_SUM_RGB
 //you can find a simple texture in so many places :(
 //#define ADD_COLOR_LOCALIZATION_SIMPLESUM	1
 //#define ADD_COLOR_LOCALIZATION_4x4	1
@@ -50,8 +50,9 @@ enum SS_SEARCH_TYPES
 {
 	SS_SEARCH_TYPE_START = 0,
 	SS_SEARCH_TYPE_BUGGED_LINKED_PIXELS = 1,
-	SS_SEARCH_TYPE_SUMMED_PIXELS = 2,
+	SS_SEARCH_TYPE_LINKED_SUMMED_PIXELS2 = 2,
 	SS_SEARCH_TYPE_LINKED_SUMMED_PIXELS = 3,
+	SS_SEARCH_TYPE_SUMMED_PIXELS = 4,
 	SS_SEARCH_TYPE_END,
 };
 

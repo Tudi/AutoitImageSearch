@@ -23,5 +23,7 @@ EXPORTS
 	SaveEdgeMap
 	RegisterOCRFont
 	ReadTextFromScreenshot
+	ImageSearchOnScreenshotBest
+	ImageSearchOnScreenshotBestTransparent
 	
 	

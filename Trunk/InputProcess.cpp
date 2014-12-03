@@ -474,6 +474,229 @@ docleanupandreturn2:
 	return ReturnBuff;
 }
 
+char* WINAPI ImageSearchOnScreenshotBest( char *aFilespec )
+{
+	char ReturnBuff2[DEFAULT_STR_BUFFER_SIZE*10];
+	int MatchesFound = 0;
+	ReturnBuff[0]=0;
+	ReturnBuff2[0]=0;
+	FileDebug( "Started Image search" );
+	CachedPicture *cache = CachePicture( aFilespec );
+	if( cache == NULL )
+	{
+		FileDebug( "Skipping Image search as image could not be loaded" );
+		return "";
+	}
+	if( cache->Pixels == NULL )
+	{
+		FileDebug( "Skipping Image search as image pixels are missing" );
+		return "";
+	}
+	if( CurScreenshot->Pixels == NULL )
+	{
+		FileDebug( "Skipping Image search no screenshot is available" );
+		return "";
+	}
+
+	int Width = CurScreenshot->Right - CurScreenshot->Left;
+	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
+
+	int retx = -1;
+	int rety = -1;
+	unsigned int BestSAD = 0x7FFFFFFF;
+	{
+//DumpAsPPM( MinMap[0], MinMap[1], MinMap[2], cache->Width, cache->Height );
+//DumpAsPPM( &CurScreenshot->Pixels[ 40 * Width + 40 ], 40, 40, Width );
+//DumpAsPPM( MaxMap[0], MaxMap[1], MaxMap[2], cache->Width, cache->Height );
+		for( int y = 0; y < Height - cache->Height; y +=1 )
+		{
+			for( int x = 0; x < Width - cache->Width; x += 1 )
+			{
+/*				int RDiffSum = 0;
+				int GDiffSum = 0;
+				int BDiffSum = 0;
+
+//				int pixelcount1 = 0;
+				for( int y2=0;y2<cache->Height;y2++ )
+				{
+					LPCOLORREF AddrBig = &CurScreenshot->Pixels[ ( y + y2 ) * Width + x ];
+					LPCOLORREF AddSmall = &cache->Pixels[ ( 0 + y2 ) * cache->Width + 0 ];
+//					for( int x2=0;x2<cache->Width;x2++)
+					for( int x2=0;x2<(cache->Width & ~0x03);x2++)
+					{
+						COLORREF BGRDst = AddSmall[ x2 ];
+						if( BGRDst == TransparentColor )
+							continue;
+
+						COLORREF BGRSrc = AddrBig[ x2 ];
+
+						int RDiff = ( ( BGRSrc & 0x0000FF ) >> 0  ) - ( ( BGRDst & 0x0000FF ) >> 0  );
+						int GDiff = ( ( BGRSrc & 0x00FF00 ) >> 8  ) - ( ( BGRDst & 0x00FF00 ) >> 8  );
+						int BDiff = ( ( BGRSrc & 0xFF0000 ) >> 16 ) - ( ( BGRDst & 0xFF0000 ) >> 16 );
+
+						RDiff = abs( RDiff ) ;
+						GDiff = abs( GDiff ) ;
+						BDiff = abs( BDiff ) ;
+
+						RDiffSum += RDiff;
+						GDiffSum += GDiff;
+						BDiffSum += BDiff;
+//						pixelcount1++;
+					}
+				} 
+				sad = RDiffSum + GDiffSum + BDiffSum;
+				*/
+
+//				int pixelcount2 = 0;
+				unsigned int sad_array[4];
+				__m128i l0, l1, line_sad, acc_sad, alpha_mask;
+
+				acc_sad = _mm_setzero_si128();
+				alpha_mask = _mm_setzero_si128();
+
+				alpha_mask.m128i_u32[0] = 0x00FFFFFF;
+				alpha_mask.m128i_u32[1] = 0x00FFFFFF;
+				alpha_mask.m128i_u32[2] = 0x00FFFFFF;
+				alpha_mask.m128i_u32[3] = 0x00FFFFFF;
+
+				for( int y2=0;y2<cache->Height;y2++ )
+				{
+					LPCOLORREF AddrBig = &CurScreenshot->Pixels[ ( y + y2 ) * Width + x ];
+					LPCOLORREF AddSmall = &cache->Pixels[ ( 0 + y2 ) * cache->Width + 0 ];
+					for( int x2=0;x2<(cache->Width & ~0x03); x2+= 4 )
+//					for( int x2=0;x2<4;x2+=4)
+					{
+//assert( ( AddrBig[0] & 0xFF000000 ) == 0 && ( AddrBig[1] & 0xFF000000 ) == 0 && ( AddrBig[2] & 0xFF000000 ) == 0 && ( AddrBig[3] & 0xFF000000 ) == 0 );
+//assert( ( AddSmall[0] & 0xFF000000 ) == 0 && ( AddSmall[1] & 0xFF000000 ) == 0 && ( AddSmall[2] & 0xFF000000 ) == 0 && ( AddSmall[3] & 0xFF000000 ) == 0 );
+						l0 = _mm_loadu_si128((__m128i*)AddrBig);
+						l0 = _mm_and_si128( l0, alpha_mask );
+						l1 = _mm_loadu_si128((__m128i*)AddSmall);
+						line_sad = _mm_sad_epu8( l0, l1 );
+						acc_sad = _mm_add_epi32( acc_sad, line_sad );
+
+						AddrBig += 4;
+						AddSmall += 4;
+//						pixelcount2 += 4;
+					}
+				}
+
+				_mm_storeu_si128((__m128i*)(&sad_array[0]), acc_sad);
+
+				unsigned int sad = sad_array[0]+sad_array[2];
+
+//				assert( sad == RDiffSum + GDiffSum + BDiffSum );
+
+				if( BestSAD > sad )
+				{
+					BestSAD = sad;
+					retx = x + CurScreenshot->Left;
+					rety = y + CurScreenshot->Top;
+					//exact match ? I doubt it will ever happen...
+					if( BestSAD == 0 )
+						goto docleanupandreturn;
+				}
+			}
+		}
+docleanupandreturn:
+			if( MatchesFound == 0 )
+				FileDebug( "\t Image search found no matches" );
+	}
+
+	sprintf_s( ReturnBuff, DEFAULT_STR_BUFFER_SIZE*10, "1|%d|%d|%d", retx, rety, BestSAD );
+	FileDebug( "\tImage search finished" );
+	return ReturnBuff;
+}
+
+char* WINAPI ImageSearchOnScreenshotBestTransparent( char *aFilespec )
+{
+	char ReturnBuff2[DEFAULT_STR_BUFFER_SIZE*10];
+	int MatchesFound = 0;
+	ReturnBuff[0]=0;
+	ReturnBuff2[0]=0;
+	FileDebug( "Started Image search" );
+	CachedPicture *cache = CachePicture( aFilespec );
+	if( cache == NULL )
+	{
+		FileDebug( "Skipping Image search as image could not be loaded" );
+		return "";
+	}
+	if( cache->Pixels == NULL )
+	{
+		FileDebug( "Skipping Image search as image pixels are missing" );
+		return "";
+	}
+	if( CurScreenshot->Pixels == NULL )
+	{
+		FileDebug( "Skipping Image search no screenshot is available" );
+		return "";
+	}
+
+	int Width = CurScreenshot->Right - CurScreenshot->Left;
+	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
+
+	int retx = -1;
+	int rety = -1;
+	unsigned int BestSAD = 0x7FFFFFFF;
+	unsigned int TransparentColor = 0x00FFFFFF;
+	{
+//DumpAsPPM( MinMap[0], MinMap[1], MinMap[2], cache->Width, cache->Height );
+//DumpAsPPM( &CurScreenshot->Pixels[ 40 * Width + 40 ], 40, 40, Width );
+//DumpAsPPM( MaxMap[0], MaxMap[1], MaxMap[2], cache->Width, cache->Height );
+		for( int y = 0; y < Height - cache->Height; y +=1 )
+		{
+			for( int x = 0; x < Width - cache->Width; x += 1 )
+			{
+				int RDiffSum = 0;
+				int GDiffSum = 0;
+				int BDiffSum = 0;
+
+				for( int y2=0;y2<cache->Height;y2++ )
+				{
+					LPCOLORREF AddrBig = &CurScreenshot->Pixels[ ( y + y2 ) * Width + x ];
+					LPCOLORREF AddSmall = &cache->Pixels[ ( 0 + y2 ) * cache->Width + 0 ];
+					for( int x2=0;x2<cache->Width;x2++)
+					{
+						COLORREF BGRDst = AddSmall[ x2 ];
+						if( BGRDst == TransparentColor )
+							continue;
+
+						COLORREF BGRSrc = AddrBig[ x2 ];
+
+						int RDiff = ( ( BGRSrc & 0x0000FF ) >> 0  ) - ( ( BGRDst & 0x0000FF ) >> 0  );
+						int GDiff = ( ( BGRSrc & 0x00FF00 ) >> 8  ) - ( ( BGRDst & 0x00FF00 ) >> 8  );
+						int BDiff = ( ( BGRSrc & 0xFF0000 ) >> 16 ) - ( ( BGRDst & 0xFF0000 ) >> 16 );
+
+						RDiff = abs( RDiff ) ;
+						GDiff = abs( GDiff ) ;
+						BDiff = abs( BDiff ) ;
+
+						RDiffSum += RDiff;
+						GDiffSum += GDiff;
+						BDiffSum += BDiff;
+					}
+				} 
+				unsigned int sad = RDiffSum + GDiffSum + BDiffSum;
+				if( BestSAD > sad )
+				{
+					BestSAD = sad;
+					retx = x + CurScreenshot->Left;
+					rety = y + CurScreenshot->Top;
+					//exact match ? I doubt it will ever happen...
+					if( BestSAD == 0 )
+						goto docleanupandreturn;
+				}
+			}
+		}
+docleanupandreturn:
+			if( MatchesFound == 0 )
+				FileDebug( "\t Image search found no matches" );
+	}
+
+	sprintf_s( ReturnBuff, DEFAULT_STR_BUFFER_SIZE*10, "1|%d|%d|%d", retx, rety, BestSAD );
+	FileDebug( "\tImage search finished" );
+	return ReturnBuff;
+}
+
 char* WINAPI GetImageSize( char *aImageFile )
 {
 	CachedPicture *cache = CachePicture( aImageFile );

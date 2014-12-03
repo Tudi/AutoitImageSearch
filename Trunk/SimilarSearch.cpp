@@ -5,7 +5,7 @@ LIBRARY_API int SimilarSearchGroupingSizeX = 1024;
 LIBRARY_API int SimilarSearchGroupingSizeY = 1024;
 LIBRARY_API int SimilarSearchResizeStep = 1;
 LIBRARY_API int SimilarSearchLinkSize = 0;
-LIBRARY_API int SimilarSearchSearchType = SS_SEARCH_TYPE_LINKED_SUMMED_PIXELS;
+LIBRARY_API int SimilarSearchSearchType = SS_SEARCH_TYPE_SUMMED_PIXELS;
 LIBRARY_API int SimilarSearchOnlySearchOnDiffMask = 0;
 
 void WINAPI SetupSimilarSearch( int MaxImageSize, int DownScale, int SearchType, int OnlyAtDiffMask )
@@ -55,7 +55,31 @@ void GetPictureSumAtLoc( LPCOLORREF Pixels, int Width, int Height, int Stride, i
 		FileDebug( "!Warning : values might overflow !" );
 	}
 
-	if( SimilarSearchSearchType == SS_SEARCH_TYPE_BUGGED_LINKED_PIXELS )
+	if( SimilarSearchSearchType == SS_SEARCH_TYPE_SUMMED_PIXELS )
+	{
+		assert( G != NULL && B != NULL );
+		int ShiftedRSum = 0;
+		int ShiftedGSum = 0;
+		int ShiftedBSum = 0;
+		for( int y=0;y<Height;y+=1)
+		{
+			LPCOLORREF PixelsRow1 = &Pixels[ y * Stride ];
+			for( int x=0;x<Width;x+=1)
+			{
+				int Pixel1 = PixelsRow1[ x ];
+				ShiftedRSum += ( Pixel1 & 0x000000FF );
+				ShiftedGSum += ( Pixel1 & 0x0000FF00 );
+				ShiftedBSum += ( ( Pixel1 & 0x00FF0000 ) >> 16 );	
+			}
+		}/**/
+		ShiftedRSum = ShiftedRSum;
+		ShiftedGSum = ShiftedGSum >> 8;
+		ShiftedBSum = ShiftedBSum >> 0;
+		R[0] += (int)( ShiftedRSum );
+		G[0] += (int)( ShiftedGSum );
+		B[0] += (int)( ShiftedBSum );
+	}
+	else if( SimilarSearchSearchType == SS_SEARCH_TYPE_BUGGED_LINKED_PIXELS )
 	{
 		//this makes no sense for similarity test. Links 2 pixels to be 1 pixel but you can not use SAD to guess if it is better or not
 		for( int y=0;y<Height;y+=SimilarSearchResizeStep)
@@ -66,7 +90,7 @@ void GetPictureSumAtLoc( LPCOLORREF Pixels, int Width, int Height, int Stride, i
 				R[0] += (int)sqrt( MyMul );
 			}/**/
 	}
-	else if( SimilarSearchSearchType == SS_SEARCH_TYPE_SUMMED_PIXELS )
+	else if( SimilarSearchSearchType == SS_SEARCH_TYPE_LINKED_SUMMED_PIXELS2 )
 	{
 		// can not differentiate textures, only luminosity of a pixel
 		for( int y=0;y<Height;y+=SimilarSearchResizeStep)
@@ -519,14 +543,19 @@ __forceinline int GetImageScoreAtLoc( SimilarSearch *SearchIn, SimilarSearch *Se
 double GetImageScoreAtLoc( SimilarSearch *SearchIn, SimilarSearch *SearchFor, int x, int y )
 {
 #ifndef IMPLEMENTING_MULTI_BLOCKS
-	int RDiff = SearchIn->R[ y * SearchIn->Width + x ] - SearchFor->R[ 0 ];
-	int GDiff = SearchIn->G[ y * SearchIn->Width + x ] - SearchFor->G[ 0 ];
-	int BDiff = SearchIn->B[ y * SearchIn->Width + x ] - SearchFor->B[ 0 ];
+	int index = y * SearchIn->Width + x;
+	int RDiff = SearchIn->R[ index ] - SearchFor->R[ 0 ];
+	int GDiff = SearchIn->G[ index ] - SearchFor->G[ 0 ];
+	int BDiff = SearchIn->B[ index ] - SearchFor->B[ 0 ];
+	RDiff |= 1;
+	GDiff |= 1;
+	BDiff |= 1;
 #endif
 	double RD = RDiff;
 	double GD = GDiff;
 	double BD = BDiff;
-	double diff = RD * GD * BD;
+//	double diff = RD * GD * BD;
+	double diff = RD * RD + GD * GD + BD * BD;
 	if( diff < 0 )
 		diff = -diff;
 	return diff;
@@ -755,8 +784,8 @@ char * WINAPI SearchSimilarOnScreenshot( char *aImageFile )
 	trety += CurScreenshot->Top;
 
 	//calculate middle of the image
-	tretx += cache->Width / 2;
-	trety += cache->Height / 2;
+//	tretx += cache->Width / 2;
+//	trety += cache->Height / 2;
 
 	sprintf_s( SSReturnBuff, DEFAULT_STR_BUFFER_SIZE*10, "1|%d|%d|%d",tretx,trety,pixelscore);
 	FileDebug( "\tFinished Similar Image search" );

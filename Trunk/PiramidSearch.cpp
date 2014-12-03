@@ -379,6 +379,14 @@ char * WINAPI SearchPiramidOnScreenshot( char *aImageFile )
 	PiramidSearch( CurScreenshot->PSCache, cache->PSCache, &retx, &rety, &retrsad, &retgsad, &retbsad, 0 );
 //	PiramidSearch( CurScreenshot->PSCache, cache->PSCache, &retx, &rety, &retrsad, &retgsad, &retbsad, 0, 0 );	//image to image search
 
+	//calculate absolute positioning
+	retx += CurScreenshot->Left;
+	rety += CurScreenshot->Top;
+
+	//calculate middle of the image
+//	tretx += cache->Width / 2;
+//	trety += cache->Height / 2;
+
 //	TakeScreenshot( retx, rety, retx + 150 , rety + 150 );	//for me this is black box on black screen search ... worst case
 //	SaveScreenshot();
 
