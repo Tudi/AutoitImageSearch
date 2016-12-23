@@ -21,7 +21,9 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 		CurScreenshot = &ScreenshotCache[ 0 ];
 		PrevScreenshot = &ScreenshotCache[ 1 ];
 		NrPicturesCached = 0;
-		FileDebug( "=================================================" );
+		//start precise counter
+		StartCounter();
+		FileDebug("=================================================");
 	}
 	else if( ul_reason_for_call == DLL_PROCESS_DETACH )
 	{
@@ -83,7 +85,7 @@ void main()
 		TakeScreenshot( 0, 0, 2000, 2000 );
 		char *res;
 		res = ImageSearchOnScreenshot( "Resync.bmp", 0x01000000, 0, 0, 1 );
-		int Start = GetTickCount();
+		int Start = GetTimeTickI();
 		for( int i = 0; i < 1000; i++ )
 		{
 			TakeScreenshot( 1709, 1139, 1709 + 7, 1139 + 23 );
@@ -93,7 +95,7 @@ void main()
 				res[0] = '1';
 			}
 		}
-		int End = GetTickCount();
+		int End = GetTimeTickI();
 		printf("result of search benchmarking : %d %d FPS\n", End - Start, 1000 * 1000 / ( End - Start + 1 ) );
 		_getch();
 	}/**/
@@ -102,7 +104,7 @@ void main()
 		TakeScreenshot( 100, 100, 1500, 800 );
 		char *res;
 		res = ImageSearchOnScreenshotBest( "bobber_try2.bmp" );
-		int Start = GetTickCount();
+		int Start = GetTimeTickI();
 		for( int i = 0; i < 1; i++ )
 		{
 			TakeScreenshot( 100,100, 1500, 800 );
@@ -112,7 +114,7 @@ void main()
 				res[0] = '1';
 			}
 		}
-		int End = GetTickCount();
+		int End = GetTimeTickI();
 		printf("result of search benchmarking : %d %d FPS\n", End - Start, 1000 * 1000 / ( End - Start + 1 ) );
 		_getch();
 	}/**/

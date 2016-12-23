@@ -8,9 +8,9 @@ int StartTickCount = 0;
 	{
 		if( StartTickCount == 0 )
 		{
-			PrevTickCount = StartTickCount = GetTickCount();
+			PrevTickCount = StartTickCount = GetTimeTickI();
 		}
-		int TickNow = GetTickCount();
+		int TickNow = GetTimeTickI();
 		int Diff = TickNow - PrevTickCount;
 		PrevTickCount = TickNow;
 		FILE *f = fopen( "debug.txt", "at" );

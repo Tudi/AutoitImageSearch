@@ -111,7 +111,10 @@ end:
 
 void WINAPI TakeScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 {
-	FileDebug( "Started taking the screenshot" );
+	char TBuff[2000];
+	sprintf_s(TBuff, sizeof(TBuff), "Started taking the screenshot [%d,%d][%d,%d]", aLeft, aTop, aRight, aBottom);
+	FileDebug(TBuff);
+
 	CycleScreenshots();
 	ReleaseScreenshot();
 	TakeNewScreenshot( aLeft, aTop, aRight, aBottom );
@@ -768,5 +771,30 @@ void RemoveScreenshotAlphaChannel( ScreenshotStruct *cache )
 		int PixelCount = cache->GetWidth() * cache->GetHeight();
 		for( int i=0;i<PixelCount;i++)
 			cache->Pixels[ i ] = cache->Pixels[ i ] & 0x00FFFFFF;
+	}
+}
+
+void DecreaseColorPrecision(ScreenshotStruct *cache, unsigned int Div, unsigned int And)
+{
+	int PixelCount = cache->GetWidth() * cache->GetHeight();
+	for (int i = 0; i < PixelCount; i++)
+	{
+		int Colors[3];
+		Colors[0] = GetRValue(cache->Pixels[i]);
+		Colors[1] = GetGValue(cache->Pixels[i]);
+		Colors[2] = GetBValue(cache->Pixels[i]);
+		if (Div != 0)
+		{
+			Colors[0] = Colors[0] / Div;
+			Colors[1] = Colors[1] / Div;
+			Colors[2] = Colors[2] / Div;
+		}
+		if (And != 0)
+		{
+			Colors[0] = Colors[0] & And;
+			Colors[1] = Colors[1] & And;
+			Colors[2] = Colors[2] & And;
+		}
+		cache->Pixels[i] = RGB(Colors[0], Colors[1], Colors[2]);
 	}
 }

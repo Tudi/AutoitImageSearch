@@ -60,6 +60,10 @@ public:
 		}
 		return Pixels[ y * ( Right - Left ) + x ];
 	}
+	__forceinline void	SetPixel(int x, int y, COLORREF NewColor)
+	{
+		Pixels[y * (Right - Left) + x] = NewColor;
+	}
 };
 
 #define NR_SCREENSHOTS_CACHED	2
@@ -67,7 +71,9 @@ public:
 extern LIBRARY_API ScreenshotStruct ScreenshotCache[NR_SCREENSHOTS_CACHED];
 extern LIBRARY_API ScreenshotStruct	*CurScreenshot, *PrevScreenshot;
 extern LIBRARY_API int ScreenshotStoreIndex;
+extern LIBRARY_API char ReturnBuff[DEFAULT_STR_BUFFER_SIZE * 10];
 
 void RemoveScreenshotAlphaChannel( ScreenshotStruct *cache );
+void DecreaseColorPrecision(ScreenshotStruct *cache, unsigned int Div, unsigned int And);
 
 #endif

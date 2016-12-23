@@ -76,6 +76,7 @@
 #include "PiramidSearch.h"
 #include "SimilarSearch.h"
 #include "OCR.h"
+#include "UniquePixelPairSearch.h"
 
 #ifdef _CONSOLE
 	#include "Benchmarks/Benchmarks.h"

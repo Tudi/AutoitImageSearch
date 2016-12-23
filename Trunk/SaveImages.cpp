@@ -199,3 +199,103 @@ void DumpAsPPMBGR( LPCOLORREF BGR, int Width, int Height )
 	}
 	fclose(fp);
 }
+
+void WINAPI SaveScreenshotCutTransparent()
+{
+	FileDebug("Started saving the screenshot");
+
+	if (CurScreenshot->Pixels == NULL)
+	{
+		FileDebug("WARNING:Screenshot buffer is null when trying to save it to file!");
+		return;
+	}
+	int CountRowsStartTransparent = 0;
+	int CountRowsEndTransparent = 0;
+	int CountColsStartTransparent = 0;
+	int CountColsEndTransparent = 0;
+	COLORREF TransparentColor = 0x00FFFFFF;
+	//detect rows at the beginning that are transparent
+	for (int i = 0; i < CurScreenshot->GetHeight(); i++)
+	{
+		int IsRowTransparent = 1;
+		for (int j = 0; j < CurScreenshot->GetWidth(); j++)
+			if (CurScreenshot->GetPixel(j, i) != TransparentColor)
+			{
+				IsRowTransparent = 0;
+				break;
+			}
+		if (IsRowTransparent == 0)
+			break;
+		CountRowsStartTransparent++;
+	}
+	//detect rows at the end that are transparent
+	for (int i = CurScreenshot->GetHeight() - 1; i > CountRowsStartTransparent; i--)
+	{
+		int IsRowTransparent = 1;
+		for (int j = 0; j < CurScreenshot->GetWidth(); j++)
+			if (CurScreenshot->GetPixel(j, i) != TransparentColor)
+			{
+				IsRowTransparent = 0;
+				break;
+			}
+		if (IsRowTransparent == 0)
+			break;
+		CountRowsEndTransparent++;
+	}
+	//detect columns at the beginning that are transparent
+	for (int i = 0; i < CurScreenshot->GetWidth(); i++)
+	{
+		int IsColTransparent = 1;
+		for (int j = 0; j < CurScreenshot->GetHeight(); j++)
+			if (CurScreenshot->GetPixel(i, j) != TransparentColor)
+			{
+				IsColTransparent = 0;
+				break;
+			}
+		if (IsColTransparent == 0)
+			break;
+		CountColsStartTransparent++;
+	}
+	//detect columns at the end that are transparent
+	for (int i = CurScreenshot->GetWidth() - 1; i > CountColsStartTransparent; i--)
+	{
+		int IsColTransparent = 1;
+		for (int j = 0; j < CurScreenshot->GetHeight(); j++)
+			if (CurScreenshot->GetPixel(i, j) != TransparentColor)
+			{
+				IsColTransparent = 0;
+				break;
+			}
+		if (IsColTransparent == 0)
+			break;
+		CountColsEndTransparent++;
+	}
+
+	int Width = CurScreenshot->Right - CurScreenshot->Left - CountColsStartTransparent - CountColsEndTransparent;
+	int Height = CurScreenshot->Bottom - CurScreenshot->Top - CountRowsStartTransparent - CountRowsEndTransparent;
+	//find an available file name
+	char MyFileName[DEFAULT_STR_BUFFER_SIZE];
+	BOOL FileExists;
+	do {
+		sprintf_s(MyFileName, DEFAULT_STR_BUFFER_SIZE, "Screenshot_%04d_%04d_%04d.bmp", ImageFileAutoIncrement, Width, Height);
+		FileExists = (_access(MyFileName, 0) == 0);
+		ImageFileAutoIncrement++;
+	} while (FileExists == TRUE);
+
+	FileDebug("chosen filename is :");
+	FileDebug(MyFileName);
+
+	//create a bitmap and populate pixels on it
+	CImage Img;
+	Img.Create(Width, Height, 32);
+
+	unsigned char *Pixels = (unsigned char*)CurScreenshot->Pixels;
+	for (int y = 0; y < Height; y += 1)
+		for (int x = 0; x < Width; x += 1)
+		{
+			COLORREF Pixel = CurScreenshot->GetPixel(CountColsStartTransparent + x, CountRowsStartTransparent + y);
+			Img.SetPixel(x, y, RGB(GetBValue(Pixel), GetGValue(Pixel), GetRValue(Pixel)));
+		}
+
+	Img.Save(MyFileName);
+}

@@ -25,5 +25,10 @@ EXPORTS
 	ReadTextFromScreenshot
 	ImageSearchOnScreenshotBest
 	ImageSearchOnScreenshotBestTransparent
+	TakeScreenshotDetectUniquePixelsInitial
+	TakeScreenshotKeepUniquePixels
+	TakeScreenshotRemoveDynamicPixels
+	SaveScreenshotUniqueFeatures
+	ImageSearchOnScreenshotUniqueFeatures
 	
 	
