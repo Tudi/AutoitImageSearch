@@ -28,6 +28,7 @@ EXPORTS
 	TakeScreenshotDetectUniquePixelsInitial
 	TakeScreenshotKeepUniquePixels
 	TakeScreenshotRemoveDynamicPixels
+	TakeScreenshotRemoveDynamicPixelsAutoPosition
 	SaveScreenshotUniqueFeatures
 	ImageSearchOnScreenshotUniqueFeatures
 	

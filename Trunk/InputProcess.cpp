@@ -127,7 +127,7 @@ void WINAPI TakeScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 }
 
 char ReturnBuff[DEFAULT_STR_BUFFER_SIZE*10];
-char* WINAPI ImageSearchOnScreenshot( char *aFilespec, int TransparentColor, int AcceptedColorDiff, int AcceptedErrorCount, int StopAfterNMatches )
+char* WINAPI ImageSearchOnScreenshot( char *aFilespec, int TransparentColor, int AcceptedColorDiff, int AcceptedErrorCount, int StopAfterNFullMatches )
 {
 	char ReturnBuff2[DEFAULT_STR_BUFFER_SIZE*10];
 	int MatchesFound = 0;
@@ -214,7 +214,7 @@ AbandonIMageInImageSearch:
 						sprintf_s( ReturnBuff2, DEFAULT_STR_BUFFER_SIZE*10, "%s|%d|%d", ReturnBuff2, CurScreenshot->Left + x, CurScreenshot->Top + y );
 					FileDebug( ReturnBuff2 );
 					MatchesFound++;
-					if( MatchesFound >= StopAfterNMatches )
+					if( MatchesFound >= StopAfterNFullMatches )
 						goto docleanupandreturn;
 				}
 			}
@@ -227,7 +227,7 @@ docleanupandreturn:
 	{
 		RemoveCacheAlphaChannel( cache );
 		RemoveScreenshotAlphaChannel( CurScreenshot );
-		if( TransparentColor > 0x00FFFFFF && AcceptedErrorCount == 0 && StopAfterNMatches == 1 )
+		if( TransparentColor > 0x00FFFFFF && AcceptedErrorCount == 0 && StopAfterNFullMatches == 1 )
 		{
 			for( int y = 0; y < Height - cache->Height; y +=1 )
 				for( int x = 0; x < Width - cache->Width; x += 1 )
@@ -293,7 +293,7 @@ AbandonIMageInImageSearch2:
 						sprintf_s( ReturnBuff2, DEFAULT_STR_BUFFER_SIZE*10, "%s|%d|%d", ReturnBuff2, CurScreenshot->Left + x, CurScreenshot->Top + y );
 						FileDebug( ReturnBuff2 );
 						MatchesFound++;
-						if( MatchesFound >= StopAfterNMatches )
+						if( MatchesFound >= StopAfterNFullMatches )
 							goto docleanupandreturn2;
 					}
 				}
@@ -306,7 +306,7 @@ docleanupandreturn2:
 	return ReturnBuff;
 }
 
-char* WINAPI ImageSearchOnScreenshotMasked( char *aFilespec, char *MaskFile, int TransparentColor, int AcceptedColorDiff, int AcceptedErrorCount, int StopAfterNMatches )
+char* WINAPI ImageSearchOnScreenshotMasked( char *aFilespec, char *MaskFile, int TransparentColor, int AcceptedColorDiff, int AcceptedErrorCount, int StopAfterNFullMatches )
 {
 	char ReturnBuff2[DEFAULT_STR_BUFFER_SIZE*10];
 	int MatchesFound = 0;
@@ -418,7 +418,7 @@ AbandonIMageInImageSearch:
 					sprintf_s( ReturnBuff2, DEFAULT_STR_BUFFER_SIZE*10, "%s|%d|%d", ReturnBuff2, CurScreenshot->Left + x, CurScreenshot->Top + y );
 					FileDebug( ReturnBuff2 );
 					MatchesFound++;
-					if( MatchesFound >= StopAfterNMatches )
+					if( MatchesFound >= StopAfterNFullMatches )
 						goto docleanupandreturn;
 				}
 			}
@@ -466,7 +466,7 @@ AbandonIMageInImageSearch2:
 					sprintf_s( ReturnBuff2, DEFAULT_STR_BUFFER_SIZE*10, "%s|%d|%d", ReturnBuff2, CurScreenshot->Left + x, CurScreenshot->Top + y );
 					FileDebug( ReturnBuff2 );
 					MatchesFound++;
-					if( MatchesFound >= StopAfterNMatches )
+					if( MatchesFound >= StopAfterNFullMatches )
 						goto docleanupandreturn2;
 				}
 			}
@@ -794,6 +794,29 @@ void DecreaseColorPrecision(ScreenshotStruct *cache, unsigned int Div, unsigned 
 			Colors[0] = Colors[0] & And;
 			Colors[1] = Colors[1] & And;
 			Colors[2] = Colors[2] & And;
+		}
+		cache->Pixels[i] = RGB(Colors[0], Colors[1], Colors[2]);
+	}
+}
+
+void DecreaseColorCount(ScreenshotStruct *cache, unsigned int ColorsPerChannel)
+{
+	int PixelCount = cache->GetWidth() * cache->GetHeight();
+	int ColorStep = 255 / ColorsPerChannel; // only valid for 8bpp. Which we intend ot use
+	int ColorStepHalf = ColorStep / 2; // because we use rounding
+	for (int i = 0; i < PixelCount; i++)
+	{
+		int Colors[3];
+		Colors[0] = GetRValue(cache->Pixels[i]);
+		Colors[1] = GetGValue(cache->Pixels[i]);
+		Colors[2] = GetBValue(cache->Pixels[i]);
+		for (int j = 0; j < 3; j++)
+		{
+			int NewC = (Colors[j] / ColorsPerChannel) * ColorsPerChannel;
+			if (Colors[j] - NewC >= ColorStepHalf)
+				Colors[j] = NewC + 1; // round up
+			else
+				Colors[j] = NewC;
 		}
 		cache->Pixels[i] = RGB(Colors[0], Colors[1], Colors[2]);
 	}
