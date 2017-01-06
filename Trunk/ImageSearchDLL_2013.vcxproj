@@ -171,6 +171,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="debug.cpp" />
+    <ClCompile Include="EdgeDetect.cpp" />
     <ClCompile Include="ImageFilters.cpp" />
     <ClCompile Include="ImageSearchDLL.cpp" />
     <ClCompile Include="InputProcess.cpp" />
@@ -197,6 +198,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </CustomBuild>
     <ClInclude Include="debug.h" />
+    <ClInclude Include="EdgeDetect.h" />
     <ClInclude Include="ImageFilters.h" />
     <ClInclude Include="InputProcess.h" />
     <ClInclude Include="MotionEstimation.h" />

@@ -77,6 +77,7 @@
 #include "SimilarSearch.h"
 #include "OCR.h"
 #include "UniquePixelPairSearch.h"
+#include "EdgeDetect.h"
 
 #ifdef _CONSOLE
 	#include "Benchmarks/Benchmarks.h"

@@ -763,6 +763,13 @@ char* WINAPI IsAnythingChanced( int StartX, int StartY, int EndX, int EndY )
 	return "0|0|0";
 }
 
+void WINAPI ApplyColorBitmask(int Mask)
+{
+	int PixelCount = CurScreenshot->GetWidth() * CurScreenshot->GetHeight();
+	for (int i = 0; i < PixelCount; i++)
+		CurScreenshot->Pixels[i] = CurScreenshot->Pixels[i] & Mask;
+}
+
 void RemoveScreenshotAlphaChannel( ScreenshotStruct *cache )
 {
 	if( cache->NeedsAlphaRemoved == true )
