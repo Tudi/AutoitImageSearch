@@ -64,6 +64,8 @@
 #define SSE_ALIGNMENT			16
 #define SSE_PADDING				32	//12 bytes would be enough
 
+#define TRANSPARENT_COLOR			(0x00FFFFFF)
+
 #include "PictureCache.h"
 #include "util.h"
 #include "resampling.h"

@@ -37,5 +37,9 @@ EXPORTS
 	EdgeDetectRobertCross3Channels
 	ConvertToGrayScaleMaxChannel
 	EdgeDetectRobertCross1Channel
+	EdgeBleed
+	EdgeDetectSobel3Channels
+	EdgeKeepLocalMaximaMaximaOnly
+	EdgeCopyOriginalForEdges
 	
 	

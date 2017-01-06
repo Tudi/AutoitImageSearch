@@ -5,7 +5,6 @@
 //#define MATCH_PRECISION_DECREASE	0
 //#define MATCH_PRECISION_MASK		(~0x07)	// loose the last 3 bits to avoid shade effects / gradients / overlaps messing up our search
 #define USED_COLOR_COUNT			31	// because of gradients and transparent overlays
-#define TRANSPARENT_COLOR			(0x00FFFFFF)
 
 void TakeScreenshotNext(int aLeft, int aTop, int aRight, int aBottom, int Cycle = 1)
 {
