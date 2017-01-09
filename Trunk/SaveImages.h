@@ -2,6 +2,7 @@
 #define _SAVE_IMAGE_H_
 
 void WINAPI SaveScreenshot();
+void WINAPI SavePrevScreenshot(); //debugging
 void WINAPI SaveDiffMap();
 void WINAPI SaveScreenshotDiffMask( int LowLimit );
 void WINAPI SaveEdgeMap();

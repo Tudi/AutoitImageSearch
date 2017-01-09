@@ -65,6 +65,7 @@ CachedPicture *CachePicture( char *aFilespec )
 
 	PictureCache[NrPicturesCached].NeedsPSCache = true;
 	PictureCache[NrPicturesCached].NeedsSSCache = true;
+	PictureCache[NrPicturesCached].NeedsSCCache = true;
 
 	NrPicturesCached++;
 	ReleaseDC(NULL, hdc);
@@ -99,7 +100,7 @@ void CheckPrepareToleranceMaps( CachedPicture *cache, int NewTolerance, int Tran
 	for( int y = 0; y < cache->Height; y +=1 )
 		for( int x = 0; x < cache->Width; x += 1 )
 		{
-			if( ( cache->Pixels[ y * cache->Width + x ] & 0x00FFFFFF ) == TransparentColor )
+			if ((cache->Pixels[y * cache->Width + x] & REMOVE_ALPHA_CHANNEL_MASK) == TransparentColor)
 			{
 				for( int i=0;i<3;i++)
 				{
@@ -156,6 +157,7 @@ void WINAPI MoveScreenshotToCache( char *Name )
 
 	PictureCache[NrPicturesCached].NeedsPSCache = true;
 	PictureCache[NrPicturesCached].NeedsSSCache = true;
+	PictureCache[NrPicturesCached].NeedsSCCache = true;
 
 	NrPicturesCached++;
 
@@ -168,6 +170,6 @@ void RemoveCacheAlphaChannel( CachedPicture *cache )
 	{
 		int PixelCount = cache->Width * cache->Height;
 		for( int i=0;i<PixelCount;i++)
-			cache->Pixels[ i ] = cache->Pixels[ i ] & 0x00FFFFFF;
+			cache->Pixels[i] = cache->Pixels[i] & REMOVE_ALPHA_CHANNEL_MASK;
 	}
 }

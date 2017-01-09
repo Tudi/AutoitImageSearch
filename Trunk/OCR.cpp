@@ -3,7 +3,7 @@
 int OCRAvgRForText = 0;
 int OCRAvgGForText = 0;
 int OCRAvgBForText = 0;
-int OCRTransparentColor = 0x00FFFFFF;
+int OCRTransparentColor = TRANSPARENT_COLOR;
 std::set<COLORREF> OCRTextColors;
 int OCRMaxFontWidth = 0;
 int OCRMaxFontHeight = 0;

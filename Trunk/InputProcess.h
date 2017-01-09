@@ -4,7 +4,7 @@
 void WINAPI TakeScreenshot(int aLeft, int aTop, int aRight, int aBottom);
 void WINAPI ReleaseScreenshot( );
 char* WINAPI ImageSearchOnScreenshot( char *aImageFile, int TransparentColor, int AcceptedColorDiff, int AcceptedErrorCount, int StopAfterNFullMatches );
-char* WINAPI ImageSearchOnScreenshotBest( char *aImageFile );
+char* WINAPI ImageSearchOnScreenshotBest_SAD(char *aImageFile);
 char* WINAPI ImageSearchOnScreenshotBestTransparent( char *aImageFile );
 // mask value 0 = screenshot pixel is hidden and should not be searched
 // mask value 1 = screenshot pixel is visible and should be searched
@@ -25,17 +25,20 @@ public:
 	bool			NeedsSSCache;
 	bool			NeedsPSCache;
 	bool			NeedsAlphaRemoved;
+	bool			NeedsSplitChannelCache;
 	SimilarSearch	*SSCache;
 	PiramidImage	*PSCache;
+	SplitChannel	*SCCache;
 
 	ScreenshotStruct()
 	{
 		Pixels = NULL;
 		SSCache = NULL;
 		PSCache = NULL;
+		SCCache = NULL;
 		Left = Top = Right = Bottom = 0;
 		IsDiffMap = false;
-		NeedsSSCache = NeedsPSCache = true;
+		NeedsSSCache = NeedsPSCache = NeedsSplitChannelCache = true;
 	}
 	int				GetWidth()
 	{

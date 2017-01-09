@@ -6,6 +6,7 @@
 class SimilarSearch;
 class PiramidImage;
 struct OCRStore;
+class SplitChannel;
 
 struct CachedPicture
 {
@@ -20,8 +21,10 @@ struct CachedPicture
 	unsigned char	*MaxMap[3];
 	SimilarSearch	*SSCache;
 	PiramidImage	*PSCache;
+	SplitChannel	*SCCache;
 	bool			NeedsSSCache;
 	bool			NeedsPSCache;
+	bool			NeedsSCCache;
 	OCRStore		*OCRCache;
 };
 

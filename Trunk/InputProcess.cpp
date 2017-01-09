@@ -13,9 +13,26 @@ void CycleScreenshots()
 
 void WINAPI ReleaseScreenshot()
 {
-	if( CurScreenshot->Pixels )
-		_aligned_free( CurScreenshot->Pixels );
-	CurScreenshot->Pixels = NULL;
+	if (CurScreenshot->Pixels)
+	{
+		_aligned_free(CurScreenshot->Pixels);
+		CurScreenshot->Pixels = NULL;
+	}
+	if (CurScreenshot->PSCache)
+	{
+		delete CurScreenshot->PSCache;
+		CurScreenshot->PSCache = NULL;
+	}
+	if (CurScreenshot->SSCache)
+	{
+		delete CurScreenshot->SSCache;
+		CurScreenshot->SSCache = NULL;
+	}
+	if (CurScreenshot->SCCache)
+	{
+		delete CurScreenshot->SCCache;
+		CurScreenshot->SCCache = NULL;
+	}
 }
 
 void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
@@ -32,6 +49,7 @@ void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 	CurScreenshot->NeedsSSCache = true;
 	CurScreenshot->NeedsPSCache = true;
 	CurScreenshot->NeedsAlphaRemoved = true;
+	CurScreenshot->NeedsSplitChannelCache = true;
 	CurScreenshot->BytesPerPixel = 4;
 
 	HDC sdc = NULL;
@@ -227,7 +245,7 @@ docleanupandreturn:
 	{
 		RemoveCacheAlphaChannel( cache );
 		RemoveScreenshotAlphaChannel( CurScreenshot );
-		if( TransparentColor > 0x00FFFFFF && AcceptedErrorCount == 0 && StopAfterNFullMatches == 1 )
+		if (TransparentColor > TRANSPARENT_COLOR && AcceptedErrorCount == 0 && StopAfterNFullMatches == 1)
 		{
 			for( int y = 0; y < Height - cache->Height; y +=1 )
 				for( int x = 0; x < Width - cache->Width; x += 1 )
@@ -477,7 +495,7 @@ docleanupandreturn2:
 	return ReturnBuff;
 }
 
-char* WINAPI ImageSearchOnScreenshotBest( char *aFilespec )
+char* WINAPI ImageSearchOnScreenshotBest_SAD( char *aFilespec )
 {
 	char ReturnBuff2[DEFAULT_STR_BUFFER_SIZE*10];
 	int MatchesFound = 0;
@@ -557,10 +575,10 @@ char* WINAPI ImageSearchOnScreenshotBest( char *aFilespec )
 				acc_sad = _mm_setzero_si128();
 				alpha_mask = _mm_setzero_si128();
 
-				alpha_mask.m128i_u32[0] = 0x00FFFFFF;
-				alpha_mask.m128i_u32[1] = 0x00FFFFFF;
-				alpha_mask.m128i_u32[2] = 0x00FFFFFF;
-				alpha_mask.m128i_u32[3] = 0x00FFFFFF;
+				alpha_mask.m128i_u32[0] = REMOVE_ALPHA_CHANNEL_MASK;
+				alpha_mask.m128i_u32[1] = REMOVE_ALPHA_CHANNEL_MASK;
+				alpha_mask.m128i_u32[2] = REMOVE_ALPHA_CHANNEL_MASK;
+				alpha_mask.m128i_u32[3] = REMOVE_ALPHA_CHANNEL_MASK;
 
 				for( int y2=0;y2<cache->Height;y2++ )
 				{
@@ -640,7 +658,7 @@ char* WINAPI ImageSearchOnScreenshotBestTransparent( char *aFilespec )
 	int retx = -1;
 	int rety = -1;
 	unsigned int BestSAD = 0x7FFFFFFF;
-	unsigned int TransparentColor = 0x00FFFFFF;
+	unsigned int TransparentColor = TRANSPARENT_COLOR;
 	{
 //DumpAsPPM( MinMap[0], MinMap[1], MinMap[2], cache->Width, cache->Height );
 //DumpAsPPM( &CurScreenshot->Pixels[ 40 * Width + 40 ], 40, 40, Width );
@@ -777,7 +795,7 @@ void RemoveScreenshotAlphaChannel( ScreenshotStruct *cache )
 		cache->NeedsAlphaRemoved = false;
 		int PixelCount = cache->GetWidth() * cache->GetHeight();
 		for( int i=0;i<PixelCount;i++)
-			cache->Pixels[ i ] = cache->Pixels[ i ] & 0x00FFFFFF;
+			cache->Pixels[i] = cache->Pixels[i] & REMOVE_ALPHA_CHANNEL_MASK;
 	}
 }
 

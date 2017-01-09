@@ -1,7 +1,7 @@
 #include "StdAfx.h"
 
 static int ImageFileAutoIncrement = 0;
-void WINAPI SaveScreenshot()
+void SaveScreenshot_(ScreenshotStruct	*CurScreenshot)
 {
 	FileDebug( "Started saving the screenshot" );
 
@@ -42,6 +42,16 @@ void WINAPI SaveScreenshot()
 	}
 
 	Img.Save( MyFileName );
+}
+
+void WINAPI SaveScreenshot()
+{
+	SaveScreenshot_(CurScreenshot);
+}
+
+void WINAPI SavePrevScreenshot()
+{
+	SaveScreenshot_(PrevScreenshot);
 }
 
 void WINAPI SaveDiffMap()
@@ -213,7 +223,7 @@ void WINAPI SaveScreenshotCutTransparent()
 	int CountRowsEndTransparent = 0;
 	int CountColsStartTransparent = 0;
 	int CountColsEndTransparent = 0;
-	COLORREF TransparentColor = 0x00FFFFFF;
+	COLORREF TransparentColor = TRANSPARENT_COLOR;
 	//detect rows at the beginning that are transparent
 	for (int i = 0; i < CurScreenshot->GetHeight(); i++)
 	{

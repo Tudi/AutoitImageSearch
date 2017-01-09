@@ -62,9 +62,11 @@
 #define DEFAULT_STR_BUFFER_SIZE 1024
 
 #define SSE_ALIGNMENT			16
+#define SSE_BYTE_COUNT			16
 #define SSE_PADDING				32	//12 bytes would be enough
 
 #define TRANSPARENT_COLOR			(0x00FFFFFF)
+#define REMOVE_ALPHA_CHANNEL_MASK	(0x00FFFFFF)
 
 #include "PictureCache.h"
 #include "util.h"
@@ -80,6 +82,7 @@
 #include "OCR.h"
 #include "UniquePixelPairSearch.h"
 #include "EdgeDetect.h"
+#include "SplitChannelSearch.h"
 
 #ifdef _CONSOLE
 	#include "Benchmarks/Benchmarks.h"

@@ -2,12 +2,15 @@ LIBRARY	"ImageSearchDLL"
 
 EXPORTS
 
-	ImageSearch
 	TakeScreenshot
-	SaveScreenshot	
+	SaveScreenshot
+	SavePrevScreenshot
+
+	ApplyColorBitmask
+
+	ImageSearch	
 	ResizeScreenshot
 	BlurrImage
-	ApplyColorBitmask
 	MoveScreenshotToCache
 	ImageSearchOnScreenshot
 	IsAnythingChanced
@@ -24,7 +27,7 @@ EXPORTS
 	SaveEdgeMap
 	RegisterOCRFont
 	ReadTextFromScreenshot
-	ImageSearchOnScreenshotBest
+	ImageSearchOnScreenshotBest_SAD
 	ImageSearchOnScreenshotBestTransparent
 	TakeScreenshotDetectUniquePixelsInitial
 	TakeScreenshotKeepUniquePixels

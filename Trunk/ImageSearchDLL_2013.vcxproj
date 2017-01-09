@@ -182,6 +182,7 @@
     <ClCompile Include="Resampling.cpp" />
     <ClCompile Include="SaveImages.cpp" />
     <ClCompile Include="SimilarSearch.cpp" />
+    <ClCompile Include="SplitChannelSearch.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DebugConsoleTest|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -208,6 +209,7 @@
     <ClInclude Include="Resampling.h" />
     <ClInclude Include="SaveImages.h" />
     <ClInclude Include="SimilarSearch.h" />
+    <ClInclude Include="SplitChannelSearch.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Tools.h" />
     <ClInclude Include="UniquePixelPairSearch.h" />

@@ -922,7 +922,7 @@ char* WINAPI ImageSearch(int aLeft, int aTop, int aRight, int aBottom, char *aIm
 	// Without this change, there are cases where variation=0 would find a match but a higher variation
 	// (for the same search) wouldn't. 
 	for (i = 0; i < image_pixel_count; ++i)
-		image_pixel[i] &= 0x00FFFFFF;
+		image_pixel[i] &= REMOVE_ALPHA_CHANNEL_MASK;
 
 	// Search the specified region for the first occurrence of the image:
 	if (aVariation < 1) // Caller wants an exact match.
@@ -939,7 +939,7 @@ char* WINAPI ImageSearch(int aLeft, int aTop, int aRight, int aBottom, char *aIm
 		// ignoring the high-order byte -- maybe a much higher variation would be needed if the high
 		// order byte were also subject to the same shades-of-variation analysis as the other three bytes [RGB]).
 		for (i = 0; i < screen_pixel_count; ++i)
-			screen_pixel[i] &= 0x00FFFFFF;
+			screen_pixel[i] &= REMOVE_ALPHA_CHANNEL_MASK;
 
 		for (i = 0; i < screen_pixel_count; ++i)
 		{
