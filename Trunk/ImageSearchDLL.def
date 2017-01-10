@@ -29,6 +29,7 @@ EXPORTS
 	ReadTextFromScreenshot
 	ImageSearchOnScreenshotBest_SAD
 	ImageSearchOnScreenshotBestTransparent
+	ImageSearchOnScreenshotBest_Transparent_SAD
 	TakeScreenshotDetectUniquePixelsInitial
 	TakeScreenshotKeepUniquePixels
 	TakeScreenshotRemoveDynamicPixels
