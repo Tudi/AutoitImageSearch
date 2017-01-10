@@ -52,6 +52,7 @@ void main()
 //	RunSimilarSearchBenchmark(); // 302 fps is the setup and 131 fps is the search on my pc
 //	RunPiramidSearchBenchmark(); // 151 fps is the setup and 600 fps is the search on my pc
 //	RunEdgeDetectBenchmark(); // 62 fps / 15 fps 
+//	RunImgSearchBenchmark2();
 //	_getch();
 #endif
 
@@ -118,67 +119,5 @@ void main()
 		int End = GetTimeTickI();
 		printf("result of search benchmarking : %d %d FPS\n", End - Start, 1000 * 1000 / ( End - Start + 1 ) );
 		_getch();
-	}/**/
-	{
-//		_getch();
-		TakeScreenshot(0, 0, 1900, 960);
-//for (int i = 0; i < CurScreenshot->GetWidth() * CurScreenshot->GetHeight(); i++)	CurScreenshot->Pixels[i] = 0;
-		char *res;
-		res = ImageSearchOnScreenshotBest_Transparent_SAD("16x16.bmp");
-//		res = ImageSearchOnScreenshotBest_Transparent_SAD2("16x16.bmp");
-		res = ImageSearchOnScreenshotBestTransparent("16x16.bmp");
-		int i, Start = GetTimeTickI();
-		for (i = 0; i < 10; i++)
-		{
-			TakeScreenshot(0, 0, 1900, 960);
-			res = ImageSearchOnScreenshotBest_Transparent_SAD("16x16.bmp");
-			if (res[0] != '0')
-			{
-				res[0] = '1';
-			}
-		}
-		int End = GetTimeTickI();
-		printf("result of search benchmarking : %d ms %d FPS\n", End - Start, i * 1000 * 1000 / (End - Start + 1));
-//		_getch();
-	}/**/
-#ifdef COMPARE_MULTI_REGION_READ_SPEED
-	{
-//		_getch();
-		TakeScreenshot(0, 0, 1900, 960);
-		char *res;
-		res = ImageSearchOnScreenshotBest_Transparent_SAD2("16x16.bmp");
-		int i, Start = GetTimeTickI();
-		for (i = 0; i < 10; i++)
-		{
-			TakeScreenshot(0, 0, 1900, 960);
-			res = ImageSearchOnScreenshotBest_Transparent_SAD2("16x16.bmp");
-			if (res[0] != '0')
-			{
-				res[0] = '1';
-			}
-		}
-		int End = GetTimeTickI();
-		printf("result of search benchmarking : %d ms %d FPS\n", End - Start, i * 1000 * 1000 / (End - Start + 1));
-//		_getch();
-	}/**/
-#endif
-	{
-		//		_getch();
-		TakeScreenshot(0, 0, 1900, 960);
-		char *res;
-		res = ImageSearchOnScreenshotBestTransparent("16x16.bmp");
-		int i, Start = GetTimeTickI();
-		for (i = 0; i < 10; i++)
-		{
-			TakeScreenshot(0, 0, 1900, 960);
-			res = ImageSearchOnScreenshotBestTransparent("16x16.bmp");
-			if (res[0] != '0')
-			{
-				res[0] = '1';
-			}
-		}
-		int End = GetTimeTickI();
-		printf("result of search benchmarking : %d ms %d FPS\n", End - Start, i * 1000 * 1000 / (End - Start + 1));
-		//		_getch();
 	}/**/
 }

@@ -12,6 +12,8 @@ char* WINAPI ImageSearchOnScreenshotMasked( char *ImageFile, char *MaskFile, int
 char* WINAPI GetImageSize( char *aImageFile );
 char* WINAPI IsAnythingChanced( int StartX, int StartY, int EndX, int EndY );
 void WINAPI ApplyColorBitmask(int Mask);
+void WINAPI DecreaseColorCount(unsigned int ColorsPerChannel);
+char* WINAPI ImageSearch_SAD(char *aImageFile);
 
 void CycleScreenshots();
 
@@ -79,6 +81,6 @@ extern LIBRARY_API char ReturnBuff[DEFAULT_STR_BUFFER_SIZE * 10];
 
 void RemoveScreenshotAlphaChannel( ScreenshotStruct *cache );
 void DecreaseColorPrecision( ScreenshotStruct *cache, unsigned int Div, unsigned int And );
-void DecreaseColorCount( ScreenshotStruct *cache, unsigned int ColorsPerChannel );
+void DecreaseColorCount_( ScreenshotStruct *cache, unsigned int ColorsPerChannel );
 
 #endif

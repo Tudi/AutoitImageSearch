@@ -12,7 +12,7 @@ void TakeScreenshotNext(int aLeft, int aTop, int aRight, int aBottom, int Cycle 
 	TakeScreenshot(aLeft, aTop, aRight, aBottom);
 //	RemoveScreenshotAlphaChannel(CurScreenshot);
 //	DecreaseColorPrecision(CurScreenshot, MATCH_PRECISION_DECREASE, MATCH_PRECISION_MASK); // no rounding is used. Might end up with lots of black areas
-	DecreaseColorCount(CurScreenshot, USED_COLOR_COUNT);	// rounding is used. Edge(size) of the image might change form one screeenshot to another if gradients are present
+	DecreaseColorCount_(CurScreenshot, USED_COLOR_COUNT);	// rounding is used. Edge(size) of the image might change form one screeenshot to another if gradients are present
 	//flip current and prev pictures so that on next screenshot the initial picture will not get erased
 	// CurScreenshot is THE screenshot we will save. Contains the "unique" image
 	if (Cycle == 1)
@@ -161,7 +161,7 @@ char* WINAPI ImageSearchOnScreenshotUniqueFeatures(char *aFilespec, int Accepted
 
 //	RemoveScreenshotAlphaChannel(CurScreenshot);
 //	DecreaseColorPrecision(CurScreenshot, MATCH_PRECISION_DECREASE, MATCH_PRECISION_MASK);
-	DecreaseColorCount(CurScreenshot, USED_COLOR_COUNT);
+	DecreaseColorCount_(CurScreenshot, USED_COLOR_COUNT);
 
 	//DumpAsPPM( &CurScreenshot->Pixels[ 40 * Width + 40 ], 40, 40, Width );
 	//DumpAsPPM( &cache->Pixels[ 0 ], 40, 40 );

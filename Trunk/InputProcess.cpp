@@ -628,6 +628,87 @@ docleanupandreturn:
 	return ReturnBuff;
 }
 
+char* WINAPI ImageSearch_SAD(char *aFilespec)
+{
+	char ReturnBuff2[DEFAULT_STR_BUFFER_SIZE * 10];
+	int MatchesFound = 0;
+	ReturnBuff[0] = 0;
+	ReturnBuff2[0] = 0;
+	FileDebug("Started Image search");
+	CachedPicture *cache = CachePicture(aFilespec);
+	if (cache == NULL)
+	{
+		FileDebug("Skipping Image search as image could not be loaded");
+		return "";
+	}
+	if (cache->Pixels == NULL)
+	{
+		FileDebug("Skipping Image search as image pixels are missing");
+		return "";
+	}
+	if (CurScreenshot->Pixels == NULL)
+	{
+		FileDebug("Skipping Image search no screenshot is available");
+		return "";
+	}
+
+	int Width = CurScreenshot->Right - CurScreenshot->Left;
+	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
+
+	int retx = -1;
+	int rety = -1;
+	unsigned int BestSAD = 0x7FFFFFFF;
+	{
+		//DumpAsPPM( MinMap[0], MinMap[1], MinMap[2], cache->Width, cache->Height );
+		//DumpAsPPM( &CurScreenshot->Pixels[ 40 * Width + 40 ], 40, 40, Width );
+		//DumpAsPPM( MaxMap[0], MaxMap[1], MaxMap[2], cache->Width, cache->Height );
+		for (int y = 0; y < Height - cache->Height; y += 1)
+		{
+			for (int x = 0; x < Width - cache->Width; x += 1)
+			{
+				unsigned int sad_array[4];
+				__m128i l0, l1, line_sad, acc_sad;
+
+				acc_sad = _mm_setzero_si128();
+
+				for (int y2 = 0; y2<cache->Height; y2++)
+				{
+					LPCOLORREF AddrBig = &CurScreenshot->Pixels[(y + y2) * Width + x];
+					LPCOLORREF AddSmall = &cache->Pixels[(0 + y2) * cache->Width + 0];
+					for (int x2 = 0; x2<(cache->Width & ~0x03); x2 += 4)
+					{
+						l0 = _mm_loadu_si128((__m128i*)(&AddrBig[x2]));
+						l1 = _mm_loadu_si128((__m128i*)(&AddSmall[x2]));
+						line_sad = _mm_sad_epu8(l0, l1);
+						acc_sad = _mm_add_epi32(acc_sad, line_sad);
+					}
+				}
+
+				_mm_storeu_si128((__m128i*)(&sad_array[0]), acc_sad);
+
+				unsigned int sad = sad_array[0] + sad_array[2];
+
+				if (BestSAD > sad)
+				{
+					BestSAD = sad;
+					retx = x + CurScreenshot->Left;
+					rety = y + CurScreenshot->Top;
+					//exact match ? I doubt it will ever happen...
+					if (BestSAD == 0)
+						goto docleanupandreturn;
+				}
+			}
+		}
+	docleanupandreturn:
+		if (MatchesFound == 0)
+			FileDebug("\t Image search found no matches");
+	}
+
+	sprintf_s(ReturnBuff, DEFAULT_STR_BUFFER_SIZE * 10, "1|%d|%d|%d", retx, rety, BestSAD);
+	FileDebug("\tImage search finished");
+	return ReturnBuff;
+}
+
 char* WINAPI ImageSearchOnScreenshotBestTransparent( char *aFilespec )
 {
 	char ReturnBuff2[DEFAULT_STR_BUFFER_SIZE*10];
@@ -824,7 +905,7 @@ void DecreaseColorPrecision(ScreenshotStruct *cache, unsigned int Div, unsigned 
 	}
 }
 
-void DecreaseColorCount(ScreenshotStruct *cache, unsigned int ColorsPerChannel)
+void DecreaseColorCount_(ScreenshotStruct *cache, unsigned int ColorsPerChannel)
 {
 	int PixelCount = cache->GetWidth() * cache->GetHeight();
 	int ColorStep = 255 / ColorsPerChannel; // only valid for 8bpp. Which we intend ot use
@@ -845,4 +926,9 @@ void DecreaseColorCount(ScreenshotStruct *cache, unsigned int ColorsPerChannel)
 		}
 		cache->Pixels[i] = RGB(Colors[0], Colors[1], Colors[2]);
 	}
+}
+
+void WINAPI DecreaseColorCount(unsigned int ColorsPerChannel)
+{
+	DecreaseColorCount_(CurScreenshot, ColorsPerChannel);
 }

@@ -13,5 +13,7 @@ void RunSimilarSearchBenchmark();
 void RunPiramidSearchBenchmark();
 void RunEdgeDetectBenchmark();
 void RunOCRBenchmark();
+void RunTransparentSearchBenchmark2();
+void RunImgSearchBenchmark2();
 
 #endif

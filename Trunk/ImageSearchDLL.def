@@ -7,8 +7,10 @@ EXPORTS
 	SavePrevScreenshot
 
 	ApplyColorBitmask
+	DecreaseColorCount
 
-	ImageSearch	
+	ImageSearch
+	ImageSearch_SAD	
 	ResizeScreenshot
 	BlurrImage
 	MoveScreenshotToCache
