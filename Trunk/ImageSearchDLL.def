@@ -11,6 +11,7 @@ EXPORTS
 
 	ImageSearch
 	ImageSearch_SAD	
+	ImageSearch_Multiple_ExactMatch
 	ResizeScreenshot
 	BlurrImage
 	MoveScreenshotToCache

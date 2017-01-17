@@ -14,6 +14,7 @@ char* WINAPI IsAnythingChanced( int StartX, int StartY, int EndX, int EndY );
 void WINAPI ApplyColorBitmask(int Mask);
 void WINAPI DecreaseColorCount(unsigned int ColorsPerChannel);
 char* WINAPI ImageSearch_SAD(char *aImageFile);
+char* WINAPI ImageSearch_Multiple_ExactMatch(char *aImageFile);
 
 void CycleScreenshots();
 

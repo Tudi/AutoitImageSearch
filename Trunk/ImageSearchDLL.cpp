@@ -120,4 +120,43 @@ void main()
 		printf("result of search benchmarking : %d %d FPS\n", End - Start, 1000 * 1000 / ( End - Start + 1 ) );
 		_getch();
 	}/**/
+/*	{
+		//		_getch();
+		TakeScreenshot(0, 0, 1900, 960);
+		char *res;
+		res = ImageSearch_SAD("16x16.bmp");
+		int i, Start = GetTimeTickI();
+		for (i = 0; i < 10; i++)
+		{
+			TakeScreenshot(0, 0, 1900, 960);
+			res = ImageSearch_SAD("16x16.bmp");
+			if (res[0] != '0')
+			{
+				res[0] = '1';
+			}
+		}
+		int End = GetTimeTickI();
+		printf("result of search benchmarking : %d ms %d FPS\n", End - Start, i * 1000 * 1000 / (End - Start + 1));
+		//		_getch();
+	}/**/
+	{
+		//		_getch();
+		TakeScreenshot(0, 0, 1900, 960);
+		char *res;
+		res = ImageSearch_Multiple_ExactMatch("16x16.bmp");
+		int i, Start = GetTimeTickI();
+		for (i = 0; i < 10; i++)
+		{
+			TakeScreenshot(0, 0, 1900, 960);
+			res = ImageSearch_Multiple_ExactMatch("16x16.bmp");
+			if (res[0] != '0')
+			{
+				res[0] = '1';
+			}
+		}
+		int End = GetTimeTickI();
+		printf("result of search benchmarking : %d ms %d FPS\n", End - Start, i * 1000 * 1000 / (End - Start + 1));
+		//		_getch();
+	}/**/
+
 }

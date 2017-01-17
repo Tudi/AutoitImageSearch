@@ -678,7 +678,7 @@ char* WINAPI ImageSearch_SAD(char *aFilespec)
 					for (int x2 = 0; x2<(cache->Width & ~0x03); x2 += 4)
 					{
 						l0 = _mm_loadu_si128((__m128i*)(&AddrBig[x2]));
-						l1 = _mm_loadu_si128((__m128i*)(&AddSmall[x2]));
+						l1 = _mm_load_si128((__m128i*)(&AddSmall[x2]));
 						line_sad = _mm_sad_epu8(l0, l1);
 						acc_sad = _mm_add_epi32(acc_sad, line_sad);
 					}
@@ -694,8 +694,10 @@ char* WINAPI ImageSearch_SAD(char *aFilespec)
 					retx = x + CurScreenshot->Left;
 					rety = y + CurScreenshot->Top;
 					//exact match ? I doubt it will ever happen...
+#ifndef _CONSOLE
 					if (BestSAD == 0)
 						goto docleanupandreturn;
+#endif
 				}
 			}
 		}
@@ -705,6 +707,113 @@ char* WINAPI ImageSearch_SAD(char *aFilespec)
 	}
 
 	sprintf_s(ReturnBuff, DEFAULT_STR_BUFFER_SIZE * 10, "1|%d|%d|%d", retx, rety, BestSAD);
+	FileDebug("\tImage search finished");
+	return ReturnBuff;
+}
+
+char* WINAPI ImageSearch_Multiple_ExactMatch(char *aFilespec)
+{
+	char ReturnBuff2[DEFAULT_STR_BUFFER_SIZE * 10];
+	int MatchesFound = 0;
+	ReturnBuff[0] = 0;
+	ReturnBuff2[0] = 0;
+	FileDebug("Started Image search");
+	CachedPicture *cache = CachePicture(aFilespec);
+	if (cache == NULL)
+	{
+		FileDebug("Skipping Image search as image could not be loaded");
+		return "";
+	}
+	if (cache->Pixels == NULL)
+	{
+		FileDebug("Skipping Image search as image pixels are missing");
+		return "";
+	}
+	if (CurScreenshot->Pixels == NULL)
+	{
+		FileDebug("Skipping Image search no screenshot is available");
+		return "";
+	}
+
+	int Width = CurScreenshot->Right - CurScreenshot->Left;
+	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
+
+	int CacheWidthRoundDown = (cache->Width & ~0x03);
+	for (int y = 0; y < Height - cache->Height; y += 1)
+	{
+		for (int x = 0; x < Width - CacheWidthRoundDown; x += 1)
+		{
+//#define USE_SSE 1
+			// do the sad for the picture
+#if defined( USE_SSE )
+			unsigned int sad_array[4];
+			__m128i acc_sad = _mm_setzero_si128();
+			for (int y2 = 0; y2<cache->Height; y2++)
+			{
+				LPCOLORREF AddrBig = &CurScreenshot->Pixels[(y + y2) * Width + x];
+				LPCOLORREF AddSmall = &cache->Pixels[(0 + y2) * cache->Width + 0];
+				for (int x2 = 0; x2<CacheWidthRoundDown; x2 += 4)
+				{
+					__m128i l0 = _mm_loadu_si128((__m128i*)(&AddrBig[x2]));
+					__m128i l1 = _mm_load_si128((__m128i*)(&AddSmall[x2]));
+					__m128i line_sad = _mm_sad_epu8(l0, l1);
+					acc_sad = _mm_add_epi32(acc_sad, line_sad);
+				}
+			}
+			_mm_storeu_si128((__m128i*)(&sad_array[0]), acc_sad);
+			unsigned int sad = sad_array[0] + sad_array[2];
+#elif defined( USE_SSE_EXACT_MATCH )
+			unsigned int sad_array[4];
+			__m128i acc_eq = _mm_setzero_si128();
+			for (int y2 = 0; y2<cache->Height; y2++)
+			{
+				LPCOLORREF AddrBig = &CurScreenshot->Pixels[(y + y2) * Width + x];
+				LPCOLORREF AddSmall = &cache->Pixels[(0 + y2) * cache->Width + 0];
+				for (int x2 = 0; x2<CacheWidthRoundDown; x2 += 4)
+				{
+					__m128i l0 = _mm_loadu_si128((__m128i*)(&AddrBig[x2]));
+					__m128i l1 = _mm_load_si128((__m128i*)(&AddSmall[x2]));
+					__m128i line_eq = _mm_andnot_si128(l0, l1); // 0 where values are equal
+					acc_eq = _mm_or_si128(acc_eq, line_eq);		// 0 where values are equal
+				}
+			}
+			_mm_storeu_si128((__m128i*)(&sad_array[0]), acc_eq);
+			unsigned int sad;
+			if (sad_array[0] == 0 && sad_array[1] == 0 && sad_array[2] == 0 && sad_array[3] == 0)
+				sad = 0;
+			else
+				sad = 1;
+#else
+			int sad = 0; // count the number of different pixels
+			for (int y2 = 0; y2<cache->Height; y2++)
+			{
+				LPCOLORREF AddrBig = &CurScreenshot->Pixels[(y + y2) * Width + x];
+				LPCOLORREF AddSmall = &cache->Pixels[(0 + y2) * cache->Width + 0];
+				for (int x2 = 0; x2<CacheWidthRoundDown; x2++)
+					if( AddrBig[x2] != AddSmall[x2] )
+					{
+						sad = 1;
+						// due to early exit, this should be fast when only a few examples are present on the screen
+						// worst case scenario, this is like 5 times slower than with SSE
+						goto NO_MATCH_NO_MORE_SEARCH; 
+					}
+			}
+NO_MATCH_NO_MORE_SEARCH:
+#endif
+
+			if (sad == 0)
+			{
+				MatchesFound++;
+				int retx = x + CurScreenshot->Left;
+				int rety = y + CurScreenshot->Top;
+				sprintf_s(ReturnBuff2, DEFAULT_STR_BUFFER_SIZE * 10, "%s|%d|%d", ReturnBuff2, retx, rety);
+			}
+		}
+	}
+	if (MatchesFound == 0)
+		FileDebug("\t Image search found no matches");
+
+	sprintf_s(ReturnBuff, DEFAULT_STR_BUFFER_SIZE * 10, "%d|%s", MatchesFound, ReturnBuff2);
 	FileDebug("\tImage search finished");
 	return ReturnBuff;
 }
