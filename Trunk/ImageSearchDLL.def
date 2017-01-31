@@ -4,7 +4,7 @@ EXPORTS
 
 	TakeScreenshot
 	SaveScreenshot
-	SavePrevScreenshot
+	CycleScreenshots
 
 	ApplyColorBitmask
 	DecreaseColorCount
@@ -17,6 +17,7 @@ EXPORTS
 	MoveScreenshotToCache
 	ImageSearchOnScreenshot
 	IsAnythingChanced
+	KeepColorSetRest
 	GenerateDiffMap
 	SaveDiffMap
 	SaveScreenshotDiffMask

@@ -173,6 +173,7 @@
     <ClCompile Include="debug.cpp" />
     <ClCompile Include="EdgeDetect.cpp" />
     <ClCompile Include="ImageFilters.cpp" />
+    <ClCompile Include="ImageSearch.cpp" />
     <ClCompile Include="ImageSearchDLL.cpp" />
     <ClCompile Include="InputProcess.cpp" />
     <ClCompile Include="MotionEstimation.cpp" />
@@ -201,6 +202,7 @@
     <ClInclude Include="debug.h" />
     <ClInclude Include="EdgeDetect.h" />
     <ClInclude Include="ImageFilters.h" />
+    <ClInclude Include="ImageSearch.h" />
     <ClInclude Include="InputProcess.h" />
     <ClInclude Include="MotionEstimation.h" />
     <ClInclude Include="OCR.h" />

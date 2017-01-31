@@ -83,6 +83,7 @@
 #include "UniquePixelPairSearch.h"
 #include "EdgeDetect.h"
 #include "SplitChannelSearch.h"
+#include "ImageSearch.h"
 
 #ifdef _CONSOLE
 	#include "Benchmarks/Benchmarks.h"

@@ -211,3 +211,92 @@ void WINAPI EdgeDetect( int HalfKernelSize )
 	CurScreenshot->BytesPerPixel = 1;
 	FileDebug( "Finished bluring screenshot" );
 }
+
+void WINAPI KeepColorSetRest(int SetRest, int Color1)
+{
+	FileDebug("Started KeepColorSetRest");
+	if (CurScreenshot->Pixels == NULL)
+	{
+		FileDebug("WARNING:Screenshot buffer is null when trying to extract color!");
+		return;
+	}
+	int Width = CurScreenshot->Right - CurScreenshot->Left;
+	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
+	for (int y = 1; y < Height; y += 1)
+		for (int x = 1; x < Width; x += 1)
+			if (CurScreenshot->Pixels[y * Width + x] != Color1)
+				CurScreenshot->Pixels[y * Width + x] = SetRest;
+
+	FileDebug("Finished KeepColorSetRest");
+}
+
+void WINAPI ApplyColorBitmask(int Mask)
+{
+	int PixelCount = CurScreenshot->GetWidth() * CurScreenshot->GetHeight();
+	for (int i = 0; i < PixelCount; i++)
+		CurScreenshot->Pixels[i] = CurScreenshot->Pixels[i] & Mask;
+}
+
+void DecreaseColorCount_(ScreenshotStruct *cache, unsigned int ColorsPerChannel)
+{
+	int PixelCount = cache->GetWidth() * cache->GetHeight();
+	int ColorStep = 255 / ColorsPerChannel; // only valid for 8bpp. Which we intend ot use
+	int ColorStepHalf = ColorStep / 2; // because we use rounding
+	for (int i = 0; i < PixelCount; i++)
+	{
+		int Colors[3];
+		Colors[0] = GetRValue(cache->Pixels[i]);
+		Colors[1] = GetGValue(cache->Pixels[i]);
+		Colors[2] = GetBValue(cache->Pixels[i]);
+		for (int j = 0; j < 3; j++)
+		{
+			int NewC = (Colors[j] / ColorsPerChannel) * ColorsPerChannel;
+			if (Colors[j] - NewC >= ColorStepHalf)
+				Colors[j] = NewC + 1; // round up
+			else
+				Colors[j] = NewC;
+		}
+		cache->Pixels[i] = RGB(Colors[0], Colors[1], Colors[2]);
+	}
+}
+
+void WINAPI DecreaseColorCount(unsigned int ColorsPerChannel)
+{
+	DecreaseColorCount_(CurScreenshot, ColorsPerChannel);
+}
+
+void RemoveScreenshotAlphaChannel(ScreenshotStruct *cache)
+{
+	if (cache->NeedsAlphaRemoved == true)
+	{
+		cache->NeedsAlphaRemoved = false;
+		int PixelCount = cache->GetWidth() * cache->GetHeight();
+		for (int i = 0; i<PixelCount; i++)
+			cache->Pixels[i] = cache->Pixels[i] & REMOVE_ALPHA_CHANNEL_MASK;
+	}
+}
+
+void DecreaseColorPrecision(ScreenshotStruct *cache, unsigned int Div, unsigned int And)
+{
+	int PixelCount = cache->GetWidth() * cache->GetHeight();
+	for (int i = 0; i < PixelCount; i++)
+	{
+		int Colors[3];
+		Colors[0] = GetRValue(cache->Pixels[i]);
+		Colors[1] = GetGValue(cache->Pixels[i]);
+		Colors[2] = GetBValue(cache->Pixels[i]);
+		if (Div != 0)
+		{
+			Colors[0] = Colors[0] / Div;
+			Colors[1] = Colors[1] / Div;
+			Colors[2] = Colors[2] / Div;
+		}
+		if (And != 0)
+		{
+			Colors[0] = Colors[0] & And;
+			Colors[1] = Colors[1] & And;
+			Colors[2] = Colors[2] & And;
+		}
+		cache->Pixels[i] = RGB(Colors[0], Colors[1], Colors[2]);
+	}
+}

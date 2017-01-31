@@ -3,20 +3,9 @@
 
 void WINAPI TakeScreenshot(int aLeft, int aTop, int aRight, int aBottom);
 void WINAPI ReleaseScreenshot( );
-char* WINAPI ImageSearchOnScreenshot( char *aImageFile, int TransparentColor, int AcceptedColorDiff, int AcceptedErrorCount, int StopAfterNFullMatches );
-char* WINAPI ImageSearchOnScreenshotBest_SAD(char *aImageFile);
-char* WINAPI ImageSearchOnScreenshotBestTransparent( char *aImageFile );
-// mask value 0 = screenshot pixel is hidden and should not be searched
-// mask value 1 = screenshot pixel is visible and should be searched
-char* WINAPI ImageSearchOnScreenshotMasked( char *ImageFile, char *MaskFile, int TransparentColor, int AcceptedColorDiff, int AcceptedErrorCount, int StopAfterNFullMatches );
 char* WINAPI GetImageSize( char *aImageFile );
 char* WINAPI IsAnythingChanced( int StartX, int StartY, int EndX, int EndY );
-void WINAPI ApplyColorBitmask(int Mask);
-void WINAPI DecreaseColorCount(unsigned int ColorsPerChannel);
-char* WINAPI ImageSearch_SAD(char *aImageFile);
-char* WINAPI ImageSearch_Multiple_ExactMatch(char *aImageFile);
-
-void CycleScreenshots();
+void WINAPI CycleScreenshots();
 
 class ScreenshotStruct
 {
@@ -79,9 +68,5 @@ extern LIBRARY_API ScreenshotStruct ScreenshotCache[NR_SCREENSHOTS_CACHED];
 extern LIBRARY_API ScreenshotStruct	*CurScreenshot, *PrevScreenshot;
 extern LIBRARY_API int ScreenshotStoreIndex;
 extern LIBRARY_API char ReturnBuff[DEFAULT_STR_BUFFER_SIZE * 10];
-
-void RemoveScreenshotAlphaChannel( ScreenshotStruct *cache );
-void DecreaseColorPrecision( ScreenshotStruct *cache, unsigned int Div, unsigned int And );
-void DecreaseColorCount_( ScreenshotStruct *cache, unsigned int ColorsPerChannel );
 
 #endif
