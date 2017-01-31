@@ -18,6 +18,7 @@ EXPORTS
 	ImageSearchOnScreenshot
 	IsAnythingChanced
 	KeepColorSetRest
+	KeepColor3SetBoth
 	GenerateDiffMap
 	SaveDiffMap
 	SaveScreenshotDiffMask
@@ -29,7 +30,7 @@ EXPORTS
 	SearchPiramidOnScreenshot
 	EdgeDetect
 	SaveEdgeMap
-	RegisterOCRFont
+	OCR_RegisterFont
 	ReadTextFromScreenshot
 	ImageSearchOnScreenshotBest_SAD
 	ImageSearchOnScreenshotBestTransparent

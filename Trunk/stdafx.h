@@ -84,6 +84,7 @@
 #include "EdgeDetect.h"
 #include "SplitChannelSearch.h"
 #include "ImageSearch.h"
+#include "OCR_LuckyCase.h"
 
 #ifdef _CONSOLE
 	#include "Benchmarks/Benchmarks.h"

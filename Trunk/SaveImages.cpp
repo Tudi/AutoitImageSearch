@@ -309,3 +309,43 @@ void WINAPI SaveScreenshotCutTransparent()
 
 	Img.Save(MyFileName);
 }
+
+
+void WINAPI SaveScreenshotArea(int StartX, int StartY, int EndX, int EndY)
+{
+	FileDebug("Started saving the screenshot");
+
+	if (CurScreenshot->Pixels == NULL)
+	{
+		FileDebug("WARNING:Screenshot buffer is null when trying to save it to file!");
+		return;
+	}
+
+	int Width = EndX - StartX;
+	int Height = EndY - StartY;
+	//find an available file name
+	char MyFileName[DEFAULT_STR_BUFFER_SIZE];
+	BOOL FileExists;
+	do {
+		sprintf_s(MyFileName, DEFAULT_STR_BUFFER_SIZE, "Screenshot_%04d_%04d_%04d.bmp", ImageFileAutoIncrement, Width, Height);
+		FileExists = (_access(MyFileName, 0) == 0);
+		ImageFileAutoIncrement++;
+	} while (FileExists == TRUE);
+
+	FileDebug("chosen filename is :");
+	FileDebug(MyFileName);
+
+	//create a bitmap and populate pixels on it
+	CImage Img;
+	Img.Create(Width, Height, 32);
+
+	unsigned char *Pixels = (unsigned char*)CurScreenshot->Pixels;
+	for (int y = StartY; y < EndY; y += 1)
+		for (int x = StartX; x < EndX; x += 1)
+		{
+			COLORREF Pixel = CurScreenshot->GetPixel(x, y);
+			Img.SetPixel(x, y, RGB(GetBValue(Pixel), GetGValue(Pixel), GetRValue(Pixel)));
+		}
+
+	Img.Save(MyFileName);
+}

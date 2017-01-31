@@ -5,8 +5,8 @@ int OCRAvgGForText = 0;
 int OCRAvgBForText = 0;
 int OCRTransparentColor = TRANSPARENT_COLOR;
 std::set<COLORREF> OCRTextColors;
-int OCRMaxFontWidth = 0;
-int OCRMaxFontHeight = 0;
+int OCRMaxFontWidth = 4;
+int OCRMaxFontHeight = 4;
 
 //pinch off 2 bits -> reduce from 24 to 19 bpp. This reduces shade variations. Only worth using if you want to avoid storing too many pixels
 //#define COLOR_REDUCE_MASK	0xFC
@@ -41,7 +41,8 @@ void GetCacheColorStatistics( CachedPicture *cache )
 
 			OCRTextColors.insert( ReduceColorCount( Pixel ) );
 
-/*				cache->OCRCache->PixelCount++;
+			cache->OCRCache->PixelCount++;
+/*				
 			int R = GetRValue( Pixel );
 			if( R >= 0 ) 
 			{
@@ -92,7 +93,7 @@ void GetCharacterSetColorStatistics()
 	}
 }
 
-void WINAPI RegisterOCRFont( char *aFilespec, int Font )
+void WINAPI OCR_RegisterFont( char *aFilespec, int Font )
 {
 	CachedPicture *cache = CachePicture( aFilespec );
 	if( cache != NULL && cache->Pixels != NULL )
@@ -272,4 +273,42 @@ char * WINAPI ReadTextFromScreenshot( int StartX, int StartY, int EndX, int EndY
 //FileDebug( OCRReturnBuff );
 	FileDebug( "\tFinished  OCR" );
 	return OCRReturnBuff;
+}
+
+void WINAPI KeepColorSetRest(int SetRest, int Color1)
+{
+	FileDebug("Started KeepColorSetRest");
+	if (CurScreenshot->Pixels == NULL)
+	{
+		FileDebug("WARNING:Screenshot buffer is null when trying to extract color!");
+		return;
+	}
+	int Width = CurScreenshot->Right - CurScreenshot->Left;
+	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
+	for (int y = 1; y < Height; y += 1)
+		for (int x = 1; x < Width; x += 1)
+			if (CurScreenshot->Pixels[y * Width + x] != Color1)
+				CurScreenshot->Pixels[y * Width + x] = SetRest;
+
+	FileDebug("Finished KeepColorSetRest");
+}
+
+void WINAPI KeepColor3SetBoth(int SetRest, int SetColors, int Color1, int Color2, int Color3)
+{
+	FileDebug("Started KeepColor3SetBoth");
+	if (CurScreenshot->Pixels == NULL)
+	{
+		FileDebug("WARNING:Screenshot buffer is null when trying to extract color!");
+		return;
+	}
+	int Width = CurScreenshot->Right - CurScreenshot->Left;
+	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
+	for (int y = 1; y < Height; y += 1)
+		for (int x = 1; x < Width; x += 1)
+			if (CurScreenshot->Pixels[y * Width + x] == Color1 || CurScreenshot->Pixels[y * Width + x] == Color2 || CurScreenshot->Pixels[y * Width + x] == Color3 )
+				CurScreenshot->Pixels[y * Width + x] = SetColors;
+			else
+				CurScreenshot->Pixels[y * Width + x] = SetRest;
+
+	FileDebug("Finished KeepColor3SetBoth");
 }

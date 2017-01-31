@@ -178,6 +178,7 @@
     <ClCompile Include="InputProcess.cpp" />
     <ClCompile Include="MotionEstimation.cpp" />
     <ClCompile Include="OCR.cpp" />
+    <ClCompile Include="OCR_LuckyCase.cpp" />
     <ClCompile Include="PictureCache.cpp" />
     <ClCompile Include="PiramidSearch.cpp" />
     <ClCompile Include="Resampling.cpp" />
@@ -206,6 +207,7 @@
     <ClInclude Include="InputProcess.h" />
     <ClInclude Include="MotionEstimation.h" />
     <ClInclude Include="OCR.h" />
+    <ClInclude Include="OCR_LuckyCase.h" />
     <ClInclude Include="PictureCache.h" />
     <ClInclude Include="PiramidSearch.h" />
     <ClInclude Include="Resampling.h" />

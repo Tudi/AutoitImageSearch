@@ -57,9 +57,9 @@ void main()
 #endif
 
 /*	{
-		RegisterOCRFont( "OCR_1_green.bmp", '1' );
-		RegisterOCRFont( "OCR_2_green.bmp", '2' );
-		RegisterOCRFont( "OCR_3_green.bmp", '3' );
+		OCR_RegisterFont( "OCR_1_green.bmp", '1' );
+		OCR_RegisterFont( "OCR_2_green.bmp", '2' );
+		OCR_RegisterFont( "OCR_3_green.bmp", '3' );
 
 		_getch();
 	//	TakeScreenshot( 0, 0, 800, 800 );

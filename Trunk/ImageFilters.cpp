@@ -212,24 +212,6 @@ void WINAPI EdgeDetect( int HalfKernelSize )
 	FileDebug( "Finished bluring screenshot" );
 }
 
-void WINAPI KeepColorSetRest(int SetRest, int Color1)
-{
-	FileDebug("Started KeepColorSetRest");
-	if (CurScreenshot->Pixels == NULL)
-	{
-		FileDebug("WARNING:Screenshot buffer is null when trying to extract color!");
-		return;
-	}
-	int Width = CurScreenshot->Right - CurScreenshot->Left;
-	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
-	for (int y = 1; y < Height; y += 1)
-		for (int x = 1; x < Width; x += 1)
-			if (CurScreenshot->Pixels[y * Width + x] != Color1)
-				CurScreenshot->Pixels[y * Width + x] = SetRest;
-
-	FileDebug("Finished KeepColorSetRest");
-}
-
 void WINAPI ApplyColorBitmask(int Mask)
 {
 	int PixelCount = CurScreenshot->GetWidth() * CurScreenshot->GetHeight();
