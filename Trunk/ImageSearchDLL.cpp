@@ -160,9 +160,12 @@ void main()
 		}/**/
 	{
 		char *res;
+		//OCR_LoadFontsFromFile("K_C_M_FontMap.txt");
+		OCR_LoadFontsFromDir("K_C_M", "K_C_M_");
 		TakeScreenshot(0, 0, 1025, 599);
 		OCR_SetMaxFontSize(20, 20);
-		LoadCacheOverScreenshot("Screenshot_0042_1025_0599.bmp", 0, 0);
+		LoadCacheOverScreenshot("Screenshot_0021_1025_0599.bmp", 0, 0);
+//		LoadCacheOverScreenshot("Screenshot_0042_1025_0599.bmp", 0, 0);
 		//SaveScreenshot(); 
 		//ConvertToGrayScale();
 		DecreaseColorCount(1);
@@ -170,7 +173,6 @@ void main()
 		//GetUniqueColorsInRegion(502, 223, 580, 237);
 		KeepColorSetRest(0x00000000, 0x00FFFFFF, 0x00000000);
 		//SaveScreenshot();
-		OCR_LoadFontsFromFile("K_C_M_FontMap.txt");
 		//read name
 		res = OCR_ReadTextLeftToRightSaveUnknownChars(446, 182, 680, 205);
 		if (res != NULL)
@@ -194,7 +196,7 @@ void main()
 			printf("kills : %s\n", res);
 		}
 		//read guild
-		res = OCR_ReadTextLeftToRightSaveUnknownChars(405, 277, 680, 294);
+		res = OCR_ReadTextLeftToRightSaveUnknownChars(405, 276, 680, 295);
 		if (res != NULL)
 		{
 			printf("guild : %s\n", res);

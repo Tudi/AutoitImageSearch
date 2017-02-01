@@ -337,3 +337,27 @@ void WINAPI OCR_LoadFontsFromFile(char *aFilespec)
 		fclose(f);
 	}
 }
+
+void WINAPI OCR_LoadFontsFromDir(char *Path, char *SkipFileNameStart)
+{
+	int skiptocharpos = strlen(SkipFileNameStart);
+	std::string search_path = Path;
+	search_path += "/*.*";
+	WIN32_FIND_DATA fd;
+	HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
+	if (hFind != INVALID_HANDLE_VALUE) 
+	{
+		do {
+			// read all (real) files in current folder
+			// , delete '!' read other 2 default folder . and ..
+			if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) 
+			{
+				char c = fd.cFileName[skiptocharpos];
+				char FullPath[2500];
+				sprintf_s(FullPath, sizeof(FullPath), "%s/%s", Path, fd.cFileName);
+				OCR_RegisterFont(FullPath, c);
+			}
+		} while (::FindNextFile(hFind, &fd));
+		::FindClose(hFind);
+	}
+}
