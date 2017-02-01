@@ -62,15 +62,15 @@ void main()
 		OCR_RegisterFont( "OCR_3_green.bmp", '3' );
 
 		_getch();
-	//	TakeScreenshot( 0, 0, 800, 800 );
-	//	TakeScreenshot( 63, 100, 103, 108 );
+		//	TakeScreenshot( 0, 0, 800, 800 );
+		//	TakeScreenshot( 63, 100, 103, 108 );
 		TakeScreenshot( 218, 95, 271, 116 );
-	//	SaveScreenshot();
+		//	SaveScreenshot();
 
-	//	ReadTextFromScreenshot( 53, 98, 127, 117 );
-	//	ReadTextFromScreenshot( 63, 100, 103, 108 );
+		//	ReadTextFromScreenshot( 53, 98, 127, 117 );
+		//	ReadTextFromScreenshot( 63, 100, 103, 108 );
 		ReadTextFromScreenshot( 218, 95, 271, 116 );
-	}/**/
+		}/**/
 //	SetupSimilarSearch( 0, 1, 3, 0 );
 //	SearchSimilarOnScreenshot( "tosearch10.bmp" );
 /*	{
@@ -81,7 +81,7 @@ void main()
 		res = ImageSearchOnScreenshot( "Resync.bmp", 0x01000000, 0, 0, 1 );
 		TakeScreenshot( 1709, 1139, 1709 + 7, 1139 + 23 );
 		//SaveScreenshot();
-	}/**/
+		}/**/
 /*	{
 		_getch();
 		TakeScreenshot( 0, 0, 2000, 2000 );
@@ -90,17 +90,17 @@ void main()
 		int Start = GetTimeTickI();
 		for( int i = 0; i < 1000; i++ )
 		{
-			TakeScreenshot( 1709, 1139, 1709 + 7, 1139 + 23 );
-			res = IsAnythingChanced( 0, 0, 7, 23 );
-			if( res[0] != '0' )
-			{
-				res[0] = '1';
-			}
+		TakeScreenshot( 1709, 1139, 1709 + 7, 1139 + 23 );
+		res = IsAnythingChanced( 0, 0, 7, 23 );
+		if( res[0] != '0' )
+		{
+		res[0] = '1';
+		}
 		}
 		int End = GetTimeTickI();
 		printf("result of search benchmarking : %d %d FPS\n", End - Start, 1000 * 1000 / ( End - Start + 1 ) );
 		_getch();
-	}/**/
+		}/**/
 /*	{
 		_getch();
 		TakeScreenshot( 100, 100, 1500, 800 );
@@ -109,17 +109,17 @@ void main()
 		int Start = GetTimeTickI();
 		for( int i = 0; i < 1; i++ )
 		{
-			TakeScreenshot( 100,100, 1500, 800 );
-			res = IsAnythingChanced( 0, 0, 7, 23 );
-			if( res[0] != '0' )
-			{
-				res[0] = '1';
-			}
+		TakeScreenshot( 100,100, 1500, 800 );
+		res = IsAnythingChanced( 0, 0, 7, 23 );
+		if( res[0] != '0' )
+		{
+		res[0] = '1';
+		}
 		}
 		int End = GetTimeTickI();
 		printf("result of search benchmarking : %d %d FPS\n", End - Start, 1000 * 1000 / ( End - Start + 1 ) );
 		_getch();
-	}/**/
+		}/**/
 /*	{
 		//		_getch();
 		TakeScreenshot(0, 0, 1900, 960);
@@ -128,18 +128,18 @@ void main()
 		int i, Start = GetTimeTickI();
 		for (i = 0; i < 10; i++)
 		{
-			TakeScreenshot(0, 0, 1900, 960);
-			res = ImageSearch_SAD("16x16.bmp");
-			if (res[0] != '0')
-			{
-				res[0] = '1';
-			}
+		TakeScreenshot(0, 0, 1900, 960);
+		res = ImageSearch_SAD("16x16.bmp");
+		if (res[0] != '0')
+		{
+		res[0] = '1';
+		}
 		}
 		int End = GetTimeTickI();
 		printf("result of search benchmarking : %d ms %d FPS\n", End - Start, i * 1000 * 1000 / (End - Start + 1));
 		//		_getch();
-	}/**/
-	{
+		}/**/
+/*	{
 		//		_getch();
 		TakeScreenshot(0, 0, 1900, 960);
 		char *res;
@@ -147,16 +147,70 @@ void main()
 		int i, Start = GetTimeTickI();
 		for (i = 0; i < 10; i++)
 		{
-			TakeScreenshot(0, 0, 1900, 960);
-			res = ImageSearch_Multiple_ExactMatch("16x16.bmp");
-			if (res[0] != '0')
-			{
-				res[0] = '1';
-			}
+		TakeScreenshot(0, 0, 1900, 960);
+		res = ImageSearch_Multiple_ExactMatch("16x16.bmp");
+		if (res[0] != '0')
+		{
+		res[0] = '1';
+		}
 		}
 		int End = GetTimeTickI();
 		printf("result of search benchmarking : %d ms %d FPS\n", End - Start, i * 1000 * 1000 / (End - Start + 1));
 		//		_getch();
+		}/**/
+	{
+		char *res;
+		TakeScreenshot(0, 0, 1025, 599);
+		OCR_SetMaxFontSize(20, 20);
+		LoadCacheOverScreenshot("Screenshot_0042_1025_0599.bmp", 0, 0);
+		//SaveScreenshot(); 
+		//ConvertToGrayScale();
+		DecreaseColorCount(1);
+		//SaveScreenshot(); 
+		//GetUniqueColorsInRegion(502, 223, 580, 237);
+		KeepColorSetRest(0x00000000, 0x00FFFFFF, 0x00000000);
+		//SaveScreenshot();
+		OCR_LoadFontsFromFile("K_C_M_FontMap.txt");
+		//read name
+		res = OCR_ReadTextLeftToRightSaveUnknownChars(446, 182, 680, 205);
+		if (res != NULL)
+		{
+			printf("Name : %s\n", res);
+		}
+		//read might
+		res = OCR_ReadTextLeftToRightSaveUnknownChars(502, 223, 680, 240);
+		if (res != NULL)
+		{
+			printf("might : %s\n", res);
+			RemoveCharFromNumberString(res, ',');
+			printf("might : %s\n", res);
+		}
+		//read troops killed
+		res = OCR_ReadTextLeftToRightSaveUnknownChars(554, 249, 680, 265);
+		if (res != NULL)
+		{
+			printf("kills : %s\n", res);
+			RemoveCharFromNumberString(res, ',');
+			printf("kills : %s\n", res);
+		}
+		//read guild
+		res = OCR_ReadTextLeftToRightSaveUnknownChars(405, 277, 680, 294);
+		if (res != NULL)
+		{
+			printf("guild : %s\n", res);
+		}
+		//read location X
+		res = OCR_ReadTextLeftToRightSaveUnknownChars(502, 469, 529, 482);
+		if (res != NULL)
+		{
+			printf("x : %s\n", res);
+		}
+		//read location y
+		res = OCR_ReadTextLeftToRightSaveUnknownChars(543, 469, 570, 482);
+		if (res != NULL)
+		{
+			printf("y : %s\n", res);
+		}
 	}/**/
 
 }

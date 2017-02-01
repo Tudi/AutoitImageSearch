@@ -5,14 +5,20 @@ int OCRAvgGForText = 0;
 int OCRAvgBForText = 0;
 int OCRTransparentColor = TRANSPARENT_COLOR;
 std::set<COLORREF> OCRTextColors;
-int OCRMaxFontWidth = 4;
-int OCRMaxFontHeight = 4;
+int OCRMaxFontWidth = 8;
+int OCRMaxFontHeight = 8;
 
 //pinch off 2 bits -> reduce from 24 to 19 bpp. This reduces shade variations. Only worth using if you want to avoid storing too many pixels
 //#define COLOR_REDUCE_MASK	0xFC
 //pinch off 3 bits -> reduce from 24 to 15 bpp. This reduces shade variations. Only worth using if you want to avoid storing too many pixels
 #define COLOR_REDUCE_MASK8	0xF8
 #define COLOR_REDUCE_MASK24	0x00F8F8F8
+
+void WINAPI OCR_SetMaxFontSize(int Width, int Height)
+{
+	OCRMaxFontWidth = Width;
+	OCRMaxFontHeight = Height;
+}
 
 COLORREF ReduceColorCount( COLORREF Pixel )
 {
@@ -275,7 +281,7 @@ char * WINAPI ReadTextFromScreenshot( int StartX, int StartY, int EndX, int EndY
 	return OCRReturnBuff;
 }
 
-void WINAPI KeepColorSetRest(int SetRest, int Color1)
+void WINAPI KeepColorSetRest(int SetRest, int SetColors, int Color1)
 {
 	FileDebug("Started KeepColorSetRest");
 	if (CurScreenshot->Pixels == NULL)
@@ -289,6 +295,8 @@ void WINAPI KeepColorSetRest(int SetRest, int Color1)
 		for (int x = 1; x < Width; x += 1)
 			if (CurScreenshot->Pixels[y * Width + x] != Color1)
 				CurScreenshot->Pixels[y * Width + x] = SetRest;
+			else
+				CurScreenshot->Pixels[y * Width + x] = SetColors;
 
 	FileDebug("Finished KeepColorSetRest");
 }
@@ -311,4 +319,21 @@ void WINAPI KeepColor3SetBoth(int SetRest, int SetColors, int Color1, int Color2
 				CurScreenshot->Pixels[y * Width + x] = SetRest;
 
 	FileDebug("Finished KeepColor3SetBoth");
+}
+
+void WINAPI OCR_LoadFontsFromFile(char *aFilespec)
+{
+	FILE *f = fopen(aFilespec, "rt");
+	if (f)
+	{
+		char c;
+		char path[32000];
+		int res = fscanf_s(f, "%c %s\n", &c, 1, path, sizeof( path ));
+		while (res == 2)
+		{
+			OCR_RegisterFont(path, c);
+			res = fscanf_s(f, "%c %s\n", &c, 1, path, sizeof(path));
+		}
+		fclose(f);
+	}
 }

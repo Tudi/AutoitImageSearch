@@ -232,9 +232,10 @@ void DecreaseColorCount_(ScreenshotStruct *cache, unsigned int ColorsPerChannel)
 		Colors[2] = GetBValue(cache->Pixels[i]);
 		for (int j = 0; j < 3; j++)
 		{
-			int NewC = (Colors[j] / ColorsPerChannel) * ColorsPerChannel;
-			if (Colors[j] - NewC >= ColorStepHalf)
-				Colors[j] = NewC + 1; // round up
+			int PrecisionLost = (Colors[j] % ColorStep);
+			int NewC = max(0,Colors[j] - PrecisionLost);
+			if (PrecisionLost >= ColorStepHalf)
+				Colors[j] = min(255,NewC + ColorStep); // round up
 			else
 				Colors[j] = NewC;
 		}
@@ -280,5 +281,23 @@ void DecreaseColorPrecision(ScreenshotStruct *cache, unsigned int Div, unsigned 
 			Colors[2] = Colors[2] & And;
 		}
 		cache->Pixels[i] = RGB(Colors[0], Colors[1], Colors[2]);
+	}
+}
+
+void GetUniqueColorsInRegion(int StartX, int StartY, int EndX, int EndY)
+{
+	if (CurScreenshot == NULL || CurScreenshot->Pixels == NULL)
+		return;
+	std::set<unsigned int> PixelCollection;
+	for (int y = StartY; y < EndY; y++)
+		for (int x = StartX; x < EndX; x++)
+			PixelCollection.insert(CurScreenshot->GetPixel(x, y));
+	for (std::set<unsigned int>::iterator itr = PixelCollection.begin(); itr != PixelCollection.end(); itr++)
+	{
+		int Color = *itr;
+		int R = GetRValue(Color);
+		int G = GetGValue(Color);
+		int B = GetBValue(Color);
+		printf("\n0x%08X \t%d\t%d\t%d", Color,R,G,B);
 	}
 }

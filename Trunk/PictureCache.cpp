@@ -173,3 +173,35 @@ void RemoveCacheAlphaChannel( CachedPicture *cache )
 			cache->Pixels[i] = cache->Pixels[i] & REMOVE_ALPHA_CHANNEL_MASK;
 	}
 }
+
+void WINAPI LoadCacheOverScreenshot(char *aFilename, int Atx, int Aty)
+{
+	FileDebug("LoadCacheOverScreenshot : Start");
+	CachedPicture *Cache = CachePicture(aFilename);
+	if (Cache == NULL)
+	{
+		FileDebug("LoadCacheOverScreenshot : Could not find cache");
+		return;
+	}
+	if (CurScreenshot == NULL || CurScreenshot->Pixels == NULL)
+	{
+		FileDebug("LoadCacheOverScreenshot : No screensshot to copy over to");
+		return;
+	}
+	if (Atx > CurScreenshot->GetWidth())
+	{
+		FileDebug("LoadCacheOverScreenshot : target X is arger than Screensot width");
+		return;
+	}
+	if (Aty > CurScreenshot->GetHeight())
+	{
+		FileDebug("LoadCacheOverScreenshot : target y is larger than screenshot height");
+		return;
+	}
+	int MaxCopyX = min(Cache->Width, CurScreenshot->GetWidth() - Atx);
+	int MaxCopyY = min(Cache->Height, CurScreenshot->GetHeight() - Aty);
+	for (int y = 0; y < MaxCopyY; y++)
+		for (int x = 0; x < MaxCopyX; x++)
+			CurScreenshot->SetPixel(x + Atx, y + Aty, Cache->Pixels[y*Cache->Width + x]);
+	FileDebug("LoadCacheOverScreenshot : End");
+}

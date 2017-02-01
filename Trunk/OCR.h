@@ -11,10 +11,12 @@ struct OCRStore
 };
 
 void WINAPI OCR_RegisterFont( char *aFilespec, int Font );
+void WINAPI OCR_LoadFontsFromFile(char *aFilespec);
+void WINAPI OCR_SetMaxFontSize(int Width, int Height);	// if you put it too large, it will read data from next row. If you put it too small, it might not be able to detect new characters
 char * WINAPI ReadTextFromScreenshot( int StartX, int StartY, int EndX, int EndY );
 
 //similar to image binarization. Will be used for OCR
-void WINAPI KeepColorSetRest(int SetRest, int Color1);
+void WINAPI KeepColorSetRest(int SetRest, int SetColors, int Color1);
 void WINAPI KeepColor3SetBoth(int SetRest, int SetColors, int Color1, int Color2, int Color3);
 
 extern int OCRMaxFontWidth;

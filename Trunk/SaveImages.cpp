@@ -344,7 +344,7 @@ void WINAPI SaveScreenshotArea(int StartX, int StartY, int EndX, int EndY)
 		for (int x = StartX; x < EndX; x += 1)
 		{
 			COLORREF Pixel = CurScreenshot->GetPixel(x, y);
-			Img.SetPixel(x, y, RGB(GetBValue(Pixel), GetGValue(Pixel), GetRValue(Pixel)));
+			Img.SetPixel(x - StartX, y - StartY, RGB(GetBValue(Pixel), GetGValue(Pixel), GetRValue(Pixel)));
 		}
 
 	Img.Save(MyFileName);

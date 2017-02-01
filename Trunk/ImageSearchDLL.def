@@ -9,12 +9,16 @@ EXPORTS
 	ApplyColorBitmask
 	DecreaseColorCount
 
+	OCR_RegisterFont
+	OCR_ReadTextLeftToRightSaveUnknownChars
+
 	ImageSearch
 	ImageSearch_SAD	
 	ImageSearch_Multiple_ExactMatch
 	ResizeScreenshot
 	BlurrImage
 	MoveScreenshotToCache
+	LoadCacheOverScreenshot
 	ImageSearchOnScreenshot
 	IsAnythingChanced
 	KeepColorSetRest
@@ -30,7 +34,6 @@ EXPORTS
 	SearchPiramidOnScreenshot
 	EdgeDetect
 	SaveEdgeMap
-	OCR_RegisterFont
 	ReadTextFromScreenshot
 	ImageSearchOnScreenshotBest_SAD
 	ImageSearchOnScreenshotBestTransparent
