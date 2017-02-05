@@ -301,3 +301,72 @@ void GetUniqueColorsInRegion(int StartX, int StartY, int EndX, int EndY)
 		printf("\n0x%08X \t%d\t%d\t%d", Color,R,G,B);
 	}
 }
+
+void WINAPI ErrodeRegionToTransparent(int StartX, int StartY, int EndX, int EndY, int RequiredNeighbourCount)
+{
+	if (CurScreenshot == NULL || CurScreenshot->Pixels == NULL)
+		return;
+	if (StartX == -1)
+	{
+		StartX = 0;
+		StartY = 0;
+		EndX = CurScreenshot->GetWidth();
+		EndY = CurScreenshot->GetHeight();
+	}
+	int Width = CurScreenshot->GetWidth();
+	for (int y = StartY + 1; y < EndY - 1; y++)
+		for (int x = StartX + 1; x < EndX - 1; x++)
+			if (CurScreenshot->Pixels[(y - 0)*Width + x - 0] != TRANSPARENT_COLOR)
+			{
+				int NeighbourCount1 = 0;
+				int NeighbourCount2 = 0;
+				// cross way
+				{
+
+					if (CurScreenshot->Pixels[(y - 1)*Width + x - 1] != TRANSPARENT_COLOR) NeighbourCount2++;
+					if (CurScreenshot->Pixels[(y - 1)*Width + x - 0] != TRANSPARENT_COLOR) NeighbourCount1++;
+					if (CurScreenshot->Pixels[(y - 1)*Width + x + 1] != TRANSPARENT_COLOR) NeighbourCount2++;
+
+					if (CurScreenshot->Pixels[(y - 0)*Width + x - 1] != TRANSPARENT_COLOR) NeighbourCount1++;
+					//			if (CurScreenshot->Pixels[(y - 0)*Width + x - 0] != TRANSPARENT_COLOR) NeighbourCount++;
+					if (CurScreenshot->Pixels[(y - 0)*Width + x + 1] != TRANSPARENT_COLOR) NeighbourCount1++;
+
+					if (CurScreenshot->Pixels[(y + 1)*Width + x - 1] != TRANSPARENT_COLOR) NeighbourCount2++;
+					if (CurScreenshot->Pixels[(y + 1)*Width + x - 0] != TRANSPARENT_COLOR) NeighbourCount1++;
+					if (CurScreenshot->Pixels[(y + 1)*Width + x + 1] != TRANSPARENT_COLOR) NeighbourCount2++;
+
+					if (NeighbourCount1 < RequiredNeighbourCount && NeighbourCount2 < RequiredNeighbourCount)
+						CurScreenshot->Pixels[(y - 0)*Width + x - 0] = TRANSPARENT_COLOR;
+				}
+			}
+}
+
+void WINAPI KeepColorRangesInRegion(int StartX, int StartY, int EndX, int EndY, int RMin, int RMax, int GMin, int GMax, int BMin, int BMax)
+{
+	if (CurScreenshot == NULL || CurScreenshot->Pixels == NULL)
+		return;
+	if (StartX == -1)
+	{
+		StartX = 0;
+		StartY = 0;
+		EndX = CurScreenshot->GetWidth();
+		EndY = CurScreenshot->GetHeight();
+	}
+	int Width = CurScreenshot->GetWidth();
+	for (int y = StartY; y < EndY; y++)
+		for (int x = StartX; x < EndX; x++)
+		{
+			int Color = CurScreenshot->Pixels[y*Width + x];
+//			if (Color != TRANSPARENT_COLOR)
+			{
+				int B = GetRValue(Color);
+				int G = GetGValue(Color);
+				int R = GetBValue(Color);
+
+				if (R < RMin || R > RMax || G < GMin | G > GMax || B < BMin || B > BMax)
+					CurScreenshot->Pixels[y*Width + x] = TRANSPARENT_COLOR;
+				else
+					CurScreenshot->Pixels[y*Width + x] = 0;
+			}
+		}
+}

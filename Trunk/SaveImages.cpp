@@ -311,7 +311,7 @@ void WINAPI SaveScreenshotCutTransparent()
 }
 
 
-void WINAPI SaveScreenshotArea(int StartX, int StartY, int EndX, int EndY)
+void WINAPI SaveScreenshotArea(int StartX, int StartY, int EndX, int EndY, char *FileName)
 {
 	FileDebug("Started saving the screenshot");
 
@@ -325,12 +325,17 @@ void WINAPI SaveScreenshotArea(int StartX, int StartY, int EndX, int EndY)
 	int Height = EndY - StartY;
 	//find an available file name
 	char MyFileName[DEFAULT_STR_BUFFER_SIZE];
-	BOOL FileExists;
-	do {
-		sprintf_s(MyFileName, DEFAULT_STR_BUFFER_SIZE, "Screenshot_%04d_%04d_%04d.bmp", ImageFileAutoIncrement, Width, Height);
-		FileExists = (_access(MyFileName, 0) == 0);
-		ImageFileAutoIncrement++;
-	} while (FileExists == TRUE);
+	if (FileName == NULL)
+	{
+		BOOL FileExists;
+		do {
+			sprintf_s(MyFileName, DEFAULT_STR_BUFFER_SIZE, "Screenshot_%04d_%04d_%04d.bmp", ImageFileAutoIncrement, Width, Height);
+			FileExists = (_access(MyFileName, 0) == 0);
+			ImageFileAutoIncrement++;
+		} while (FileExists == TRUE);
+	}
+	else
+		strcpy(MyFileName, FileName);
 
 	FileDebug("chosen filename is :");
 	FileDebug(MyFileName);

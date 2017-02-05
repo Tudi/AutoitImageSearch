@@ -53,20 +53,15 @@ int OCR_FindCurrentCharFirstRow(int *Image, int Width, int StartX, int EndX, int
 
 int OCR_FindCurrentCharLastRow(int *Image, int Width, int StartX, int EndX, int &StartY, int BoxEndY)
 {
-	for (int y2 = StartY; y2 <BoxEndY; y2++) // give  a chance to detect new fonts
+	for (int y2 = BoxEndY - 1; y2 >= StartY; y2--) // has to go bottom->top or else i will have separate parts
 	{
 		int AllWasTransparent = 1;
 		for (int x2 = StartX; x2 < EndX; x2++)
 			if (Image[y2*Width + x2] != OCRTransparentColor)
 			{
-				AllWasTransparent = 0;
-				break;
+				StartY = y2 + 1;
+				return 1;
 			}
-		if (AllWasTransparent == 1)
-		{
-			StartY = y2;
-			return 1;
-		}
 	}
 	return 0;
 }
@@ -134,6 +129,68 @@ int GetAreaHash(int *Img, int Width, int StartX, int StartY, int EndX, int EndY)
 		}
 	return ret;
 }
+
+void OCR_FindMostSimilarFontAndSave(int *Img, int Width, int CharStartX, int CharStartY, int CharEndX, int CharEndY)
+{
+	int BestMatch = 0;
+	CachedPicture *BestMatchFont = NULL;
+	int CharWidth = CharEndX - CharStartX;
+	int CharHeight = CharEndY - CharStartY;
+	// iterate through all cached pictures and check which ones are fonts
+	for (int c = 0; c < NrPicturesCached; c++)
+	{
+		//if this font would be the best match, at what location would it be at ?
+		CachedPicture *FontCache = &PictureCache[c];
+		if (FontCache->OCRCache == NULL)
+			continue;
+		if (abs(CharWidth - FontCache->Width) > 3 || abs(CharHeight - FontCache->Height) > 3)
+			continue;
+		//there is a chance the new old font location does not perfectly allign. Search in multiple locations for a lucky hit
+		for (int y = -1; y <= 1; y++)
+			for (int x = -1; x <= 1; x++)
+			{
+				int MatchStrength = GetPixelMatchCount(Img, Width, CharStartX+x, CharStartY+y, CharEndX+x, CharEndY+y, (int*)FontCache->Pixels, FontCache->Width, FontCache->Height);
+				if (MatchStrength > BestMatch)
+				{
+					BestMatch = MatchStrength;
+					BestMatchFont = FontCache;
+				}
+			}
+	}
+	//maybe it's just a small aberation of an already declared font. Some fontx are 8x8 pixels. 10% represents 6 pixel diference. Which can be enough to confuse it with another font. 'o' -'u' = 4 pixels ?
+	if (BestMatchFont && abs( BestMatchFont->OCRCache->PixelCount - BestMatch ) < BestMatchFont->OCRCache->PixelCount * 10 / 100)
+	{
+		//generate a new valid filename
+		char NewFilename[500], OldFilename[500];
+		int FileIndex = 0;
+		do{
+			FileIndex++;
+			sprintf_s(NewFilename, sizeof(NewFilename), "KCM_%c_%d.bmp", BestMatchFont->OCRCache->AssignedChar, FileIndex++);
+			if (_access(NewFilename, 0) == 0)
+				continue;
+			sprintf_s(OldFilename, sizeof(OldFilename), "K_C_M/KCM_%c_%d.bmp", BestMatchFont->OCRCache->AssignedChar, FileIndex++);
+			if (_access(OldFilename, 0) == 0)
+				continue;
+			sprintf_s(OldFilename, sizeof(OldFilename), "K_C_M/KCM_%c_%d.bmp", toupper(BestMatchFont->OCRCache->AssignedChar), FileIndex++);
+			if (_access(OldFilename, 0) == 0)
+				continue;
+			sprintf_s(OldFilename, sizeof(OldFilename), "K_C_M/KCM_%c_%d.bmp", tolower(BestMatchFont->OCRCache->AssignedChar), FileIndex++);
+			if (_access(OldFilename, 0) == 0)
+				continue;
+		} while (FileIndex == 0);
+		SaveScreenshotArea(CharStartX, CharStartY, CharEndX, CharEndY, NewFilename);
+	}
+	else
+	{
+		char NewFilename[500];
+		int FileIndex = 0;
+		do{
+			sprintf_s(NewFilename, sizeof(NewFilename), "KCM__%d.bmp", FileIndex++);
+		} while (_access(NewFilename, 0) == 0 && FileIndex < 1000);
+		SaveScreenshotArea(CharStartX, CharStartY, CharEndX, CharEndY, NewFilename);
+	}
+}
+
 std::set<int> ReportedHashes;
 void ExtractNewFont( int *Img, int Width, int CharStartX, int CharStartY, int CharEndX, int CharEndY)
 {
@@ -141,7 +198,7 @@ void ExtractNewFont( int *Img, int Width, int CharStartX, int CharStartY, int Ch
 	if (ReportedHashes.find(Hash) != ReportedHashes.end())
 		return;
 	ReportedHashes.insert(Hash);
-	SaveScreenshotArea(CharStartX, CharStartY, CharEndX, CharEndY);
+	OCR_FindMostSimilarFontAndSave(Img, Width, CharStartX, CharStartY, CharEndX, CharEndY);
 }
 
 int FindCharacterEnclosingBox(int *Img, int Width, int &CharStartX, int &CharStartY, int &CharEndX, int &CharEndY)
@@ -180,6 +237,7 @@ char * WINAPI OCR_ReadTextLeftToRightSaveUnknownChars(int StartX, int StartY, in
 	int Height = CurScreenshot->GetHeight();
 	int WriteIndex = 0;
 	ReturnBuff[0] = 0;
+	int PrevFontEnd = StartX;
 	while (SearchRes == 1 && CharStartX < EndX)
 	{
 		CharStartY = StartY;
@@ -188,6 +246,10 @@ char * WINAPI OCR_ReadTextLeftToRightSaveUnknownChars(int StartX, int StartY, in
 			// try to get 1 full character that is separated by the next one and it's close to the previous one
 		if (FindCharacterEnclosingBox(Img, Width, CharStartX, CharStartY, CharEndX, CharEndY) == 0)
 			break;
+		//guessing there were " " characters between the 2 fonts
+		if (CharStartX > PrevFontEnd + 3)
+			ReturnBuff[WriteIndex++] = ' ';
+		//maybe we get lucky and guess what this was
 		char Font = FindMatchingFont(Img, Width, CharStartX, CharStartY, CharEndX, CharEndY);
 		if (Font != 0)
 			ReturnBuff[WriteIndex++] = Font;
@@ -195,6 +257,7 @@ char * WINAPI OCR_ReadTextLeftToRightSaveUnknownChars(int StartX, int StartY, in
 			ExtractNewFont(Img, Width, CharStartX, CharStartY, CharEndX, CharEndY);
 
 		CharStartX = CharEndX + 1;
+		PrevFontEnd = CharStartX;
 	}
 	FileDebug("Finished OCR_ReadTextLeftToRightSaveUnknownChars");
 	ReturnBuff[WriteIndex++] = 0;

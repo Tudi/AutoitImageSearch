@@ -361,3 +361,33 @@ void WINAPI OCR_LoadFontsFromDir(char *Path, char *SkipFileNameStart)
 		::FindClose(hFind);
 	}
 }
+
+void WINAPI KeepColorsMinInRegion(int StartX, int StartY, int EndX, int EndY, int RMin, int GMin, int BMin)
+{
+	if (CurScreenshot == NULL || CurScreenshot->Pixels == NULL)
+		return;
+	if (StartX == -1)
+	{
+		StartX = 0;
+		StartY = 0;
+		EndX = CurScreenshot->GetWidth();
+		EndY = CurScreenshot->GetHeight();
+	}
+	int Width = CurScreenshot->GetWidth();
+	for (int y = StartY; y < EndY; y++)
+		for (int x = StartX; x < EndX; x++)
+		{
+			int Color = CurScreenshot->Pixels[y*Width + x];
+			//			if (Color != TRANSPARENT_COLOR)
+			{
+				int B = GetRValue(Color);
+				int G = GetGValue(Color);
+				int R = GetBValue(Color);
+
+				if (R < RMin || G < GMin || B < BMin)
+					CurScreenshot->Pixels[y*Width + x] = TRANSPARENT_COLOR;
+				else
+					CurScreenshot->Pixels[y*Width + x] = 0;
+			}
+		}
+}
