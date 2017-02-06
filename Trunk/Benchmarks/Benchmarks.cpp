@@ -574,3 +574,35 @@ void RunImgSearchBenchmark2()
 	}/**/
 
 }
+
+void RunImgSearchGradientBenchmark()
+{
+	printf("Compare gradient color search speed with normal search speed\n");
+	{
+		TakeScreenshot(0, 0, 1025, 599);
+		LoadCacheOverScreenshot("Screenshot_0015_1025_0599.bmp", 0, 0);
+		int i, Start = GetTimeTickI();
+		for (i = 0; i < 2; i++)
+		{
+			char * ttt = ImageSearch_Multiple_Gradient(RGB(33, 106, 148), 60, 75, 181 - 151, 235 - 220);
+			printf("%s\n", ttt);
+		}
+		int End = GetTimeTickI();
+		printf("result of search benchmarking : %d ms %d FPS\n", End - Start, i * 1000 * 1000 / (End - Start + 1));
+		//		_getch();
+	}/**/
+	{
+		TakeScreenshot(0, 0, 1025, 599);
+		LoadCacheOverScreenshot("Screenshot_0015_1025_0599.bmp", 0, 0);
+		KeepGradient(RGB(33, 106, 148), 0.4f);
+		int i, Start = GetTimeTickI();
+		for (i = 0; i < 10; i++)
+		{
+			char * ttt = ImageSearch_Multiple_PixelCount(0, 75, 181 - 151, 235 - 220);
+			printf("%s\n", ttt);
+		}
+		int End = GetTimeTickI();
+		printf("result of search benchmarking : %d ms %d FPS\n", End - Start, i * 1000 * 1000 / (End - Start + 1));
+		//		_getch();
+	}/**/
+}

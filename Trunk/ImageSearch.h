@@ -10,5 +10,8 @@ char* WINAPI ImageSearchOnScreenshotMasked(char *ImageFile, char *MaskFile, int 
 char* WINAPI ImageSearch_SAD(char *aImageFile);
 char* WINAPI ImageSearch_Multiple_ExactMatch(char *aImageFile);
 char* WINAPI ImageSearch_Multiple_Transparent(char *aImageFile);
+char* WINAPI ImageSearch_Multiple_PixelCount(int Color, int Percent, int AreaWidth, int AreaHeight);
+// this is a lot slower than doing it step by step !
+char* WINAPI ImageSearch_Multiple_Gradient(int Color, int GradientMatchPercent, int CountInAreaPercent, int AreaWidth, int AreaHeight);
 
 #endif

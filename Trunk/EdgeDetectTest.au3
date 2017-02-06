@@ -1,4 +1,5 @@
 #include "MouseOnEvent.au3"
+#RequireAdmin
 
 ;HotKeySet("{ESC}", "RestoreMouse")
 HotKeySet("9", "TakeScreenshotsWithMouse")
@@ -29,6 +30,11 @@ func TakeScreenshotsWithMouse()
 	local $x2 = $MouseCoords[1][0]
 	local $y2 = $MouseCoords[1][1]
 	MsgBox(64, "", "Took initial screeenshot of area : [" & $MouseCoords[0][0] & "-" & $MouseCoords[0][1] & "][" & $MouseCoords[1][0] & "-" & $MouseCoords[1][1] & "]")
+;	$result = DllCall( $dllhandle, "NONE", "TakeScreenshot", "int", $x1, "int", $y1, "int", $x2, "int", $y2 );
+;	$result = DllCall( $dllhandle, "NONE", "SaveScreenshot" )
+;	$result = DllCall( $dllhandle,"NONE","ApplyColorBitmask","int", 0x00F0F0F0)
+;	return;
+	
 	$result = DllCall( $dllhandle, "NONE", "TakeScreenshot", "int", $x1, "int", $y1, "int", $x2, "int", $y2 )
 	$result = DllCall( $dllhandle, "NONE", "SaveScreenshot" )
 	$result = DllCall( $dllhandle, "NONE", "EdgeDetectRobertCross3Channels" )

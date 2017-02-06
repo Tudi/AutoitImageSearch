@@ -48,6 +48,14 @@ void WINAPI TakeScreenshotRemoveDynamicPixels(int aLeft, int aTop, int aRight, i
 {
 	FileDebug("Started taking the screenshot in TakeScreenshotRemoveDynamicPixels");
 
+	//cause we were lasy to specify something usefull
+	if (aLeft == -1)
+	{
+		aRight = CurScreenshot->Left;
+		aTop = CurScreenshot->Top;
+		aRight = CurScreenshot->Right;
+		aBottom = CurScreenshot->Bottom;
+	}
 	// size of the new screenshot should be at least as the Curent screenshot size
 	if (aRight - aLeft < CurScreenshot->GetWidth() )
 		FileDebug("Error TakeScreenshotRemoveDynamicPixels : new screenshot width is smaller than the reference image !");

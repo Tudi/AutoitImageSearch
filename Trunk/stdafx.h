@@ -85,6 +85,7 @@
 #include "SplitChannelSearch.h"
 #include "ImageSearch.h"
 #include "OCR_LuckyCase.h"
+#include "PixelProcess.h"
 
 #ifdef _CONSOLE
 	#include "Benchmarks/Benchmarks.h"

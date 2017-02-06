@@ -281,46 +281,6 @@ char * WINAPI ReadTextFromScreenshot( int StartX, int StartY, int EndX, int EndY
 	return OCRReturnBuff;
 }
 
-void WINAPI KeepColorSetRest(int SetRest, int SetColors, int Color1)
-{
-	FileDebug("Started KeepColorSetRest");
-	if (CurScreenshot->Pixels == NULL)
-	{
-		FileDebug("WARNING:Screenshot buffer is null when trying to extract color!");
-		return;
-	}
-	int Width = CurScreenshot->Right - CurScreenshot->Left;
-	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
-	for (int y = 1; y < Height; y += 1)
-		for (int x = 1; x < Width; x += 1)
-			if (CurScreenshot->Pixels[y * Width + x] != Color1)
-				CurScreenshot->Pixels[y * Width + x] = SetRest;
-			else
-				CurScreenshot->Pixels[y * Width + x] = SetColors;
-
-	FileDebug("Finished KeepColorSetRest");
-}
-
-void WINAPI KeepColor3SetBoth(int SetRest, int SetColors, int Color1, int Color2, int Color3)
-{
-	FileDebug("Started KeepColor3SetBoth");
-	if (CurScreenshot->Pixels == NULL)
-	{
-		FileDebug("WARNING:Screenshot buffer is null when trying to extract color!");
-		return;
-	}
-	int Width = CurScreenshot->Right - CurScreenshot->Left;
-	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
-	for (int y = 1; y < Height; y += 1)
-		for (int x = 1; x < Width; x += 1)
-			if (CurScreenshot->Pixels[y * Width + x] == Color1 || CurScreenshot->Pixels[y * Width + x] == Color2 || CurScreenshot->Pixels[y * Width + x] == Color3 )
-				CurScreenshot->Pixels[y * Width + x] = SetColors;
-			else
-				CurScreenshot->Pixels[y * Width + x] = SetRest;
-
-	FileDebug("Finished KeepColor3SetBoth");
-}
-
 void WINAPI OCR_LoadFontsFromFile(char *aFilespec)
 {
 	FILE *f = fopen(aFilespec, "rt");
@@ -360,34 +320,4 @@ void WINAPI OCR_LoadFontsFromDir(char *Path, char *SkipFileNameStart)
 		} while (::FindNextFile(hFind, &fd));
 		::FindClose(hFind);
 	}
-}
-
-void WINAPI KeepColorsMinInRegion(int StartX, int StartY, int EndX, int EndY, int RMin, int GMin, int BMin)
-{
-	if (CurScreenshot == NULL || CurScreenshot->Pixels == NULL)
-		return;
-	if (StartX == -1)
-	{
-		StartX = 0;
-		StartY = 0;
-		EndX = CurScreenshot->GetWidth();
-		EndY = CurScreenshot->GetHeight();
-	}
-	int Width = CurScreenshot->GetWidth();
-	for (int y = StartY; y < EndY; y++)
-		for (int x = StartX; x < EndX; x++)
-		{
-			int Color = CurScreenshot->Pixels[y*Width + x];
-			//			if (Color != TRANSPARENT_COLOR)
-			{
-				int B = GetRValue(Color);
-				int G = GetGValue(Color);
-				int R = GetBValue(Color);
-
-				if (R < RMin || G < GMin || B < BMin)
-					CurScreenshot->Pixels[y*Width + x] = TRANSPARENT_COLOR;
-				else
-					CurScreenshot->Pixels[y*Width + x] = 0;
-			}
-		}
 }

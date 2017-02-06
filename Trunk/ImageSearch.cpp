@@ -824,3 +824,173 @@ char* WINAPI ImageSearchOnScreenshotBestTransparent(char *aFilespec)
 	FileDebug("\tImage search finished");
 	return ReturnBuff;
 }
+
+__forceinline int GetPixelCountRegion(const int *TempBuff, const int Width, const int Color, const int PrevCount, const int AreaWidth, const int AreaHeight)
+{
+	int ret = 0;
+	if (PrevCount != -1)
+	{
+		ret = PrevCount;
+		//substract prev line
+		TempBuff -= Width;
+		for (int x2 = 0; x2 < AreaWidth; x2++)
+			if (TempBuff[x2] == Color)
+				ret--;
+		//add new line
+		TempBuff += Width + ( AreaHeight - 1 ) * Width;
+		for (int x2 = 0; x2 < AreaWidth; x2++)
+			if (TempBuff[x2] == Color)
+				ret++;
+	}
+	else
+	{
+		//count all
+		for (int y2 = 0; y2 < AreaHeight; y2++)
+		{
+			for (int x2 = 0; x2 < AreaWidth; x2++)
+				if (TempBuff[x2] == Color)
+					ret++;
+			TempBuff += Width;
+		}
+	}
+	return ret;
+}
+
+char* WINAPI ImageSearch_Multiple_PixelCount(int Color, int Percent, int AreaWidth, int AreaHeight)
+{
+	char ReturnBuff2[DEFAULT_STR_BUFFER_SIZE * 50];
+	int MatchesFound = 0;
+	ReturnBuff[0] = 0;
+	ReturnBuff2[0] = 0;
+	FileDebug("Started Image search");
+	if (CurScreenshot->Pixels == NULL)
+	{
+		FileDebug("Skipping Image search no screenshot is available");
+		return "";
+	}
+
+	int Width = CurScreenshot->GetWidth();
+	int Height = CurScreenshot->GetHeight();
+	int AreaSize = AreaWidth * AreaHeight;
+	float AreaSizeP = AreaSize / 100.0f;
+	int *TempBuff = (int*)malloc(Width * Height * sizeof(int));
+	memcpy(TempBuff, CurScreenshot->Pixels, Width * Height * sizeof(int));
+
+	for (int x = 0; x < Width - AreaWidth; x += 1)
+	{
+		int PrevBlockCount = -1;
+		for (int y = 0; y < Height - AreaHeight; y += 1)
+		{
+			// this will only help if we plan to find multiple areas with considerable size. ( we will find it at least once right ? )
+			if (TempBuff[y * Width + x] == 66)
+			{
+				y += AreaHeight;
+				PrevBlockCount = -1;
+				continue;
+			}/**/
+			// count Colors
+			int Counter = GetPixelCountRegion( &TempBuff[y * Width + x], Width, Color, PrevBlockCount, AreaWidth, AreaHeight);
+			float Ratio = Counter / AreaSizeP;
+			PrevBlockCount = Counter;
+			if (Ratio > Percent)
+			{
+				// If we got here, there is a match
+				MatchesFound++;
+				int retx = x + CurScreenshot->Left;
+				int rety = y + CurScreenshot->Top;
+				sprintf_s(ReturnBuff2, DEFAULT_STR_BUFFER_SIZE * 50, "%s|%d|%d", ReturnBuff2, retx, rety);
+				//mark this zone so we do not find it again
+				for (int y2 = 0; y2 < AreaHeight; y2++)
+				{
+					memset(&TempBuff[(y + y2) * Width + x], TRANSPARENT_COLOR, AreaWidth*sizeof(int));
+					//mark this zone that we can skip processing
+					TempBuff[(y + y2) * Width + x] = 66;
+				}
+				//jump forward with X, there is no need to search this area
+				y += AreaHeight;
+				PrevBlockCount = -1;
+			}
+		}
+	}
+	if (MatchesFound == 0)
+		FileDebug("\t Image search found no matches");
+
+	sprintf_s(ReturnBuff, DEFAULT_STR_BUFFER_SIZE * 10, "%d|%s", MatchesFound, ReturnBuff2);
+	free(TempBuff);
+	FileDebug("\tImage search finished");
+	return ReturnBuff;
+}
+
+// this is 8 times slower than doing it in 2 steps !!
+char* WINAPI ImageSearch_Multiple_Gradient(int Color, int GradientMatchPercent, int CountInAreaPercent, int AreaWidth, int AreaHeight)
+{
+	char ReturnBuff2[DEFAULT_STR_BUFFER_SIZE * 10];
+	int MatchesFound = 0;
+	ReturnBuff[0] = 0;
+	ReturnBuff2[0] = 0;
+	FileDebug("Started Image search");
+	if (CurScreenshot->Pixels == NULL)
+	{
+		FileDebug("Skipping Image search no screenshot is available");
+		return "";
+	}
+	int R1 = GetRValue(Color);
+	int G1 = GetGValue(Color);
+	int B1 = GetBValue(Color);
+	float RG1 = (float)R1 / (float)G1;
+	float GB1 = (float)G1 / (float)B1;
+	float GradientMatchPercent2 = ( 100.0f - GradientMatchPercent ) / 100.0f;
+
+	int Width = CurScreenshot->GetWidth();
+	int Height = CurScreenshot->GetHeight();
+	float AreaSize = AreaWidth * AreaHeight / 100.0f;
+	int *TempBuff = (int*)malloc(Width * Height * sizeof(int));
+	memcpy(TempBuff, CurScreenshot->Pixels, Width * Height * sizeof(int));
+
+	for (int y = 0; y < Height - AreaHeight; y += 1)
+	{
+		for (int x = 0; x < Width - AreaWidth; x += 1)
+		{
+			// count Colors
+			int Counter = 0;
+			for (int y2 = 0; y2<AreaHeight; y2++)
+			{
+				int *AddrBig = &TempBuff[(y + y2) * Width + x];
+				for (int x2 = 0; x2 < AreaWidth; x2++)
+				{
+					int Color2 = AddrBig[x2];
+					int B2 = GetRValue(Color2);
+					int G2 = GetGValue(Color2);
+					int R2 = GetBValue(Color2);
+					float RG2 = (float)R2 / (float)G2;
+					if (abs(RG2 - RG1) > GradientMatchPercent2)
+						continue;
+					float GB2 = (float)G2 / (float)B2;
+					if (abs(GB2 - GB1) <= GradientMatchPercent2)
+						Counter++;
+				}
+			}
+			float Ratio = Counter / AreaSize;
+			if (Ratio > CountInAreaPercent)
+			{
+				// If we got here, there is a match
+				MatchesFound++;
+				int retx = x + CurScreenshot->Left;
+				int rety = y + CurScreenshot->Top;
+				sprintf_s(ReturnBuff2, DEFAULT_STR_BUFFER_SIZE * 10, "%s|%d|%d", ReturnBuff2, retx, rety);
+				//mark this zone so we do not find it again
+				for (int y2 = 0; y2 < AreaHeight; y2++)
+					memset(&TempBuff[(y + y2) * Width + x], TRANSPARENT_COLOR, AreaWidth*sizeof(int));
+				//jump forward with X, there is no need to search this area
+				x += AreaWidth - 1;
+			}
+		}
+	}
+	if (MatchesFound == 0)
+		FileDebug("\t Image search found no matches");
+
+	sprintf_s(ReturnBuff, DEFAULT_STR_BUFFER_SIZE * 10, "%d|%s", MatchesFound, ReturnBuff2);
+	free(TempBuff);
+	FileDebug("\tImage search finished");
+	return ReturnBuff;
+}

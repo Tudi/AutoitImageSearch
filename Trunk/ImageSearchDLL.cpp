@@ -41,7 +41,7 @@ void main()
 	StartCounter();
 //	RunSQRTBenchmark(); //fact : sqrt( double) rocks
 
-#ifdef _CONSOLE
+#if defined( _CONSOLE ) && !defined( _DEBUG )
 //	RunSCreenCaptureBenchmark(); // 350 fps on my pc
 //	RunCheckChangeBenchmark(); // 587 fps on my pc
 //	RunResizeBenchmark(); // 346 fps on my pc
@@ -53,9 +53,11 @@ void main()
 //	RunPiramidSearchBenchmark(); // 151 fps is the setup and 600 fps is the search on my pc
 //	RunEdgeDetectBenchmark(); // 62 fps / 15 fps 
 //	RunImgSearchBenchmark2();
+	RunImgSearchGradientBenchmark();
 //	_getch();
 #endif
 
+#ifdef _DEBUG
 /*	{
 		OCR_RegisterFont( "OCR_1_green.bmp", '1' );
 		OCR_RegisterFont( "OCR_2_green.bmp", '2' );
@@ -158,22 +160,22 @@ void main()
 		printf("result of search benchmarking : %d ms %d FPS\n", End - Start, i * 1000 * 1000 / (End - Start + 1));
 		//		_getch();
 		}/**/
-	{
+/*	{
 		char *res;
 		//OCR_LoadFontsFromFile("K_C_M_FontMap.txt");
 		OCR_LoadFontsFromDir("K_C_M", "KCM_");
 		TakeScreenshot(0, 0, 1025, 599);
 		OCR_SetMaxFontSize(20, 20);
-//		LoadCacheOverScreenshot("Screenshot_0021_1025_0599.bmp", 0, 0);
-//		LoadCacheOverScreenshot("Screenshot_0024_1025_0599.bmp", 0, 0);
-//		LoadCacheOverScreenshot("Screenshot_0042_1025_0599.bmp", 0, 0);
-//		LoadCacheOverScreenshot("Screenshot_0045_1025_0599.bmp", 0, 0);
-//		LoadCacheOverScreenshot("Screenshot_0048_1025_0599.bmp", 0, 0);
+		//		LoadCacheOverScreenshot("Screenshot_0021_1025_0599.bmp", 0, 0);
+		//		LoadCacheOverScreenshot("Screenshot_0024_1025_0599.bmp", 0, 0);
+		//		LoadCacheOverScreenshot("Screenshot_0042_1025_0599.bmp", 0, 0);
+		//		LoadCacheOverScreenshot("Screenshot_0045_1025_0599.bmp", 0, 0);
+		//		LoadCacheOverScreenshot("Screenshot_0048_1025_0599.bmp", 0, 0);
 		LoadCacheOverScreenshot("Screenshot_0051_1025_0599.bmp", 0, 0);
-		//SaveScreenshot(); 
-//		KeepColorsMinInRegion(446, 182, 680, 205, 144, 133, 41);
+		//SaveScreenshot();
+		//		KeepColorsMinInRegion(446, 182, 680, 205, 144, 133, 41);
 		KeepColorsMinInRegion(446, 182, 680, 205, 171, 160, 49);
-		//SaveScreenshot(); 
+		//SaveScreenshot();
 		//KeepColorsMinInRegion(405, 223, 680, 482, 154, 158, 159);
 		KeepColorsMinInRegion(502, 223, 680, 240, 154, 158, 159);
 		KeepColorsMinInRegion(554, 249, 680, 265, 154, 158, 159);
@@ -183,8 +185,8 @@ void main()
 		//SaveScreenshot();
 		//ConvertToGrayScale();
 		//DecreaseColorCount(1);
-		//SaveScreenshot(); 
-		//SaveScreenshot(); 
+		//SaveScreenshot();
+		//SaveScreenshot();
 		//GetUniqueColorsInRegion(502, 223, 580, 237);
 		//KeepColorSetRest(0x00000000, 0x00FFFFFF, 0x00000000);
 		//SaveScreenshot();
@@ -194,42 +196,85 @@ void main()
 		res = OCR_ReadTextLeftToRightSaveUnknownChars(446, 182, 680, 205);
 		if (res != NULL)
 		{
-			printf("Name : %s\n", res);
+		printf("Name : %s\n", res);
 		}
 		//read might
 		res = OCR_ReadTextLeftToRightSaveUnknownChars(502, 223, 680, 240);
 		if (res != NULL)
 		{
-			printf("might : %s\n", res);
-			RemoveCharFromNumberString(res, ',');
-			printf("might : %s\n", res);
+		printf("might : %s\n", res);
+		RemoveCharFromNumberString(res, ',');
+		printf("might : %s\n", res);
 		}
 		//read troops killed
 		res = OCR_ReadTextLeftToRightSaveUnknownChars(554, 249, 680, 265);
 		if (res != NULL)
 		{
-			printf("kills : %s\n", res);
-			RemoveCharFromNumberString(res, ',');
-			printf("kills : %s\n", res);
-		}/**/
+		printf("kills : %s\n", res);
+		RemoveCharFromNumberString(res, ',');
+		printf("kills : %s\n", res);
+		}
 		//read guild
 		res = OCR_ReadTextLeftToRightSaveUnknownChars(405, 276, 680, 295);
 		if (res != NULL)
 		{
-			printf("guild : %s\n", res);
+		printf("guild : %s\n", res);
 		}
 		//read location X
 		res = OCR_ReadTextLeftToRightSaveUnknownChars(502, 469, 529, 482);
 		if (res != NULL)
 		{
-			printf("x : %s\n", res);
+		printf("x : %s\n", res);
 		}
 		//read location y
 		res = OCR_ReadTextLeftToRightSaveUnknownChars(543, 469, 570, 482);
 		if (res != NULL)
 		{
-			printf("y : %s\n", res);
+		printf("y : %s\n", res);
 		}
-	}/**/
+		}/**/
+	{
+		TakeScreenshot(0, 0, 1025, 599);
 
+		LoadCacheOverScreenshot("Screenshot_0015_1025_0599.bmp", 0, 0);
+//		char * ttt = ImageSearch_Multiple_Gradient(RGB(33, 106, 148), 60, 75, 181 - 151, 235 - 220);
+		KeepGradient(RGB(33, 106, 148), 0.4f);
+		//SaveScreenshot();
+		float t = GetPixelRatioInArea(0, 151, 220, 181, 235);
+		printf("t = %f\n", t);
+		char * tt = ImageSearch_Multiple_PixelCount(0, 75, 181 - 151, 235 - 220);
+		return;
+
+		PushToColorKeepList(0x406060);
+		PushToColorKeepList(0x406080);
+		PushToColorKeepList(0x206080);
+		PushToColorKeepList(0x204060);
+		PushToColorKeepList(0x204040);
+		PushToColorKeepList(0x204080);
+		PushToColorKeepList(0x206060);
+		PushToColorKeepList(0x2060A0);
+		PushToColorKeepList(0x004060);
+		PushToColorKeepList(0x004080);
+		PushToColorKeepList(0x006060);
+		PushToColorKeepList(0x006080);
+		LoadCacheOverScreenshot("Screenshot_0015_1025_0599.bmp", 0, 0);
+		ApplyColorBitmask(0x00E0E0E0);
+		//SaveScreenshot();
+		//KeepColor3SetBoth(0, 0x00FFFFFF, 0x206080, 0x4080, 0x4060);
+		ApplyColorKeepList(0x00FFFFFF, 0);
+		SaveScreenshot();
+
+		LoadCacheOverScreenshot("Screenshot_0015_1025_0599.bmp", 0, 0);
+		ApplyColorBitmask(0x00C0C0C0);
+		//SaveScreenshot();
+		KeepColor3SetBoth(0, 0x00FFFFFF, 0x00004080, 0x00004040, 0x00408080);
+		//SaveScreenshot();
+
+		LoadCacheOverScreenshot("Screenshot_0015_1025_0599.bmp", 0, 0);
+		ApplyColorBitmask(0x00808080);
+		//SaveScreenshot();
+		KeepColor3SetBoth(0, 0x00FFFFFF, 0x00000080, 0x00008080, 0x00008080);
+		//SaveScreenshot();
+	}/**/
+#endif
 }

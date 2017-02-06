@@ -15,8 +15,11 @@ EXPORTS
 	ImageSearch
 	ImageSearch_SAD	
 	ImageSearch_Multiple_ExactMatch
+	ImageSearch_Multiple_Transparent
+	ImageSearch_Multiple_PixelCount
 	ResizeScreenshot
 	BlurrImage
+	KeepGradient
 	MoveScreenshotToCache
 	LoadCacheOverScreenshot
 	ImageSearchOnScreenshot

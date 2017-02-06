@@ -181,6 +181,7 @@
     <ClCompile Include="OCR_LuckyCase.cpp" />
     <ClCompile Include="PictureCache.cpp" />
     <ClCompile Include="PiramidSearch.cpp" />
+    <ClCompile Include="PixelProcess.cpp" />
     <ClCompile Include="Resampling.cpp" />
     <ClCompile Include="SaveImages.cpp" />
     <ClCompile Include="SimilarSearch.cpp" />
@@ -210,6 +211,7 @@
     <ClInclude Include="OCR_LuckyCase.h" />
     <ClInclude Include="PictureCache.h" />
     <ClInclude Include="PiramidSearch.h" />
+    <ClInclude Include="PixelProcess.h" />
     <ClInclude Include="Resampling.h" />
     <ClInclude Include="SaveImages.h" />
     <ClInclude Include="SimilarSearch.h" />
