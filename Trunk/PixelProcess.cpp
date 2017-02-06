@@ -44,7 +44,7 @@ void WINAPI ApplyColorKeepList(int SetRemainingTo, int SetEliminatedTo)
 		}
 }
 
-void WINAPI KeepColorsMinInRegion(int StartX, int StartY, int EndX, int EndY, int RMin, int GMin, int BMin)
+void WINAPI KeepColorsMinInRegion(int StartX, int StartY, int EndX, int EndY, int ColorMin)
 {
 	if (CurScreenshot == NULL || CurScreenshot->Pixels == NULL)
 		return;
@@ -55,6 +55,14 @@ void WINAPI KeepColorsMinInRegion(int StartX, int StartY, int EndX, int EndY, in
 		EndX = CurScreenshot->GetWidth();
 		EndY = CurScreenshot->GetHeight();
 	}
+	//check for valid parameters
+	if (StartX > CurScreenshot->GetWidth() || StartX < 0 || StartX >= EndX || EndX > CurScreenshot->GetWidth())
+		return;
+	if (StartY > CurScreenshot->GetHeight() || StartY < 0 || StartY >= EndY || EndY > CurScreenshot->GetHeight())
+		return;
+	int RMin = GetRValue(ColorMin);
+	int GMin = GetGValue(ColorMin);
+	int BMin = GetBValue(ColorMin);
 	int Width = CurScreenshot->GetWidth();
 	for (int y = StartY; y < EndY; y++)
 		for (int x = StartX; x < EndX; x++)
@@ -114,7 +122,7 @@ void WINAPI KeepColor3SetBoth(int SetRest, int SetColors, int Color1, int Color2
 	FileDebug("Finished KeepColor3SetBoth");
 }
 
-void WINAPI KeepGradient(int Color, float MaxChange)
+void WINAPI KeepGradientRegion(int Color, float MaxChange, int StartX, int StartY, int EndX, int EndY)
 {
 	FileDebug("Started KeepGradient");
 	int R1 = GetRValue(Color);
@@ -129,14 +137,13 @@ void WINAPI KeepGradient(int Color, float MaxChange)
 		return;
 	}
 	int Width = CurScreenshot->Right - CurScreenshot->Left;
-	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
-	for (int y = 0; y < Height; y += 1)
-		for (int x = 0; x < Width; x += 1)
+	for (int y = StartY; y < EndY; y += 1)
+		for (int x = StartX; x < EndX; x += 1)
 		{
 			int Color = CurScreenshot->Pixels[y * Width + x];
-			int B2 = GetRValue(Color);
-			int G2 = GetGValue(Color);
-			int R2 = GetBValue(Color);
+			float B2 = GetRValue(Color);
+			float G2 = GetGValue(Color);
+			float R2 = GetBValue(Color);
 			float RG2 = (float)R2 / (float)G2;
 			float GB2 = (float)G2 / (float)B2;
 			if (abs(RG2 - RG1) > MaxChange || abs(GB2 - GB1) > MaxChange)
@@ -144,7 +151,13 @@ void WINAPI KeepGradient(int Color, float MaxChange)
 			else
 				CurScreenshot->Pixels[y * Width + x] = 0;
 		}
+	FileDebug("Finished KeepGradient");
+}
 
+void WINAPI KeepGradient(int Color, float MaxChange)
+{
+	FileDebug("Started KeepGradient");
+	KeepGradientRegion(Color, MaxChange, 0, 0, CurScreenshot->GetWidth(), CurScreenshot->GetHeight());
 	FileDebug("Finished KeepGradient");
 }
 

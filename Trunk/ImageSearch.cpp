@@ -915,7 +915,7 @@ char* WINAPI ImageSearch_Multiple_PixelCount(int Color, int Percent, int AreaWid
 	if (MatchesFound == 0)
 		FileDebug("\t Image search found no matches");
 
-	sprintf_s(ReturnBuff, DEFAULT_STR_BUFFER_SIZE * 10, "%d|%s", MatchesFound, ReturnBuff2);
+	sprintf_s(ReturnBuff, DEFAULT_STR_BUFFER_SIZE * 10, "%d%s", MatchesFound, ReturnBuff2);
 	free(TempBuff);
 	FileDebug("\tImage search finished");
 	return ReturnBuff;

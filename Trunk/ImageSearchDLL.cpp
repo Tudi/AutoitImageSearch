@@ -53,8 +53,10 @@ void main()
 //	RunPiramidSearchBenchmark(); // 151 fps is the setup and 600 fps is the search on my pc
 //	RunEdgeDetectBenchmark(); // 62 fps / 15 fps 
 //	RunImgSearchBenchmark2();
-	RunImgSearchGradientBenchmark();
+//	RunImgSearchGradientBenchmark();
+
 //	_getch();
+	return;
 #endif
 
 #ifdef _DEBUG
@@ -160,29 +162,34 @@ void main()
 		printf("result of search benchmarking : %d ms %d FPS\n", End - Start, i * 1000 * 1000 / (End - Start + 1));
 		//		_getch();
 		}/**/
-/*	{
+	{
 		char *res;
 		//OCR_LoadFontsFromFile("K_C_M_FontMap.txt");
 		OCR_LoadFontsFromDir("K_C_M", "KCM_");
 		TakeScreenshot(0, 0, 1025, 599);
 		OCR_SetMaxFontSize(20, 20);
-		//		LoadCacheOverScreenshot("Screenshot_0021_1025_0599.bmp", 0, 0);
-		//		LoadCacheOverScreenshot("Screenshot_0024_1025_0599.bmp", 0, 0);
-		//		LoadCacheOverScreenshot("Screenshot_0042_1025_0599.bmp", 0, 0);
-		//		LoadCacheOverScreenshot("Screenshot_0045_1025_0599.bmp", 0, 0);
-		//		LoadCacheOverScreenshot("Screenshot_0048_1025_0599.bmp", 0, 0);
-		LoadCacheOverScreenshot("Screenshot_0051_1025_0599.bmp", 0, 0);
+		//LoadCacheOverScreenshot("Screenshot_0021_1025_0599.bmp", 0, 0);
+		//LoadCacheOverScreenshot("Screenshot_0024_1025_0599.bmp", 0, 0);
+		//LoadCacheOverScreenshot("Screenshot_0042_1025_0599.bmp", 0, 0);
+		LoadCacheOverScreenshot("Screenshot_0045_1025_0599.bmp", 0, 0);
+		//LoadCacheOverScreenshot("Screenshot_0048_1025_0599.bmp", 0, 0);
+		//LoadCacheOverScreenshot("Screenshot_0051_1025_0599.bmp", 0, 0);
 		//SaveScreenshot();
+//		KeepGradientRegion(RGB(239, 222, 65), 0.1f, 446, 182, 680, 205);
+//		KeepGradientRegion(RGB(237, 237, 237), 0.015f, 405, 223, 680, 295);
+//		KeepGradientRegion(RGB(237, 237, 237), 0.03f, 502, 469, 570, 482);
+//		SaveScreenshot();
 		//		KeepColorsMinInRegion(446, 182, 680, 205, 144, 133, 41);
-		KeepColorsMinInRegion(446, 182, 680, 205, 171, 160, 49);
+		KeepColorsMinInRegion(446, 182, 680, 205, RGB(171, 160, 49));
 		//SaveScreenshot();
 		//KeepColorsMinInRegion(405, 223, 680, 482, 154, 158, 159);
-		KeepColorsMinInRegion(502, 223, 680, 240, 154, 158, 159);
-		KeepColorsMinInRegion(554, 249, 680, 265, 154, 158, 159);
-		KeepColorsMinInRegion(405, 276, 680, 295, 154, 158, 159);
-		KeepColorsMinInRegion(502, 469, 529, 482, 154, 158, 159);
-		KeepColorsMinInRegion(543, 469, 570, 482, 154, 158, 159);
+		KeepColorsMinInRegion(446, 223, 680, 240, RGB(154, 158, 159));
+		KeepColorsMinInRegion(446, 249, 680, 265, RGB(154, 158, 159));
+		KeepColorsMinInRegion(405, 276, 680, 295, RGB(154, 158, 159));
+		KeepColorsMinInRegion(502, 469, 529, 482, RGB(154, 158, 159));
+		KeepColorsMinInRegion(543, 469, 570, 482, RGB(154, 158, 159));
 		//SaveScreenshot();
+		//return;
 		//ConvertToGrayScale();
 		//DecreaseColorCount(1);
 		//SaveScreenshot();
@@ -233,7 +240,7 @@ void main()
 		printf("y : %s\n", res);
 		}
 		}/**/
-	{
+/*	{
 		TakeScreenshot(0, 0, 1025, 599);
 
 		LoadCacheOverScreenshot("Screenshot_0015_1025_0599.bmp", 0, 0);

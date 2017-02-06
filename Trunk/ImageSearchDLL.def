@@ -10,7 +10,9 @@ EXPORTS
 	DecreaseColorCount
 
 	OCR_RegisterFont
+	OCR_LoadFontsFromDir
 	OCR_ReadTextLeftToRightSaveUnknownChars
+	KeepColorsMinInRegion
 
 	ImageSearch
 	ImageSearch_SAD	
