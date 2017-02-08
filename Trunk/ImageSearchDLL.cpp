@@ -162,32 +162,89 @@ void main()
 		printf("result of search benchmarking : %d ms %d FPS\n", End - Start, i * 1000 * 1000 / (End - Start + 1));
 		//		_getch();
 		}/**/
-/*	{
+	{
 		char *res;
 		//OCR_LoadFontsFromFile("K_C_M_FontMap.txt");
 		OCR_LoadFontsFromDir("K_C_M", "KCM_");
+		OCR_LoadFontsFromDir("K_C_M_Old1", "K_C_M_");
+		OCR_LoadFontsFromDir("K_C_M_old2", "KCM_");
+		OCR_LoadFontsFromDir("K_C_M_try3", "KCM_");
 		TakeScreenshot(0, 0, 1025, 599);
 		OCR_SetMaxFontSize(20, 20);
-		//LoadCacheOverScreenshot("Screenshot_0021_1025_0599.bmp", 0, 0);
-		//LoadCacheOverScreenshot("Screenshot_0024_1025_0599.bmp", 0, 0);
-		//LoadCacheOverScreenshot("Screenshot_0042_1025_0599.bmp", 0, 0);
-		LoadCacheOverScreenshot("Screenshot_0045_1025_0599.bmp", 0, 0);
-		//LoadCacheOverScreenshot("Screenshot_0048_1025_0599.bmp", 0, 0);
-		//LoadCacheOverScreenshot("Screenshot_0051_1025_0599.bmp", 0, 0);
+		//LoadCacheOverScreenshot("CastlepopupExamples/Screenshot_0021_1025_0599.bmp", 0, 0);
+		//LoadCacheOverScreenshot("CastlepopupExamples/Screenshot_0024_1025_0599.bmp", 0, 0);
+		//LoadCacheOverScreenshot("CastlepopupExamples/Screenshot_0042_1025_0599.bmp", 0, 0);
+		//LoadCacheOverScreenshot("CastlepopupExamples/Screenshot_0045_1025_0599.bmp", 0, 0);
+		//LoadCacheOverScreenshot("CastlepopupExamples/Screenshot_0048_1025_0599.bmp", 0, 0);
+		//LoadCacheOverScreenshot("CastlepopupExamples/Screenshot_0051_1025_0599.bmp", 0, 0);
 		//SaveScreenshot();
 //		KeepGradientRegion(RGB(239, 222, 65), 0.1f, 446, 182, 680, 205);
 //		KeepGradientRegion(RGB(237, 237, 237), 0.015f, 405, 223, 680, 295);
 //		KeepGradientRegion(RGB(237, 237, 237), 0.03f, 502, 469, 570, 482);
 //		SaveScreenshot();
 		//		KeepColorsMinInRegion(446, 182, 680, 205, 144, 133, 41);
-		KeepColorsMinInRegion(446, 182, 680, 205, RGB(171, 160, 49));
+		KeepColorsMinInRegion(446, 181, 680, 205, RGB(171, 160, 49));
 		//SaveScreenshot();
-		//KeepColorsMinInRegion(405, 223, 680, 482, 154, 158, 159);
-		KeepColorsMinInRegion(446, 223, 680, 240, RGB(154, 158, 159));
+#if 0==1
+		//this was too low, 'ffi' gets merged into 1 char 
+		KeepColorsMinInRegion(446, 223, 680, 241, RGB(154, 158, 159));
 		KeepColorsMinInRegion(446, 249, 680, 265, RGB(154, 158, 159));
 		KeepColorsMinInRegion(405, 276, 680, 295, RGB(154, 158, 159));
 		KeepColorsMinInRegion(502, 469, 529, 482, RGB(154, 158, 159));
 		KeepColorsMinInRegion(543, 469, 570, 482, RGB(154, 158, 159));
+#elif 0==2
+		KeepColorsMinInRegion(446, 223, 680, 240, RGB(182, 185, 186)); // might
+		KeepColorsMinInRegion(446, 249, 680, 265, RGB(182, 185, 186)); // kills
+		KeepColorsMinInRegion(405, 276, 680, 295, RGB(182, 185, 186)); // guild
+		KeepColorsMinInRegion(502, 469, 529, 482, RGB(182, 185, 186)); // x
+		KeepColorsMinInRegion(543, 469, 570, 482, RGB(182, 185, 186)); // y
+#elif 22==22
+		KeepColorsMinInRegion(446, 223, 680, 240, RGB(155, 158, 159)); // might
+		KeepColorsMinInRegion(446, 249, 680, 265, RGB(155, 158, 159)); // kills
+		KeepColorsMinInRegion(405, 276, 680, 295, RGB(155, 158, 159)); // guild
+		KeepColorsMinInRegion(502, 469, 529, 482, RGB(155, 158, 159)); // x
+		KeepColorsMinInRegion(543, 469, 570, 482, RGB(155, 158, 159)); // y
+#elif 0==3
+		KeepGradientRegion(RGB(155, 159, 162), 0.04f, 446, 223, 680, 241); // might
+		KeepGradientRegion(RGB(155, 159, 162), 0.04f, 446, 249, 680, 266); // kills
+		KeepGradientRegion(RGB(155, 159, 162), 0.04f, 405, 276, 680, 295); // guild
+		KeepGradientRegion(RGB(155, 159, 162), 0.04f, 502, 469, 529, 482); // x
+		KeepGradientRegion(RGB(155, 159, 162), 0.04f, 543, 469, 570, 482); // y
+#elif 0==4
+		KeepGradientRegionMinValue(RGB(172, 173, 174), 0.02f, 446, 223, 680, 241); // might
+		KeepGradientRegionMinValue(RGB(172, 173, 174), 0.02f, 446, 249, 680, 266); // kills
+		KeepGradientRegionMinValue(RGB(172, 173, 174), 0.02f, 405, 276, 680, 295); // guild
+		KeepGradientRegionMinValue(RGB(172, 173, 174), 0.02f, 502, 469, 529, 482); // x
+		KeepGradientRegionMinValue(RGB(172, 173, 174), 0.02f, 543, 469, 570, 482); // y
+#elif 0==5
+		KeepGradientRegionMinValue(RGB(155, 158, 161), 0.03f, 446, 223, 680, 241); // might
+		KeepGradientRegionMinValue(RGB(155, 158, 161), 0.03f, 446, 249, 680, 266); // kills
+		KeepGradientRegionMinValue(RGB(155, 158, 161), 0.03f, 405, 276, 680, 295); // guild
+		KeepGradientRegionMinValue(RGB(155, 158, 161), 0.03f, 502, 469, 529, 482); // x
+		KeepGradientRegionMinValue(RGB(155, 158, 161), 0.03f, 543, 469, 570, 482); // y
+#elif 0==6
+		RemoveIfHasStrongerNeighbours(3, 446, 223, 680, 241); // might
+		RemoveIfHasStrongerNeighbours(3, 446, 249, 680, 266); // kills
+		RemoveIfHasStrongerNeighbours(3, 405, 276, 680, 295); // guild
+		RemoveIfHasStrongerNeighbours(3, 502, 469, 529, 482); // x
+		RemoveIfHasStrongerNeighbours(3, 543, 469, 570, 482); // y
+#elif 0==7
+		ApplyColorBitmask(0x00F0F0F0);
+		ErodeNotInLine(446, 223, 680, 241); // might
+		ErodeNotInLine(446, 249, 680, 266); // kills
+		ErodeNotInLine(405, 276, 680, 295); // guild
+		ErodeNotInLine(502, 469, 529, 482); // x
+		ErodeNotInLine(543, 469, 570, 482); // y
+#elif 0==8
+		// fonts fade out to black. We want to remove pixel that is close to black, but a pixel that would not break a line inside the font
+		// remove non font color. Leave some very wide fonts
+		// keep eroding them without breaking lines
+		ErodeOnEdgeNeighbours(446, 223, 680, 241); // might
+		ErodeOnEdgeNeighbours(446, 249, 680, 266); // kills
+		ErodeOnEdgeNeighbours(405, 276, 680, 295); // guild
+		ErodeOnEdgeNeighbours(502, 469, 529, 482); // x
+		ErodeOnEdgeNeighbours(543, 469, 570, 482); // y
+#endif
 		//SaveScreenshot();
 		//return;
 		//ConvertToGrayScale();
@@ -200,13 +257,13 @@ void main()
 		//ErrodeRegionToTransparent();
 		//SaveScreenshot();
 		//read name
-		res = OCR_ReadTextLeftToRightSaveUnknownChars(446, 182, 680, 205);
+		res = OCR_ReadTextLeftToRightSaveUnknownChars(446, 181, 680, 205);
 		if (res != NULL)
 		{
 		printf("Name : %s\n", res);
 		}
 		//read might
-		res = OCR_ReadTextLeftToRightSaveUnknownChars(502, 223, 680, 240);
+		res = OCR_ReadTextLeftToRightSaveUnknownChars(502, 223, 680, 241);
 		if (res != NULL)
 		{
 		printf("might : %s\n", res);
@@ -239,7 +296,39 @@ void main()
 		{
 		printf("y : %s\n", res);
 		}
-		}/**/
+		return;
+	}/**/
+/*	{
+		char *res;
+		//OCR_LoadFontsFromFile("K_C_M_FontMap.txt");
+		OCR_LoadFontsFromDir("K_C_M", "KCM_");
+		TakeScreenshot(0, 0, 1025, 599);
+		OCR_SetMaxFontSize(20, 20);
+//		LoadCacheOverScreenshot("CastlepopupExamples/Screenshot_0036_0280_0325.bmp", 0, 0);
+		LoadCacheOverScreenshot("CastlepopupExamples/Screenshot_0034_0280_0325.bmp", 0, 0);
+		//read name
+		res = OCR_ReadTextLeftToRightSaveUnknownChars(446 - 400, 182 - 165, 680 - 400, 205 - 165);
+		printf("Name : %s\n", res);
+		//read might
+		res = OCR_ReadTextLeftToRightSaveUnknownChars(502 - 400, 223 - 165, 680 - 400, 240 - 165);
+		printf("might : %s\n", res);
+		RemoveCharFromNumberString(res, ',');
+		printf("might : %s\n", res);
+		//read troops killed
+		res = OCR_ReadTextLeftToRightSaveUnknownChars(554 - 400, 249 - 165, 680 - 400, 265 - 165);
+		printf("kills : %s\n", res);
+		RemoveCharFromNumberString(res, ',');
+		printf("kills : %s\n", res);
+		//read guild
+		res = OCR_ReadTextLeftToRightSaveUnknownChars(405 - 400, 276 - 165, 680 - 400, 295 - 165);
+		printf("guild : %s\n", res);
+		//read location X
+		res = OCR_ReadTextLeftToRightSaveUnknownChars(502 - 400, 469 - 165, 529 - 400, 482 - 165);
+		printf("x : %s\n", res);
+		//read location y
+		res = OCR_ReadTextLeftToRightSaveUnknownChars(543 - 400, 469 - 165, 570 - 400, 482 - 165);
+		printf("y : %s\n", res);
+	}/**/
 /*	{
 		//try to detect player shields
 		TakeScreenshot(0, 0, 1025, 599);
@@ -250,7 +339,7 @@ void main()
 		SaveScreenshot();
 		return;
 	}/**/
-	{
+/*	{
 		//try to remove water zones
 		TakeScreenshot(0, 0, 1025, 599);
 		LoadCacheOverScreenshot("WaterExamples/Screenshot_0012_1025_0599.bmp", 0, 0);

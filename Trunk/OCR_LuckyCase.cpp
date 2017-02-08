@@ -95,6 +95,30 @@ int GetPixelMatchCount(int *Screenshot, int Width, int StartX, int StartY, int E
 	return ret;
 }
 
+void GenerateAvailableFontFilename(char *Buf, int len, char TheChar)
+{
+	//generate a new valid filename
+	char NewFilename[500], OldFilename[500];
+	int FileIndex = -1;
+	do{
+		FileIndex++;
+		sprintf_s(NewFilename, sizeof(NewFilename), "KCM_%c_%d.bmp", TheChar, FileIndex);
+		if (_access(NewFilename, 0) == 0)
+			continue;
+		sprintf_s(OldFilename, sizeof(OldFilename), "K_C_M/KCM_%c_%d.bmp", TheChar, FileIndex);
+		if (_access(OldFilename, 0) == 0)
+			continue;
+		sprintf_s(OldFilename, sizeof(OldFilename), "K_C_M/KCM_%c_%d.bmp", toupper(TheChar), FileIndex);
+		if (_access(OldFilename, 0) == 0)
+			continue;
+		sprintf_s(OldFilename, sizeof(OldFilename), "K_C_M/KCM_%c_%d.bmp", tolower(TheChar), FileIndex);
+		if (_access(OldFilename, 0) == 0)
+			continue;
+		break;
+	} while (1);
+	strcpy(Buf, NewFilename);
+}
+
 char FindMatchingFont(int *Img, int Width, int CharStartX, int CharStartY, int CharEndX, int CharEndY)
 {
 	// count the number of pixels in this region. Helps our mapping search
@@ -111,7 +135,22 @@ char FindMatchingFont(int *Img, int Width, int CharStartX, int CharStartY, int C
 		//check if this image is a perfect match
 		int MatchStrength = GetPixelMatchCount(Img, Width, CharStartX, CharStartY, CharEndX, CharEndY, (int*)FontCache->Pixels, FontCache->Width, FontCache->Height);
 		if (MatchStrength == FontCache->OCRCache->PixelCount) // font pixelcount might be a bit smaller as we try to merge multiple versions into 1
+		{
+#if 0
+			//if font is comming from a differenct directory than copy it to our Font folder. This happens when whe redo the font library and want to clean up unused ones
+			if (strstr(FontCache->FileName, "_C_M/") != FontCache->FileName + 1)
+			{
+				//get the file name from src
+				char Filename[500];
+				GenerateAvailableFontFilename(Filename, sizeof(Filename), FontCache->OCRCache->AssignedChar);
+				sprintf(Filename, "KCM/%s", Filename);
+				BOOL success = CopyFile(FontCache->FileName, Filename, true);
+				if (success = false)
+					printf("failed to copy, debug me\n");
+			}
+#endif
 			return FontCache->OCRCache->AssignedChar;
+		}
 	}
 	return 0;
 }
@@ -160,24 +199,8 @@ void OCR_FindMostSimilarFontAndSave(int *Img, int Width, int CharStartX, int Cha
 	//maybe it's just a small aberation of an already declared font. Some fontx are 8x8 pixels. 10% represents 6 pixel diference. Which can be enough to confuse it with another font. 'o' -'u' = 4 pixels ?
 	if (BestMatchFont && abs( BestMatchFont->OCRCache->PixelCount - BestMatch ) < BestMatchFont->OCRCache->PixelCount * 10 / 100)
 	{
-		//generate a new valid filename
-		char NewFilename[500], OldFilename[500];
-		int FileIndex = 0;
-		do{
-			FileIndex++;
-			sprintf_s(NewFilename, sizeof(NewFilename), "KCM_%c_%d.bmp", BestMatchFont->OCRCache->AssignedChar, FileIndex++);
-			if (_access(NewFilename, 0) == 0)
-				continue;
-			sprintf_s(OldFilename, sizeof(OldFilename), "K_C_M/KCM_%c_%d.bmp", BestMatchFont->OCRCache->AssignedChar, FileIndex++);
-			if (_access(OldFilename, 0) == 0)
-				continue;
-			sprintf_s(OldFilename, sizeof(OldFilename), "K_C_M/KCM_%c_%d.bmp", toupper(BestMatchFont->OCRCache->AssignedChar), FileIndex++);
-			if (_access(OldFilename, 0) == 0)
-				continue;
-			sprintf_s(OldFilename, sizeof(OldFilename), "K_C_M/KCM_%c_%d.bmp", tolower(BestMatchFont->OCRCache->AssignedChar), FileIndex++);
-			if (_access(OldFilename, 0) == 0)
-				continue;
-		} while (FileIndex == 0);
+		char NewFilename[500];
+		GenerateAvailableFontFilename(NewFilename, sizeof(NewFilename), BestMatchFont->OCRCache->AssignedChar);
 		SaveScreenshotArea(CharStartX, CharStartY, CharEndX, CharEndY, NewFilename);
 	}
 	else
