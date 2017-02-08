@@ -82,6 +82,44 @@ void WINAPI KeepColorsMinInRegion(int StartX, int StartY, int EndX, int EndY, in
 		}
 }
 
+void WINAPI KeepColorsMaxInRegion(int StartX, int StartY, int EndX, int EndY, int ColorMax)
+{
+	if (CurScreenshot == NULL || CurScreenshot->Pixels == NULL)
+		return;
+	if (StartX == -1)
+	{
+		StartX = 0;
+		StartY = 0;
+		EndX = CurScreenshot->GetWidth();
+		EndY = CurScreenshot->GetHeight();
+	}
+	//check for valid parameters
+	if (StartX > CurScreenshot->GetWidth() || StartX < 0 || StartX >= EndX || EndX > CurScreenshot->GetWidth())
+		return;
+	if (StartY > CurScreenshot->GetHeight() || StartY < 0 || StartY >= EndY || EndY > CurScreenshot->GetHeight())
+		return;
+	int RMax = GetRValue(ColorMax);
+	int GMax = GetGValue(ColorMax);
+	int BMax = GetBValue(ColorMax);
+	int Width = CurScreenshot->GetWidth();
+	for (int y = StartY; y < EndY; y++)
+		for (int x = StartX; x < EndX; x++)
+		{
+			int Color = CurScreenshot->Pixels[y*Width + x];
+			//			if (Color != TRANSPARENT_COLOR)
+			{
+				int B = GetRValue(Color);
+				int G = GetGValue(Color);
+				int R = GetBValue(Color);
+
+				if (R > RMax || G > GMax || B > BMax)
+					CurScreenshot->Pixels[y*Width + x] = TRANSPARENT_COLOR;
+				else
+					CurScreenshot->Pixels[y*Width + x] = 0;
+			}
+		}
+}
+
 void WINAPI KeepColorSetRest(int SetRest, int SetColors, int Color1)
 {
 	FileDebug("Started KeepColorSetRest");
@@ -159,6 +197,43 @@ void WINAPI KeepGradient(int Color, float MaxChange)
 	FileDebug("Started KeepGradient");
 	KeepGradientRegion(Color, MaxChange, 0, 0, CurScreenshot->GetWidth(), CurScreenshot->GetHeight());
 	FileDebug("Finished KeepGradient");
+}
+
+void WINAPI SetGradientToColorRegion(int Color, float MaxChange, int NewColor, int StartX, int StartY, int EndX, int EndY)
+{
+	FileDebug("Started SetGradientToColorRegion");
+	int R1 = GetRValue(Color);
+	int G1 = GetGValue(Color);
+	int B1 = GetBValue(Color);
+	float RG1 = (float)R1 / (float)G1;
+	float GB1 = (float)G1 / (float)B1;
+	// human eye can distinguesh about 3db noise ( signal / noise ). We define a gradient to be the same if the expected value / real value is within this margin
+	if (CurScreenshot->Pixels == NULL)
+	{
+		FileDebug("WARNING:Screenshot buffer is null when trying to extract gradient!");
+		return;
+	}
+	int Width = CurScreenshot->Right - CurScreenshot->Left;
+	for (int y = StartY; y < EndY; y += 1)
+		for (int x = StartX; x < EndX; x += 1)
+		{
+			int Color = CurScreenshot->Pixels[y * Width + x];
+			float B2 = GetRValue(Color);
+			float G2 = GetGValue(Color);
+			float R2 = GetBValue(Color);
+			float RG2 = (float)R2 / (float)G2;
+			float GB2 = (float)G2 / (float)B2;
+			if (abs(RG2 - RG1) <= MaxChange && abs(GB2 - GB1) <= MaxChange)
+				CurScreenshot->Pixels[y * Width + x] = NewColor;
+		}
+	FileDebug("Finished SetGradientToColorRegion");
+}
+
+void WINAPI SetGradientToColor(int Color, float MaxChange, int NewColor)
+{
+	FileDebug("Started SetGradientToColor");
+	SetGradientToColorRegion(Color, MaxChange, NewColor, 0, 0, CurScreenshot->GetWidth(), CurScreenshot->GetHeight());
+	FileDebug("Finished SetGradientToColor");
 }
 
 int WINAPI CountPixelsInArea(int Color, int StartX, int StartY, int EndX, int EndY)

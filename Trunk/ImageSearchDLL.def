@@ -2,28 +2,29 @@ LIBRARY	"ImageSearchDLL"
 
 EXPORTS
 
+	; Most used functions
 	TakeScreenshot
 	SaveScreenshot
-	CycleScreenshots
+	ImageSearch_SAD	
+	ImageSearch_Multiple_ExactMatch
+	ImageSearch_Multiple_Transparent
+	ImageSearch_Multiple_PixelCount
 
 	ApplyColorBitmask
 	DecreaseColorCount
 
+	; OCR related functions
 	OCR_RegisterFont
 	OCR_LoadFontsFromDir
 	OCR_ReadTextLeftToRightSaveUnknownChars
 	KeepColorsMinInRegion
 
 	ImageSearch
-	ImageSearch_SAD	
-	ImageSearch_Multiple_ExactMatch
-	ImageSearch_Multiple_Transparent
-	ImageSearch_Multiple_PixelCount
 	ResizeScreenshot
 	BlurrImage
 	KeepGradient
+	SetGradientToColor
 	MoveScreenshotToCache
-	LoadCacheOverScreenshot
 	ImageSearchOnScreenshot
 	IsAnythingChanced
 	KeepColorSetRest
@@ -59,4 +60,6 @@ EXPORTS
 	EdgeKeepLocalMaximaMaximaOnly
 	EdgeCopyOriginalForEdges
 	
-	
+	;Junk Exports. Experimenting with random stuff
+	CycleScreenshots
+	LoadCacheOverScreenshot

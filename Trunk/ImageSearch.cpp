@@ -903,6 +903,7 @@ char* WINAPI ImageSearch_Multiple_PixelCount(int Color, int Percent, int AreaWid
 				for (int y2 = 0; y2 < AreaHeight; y2++)
 				{
 					memset(&TempBuff[(y + y2) * Width + x], TRANSPARENT_COLOR, AreaWidth*sizeof(int));
+//memset(&CurScreenshot->Pixels[(y + y2) * Width + x], 127, AreaWidth*sizeof(int));
 					//mark this zone that we can skip processing
 					TempBuff[(y + y2) * Width + x] = 66;
 				}

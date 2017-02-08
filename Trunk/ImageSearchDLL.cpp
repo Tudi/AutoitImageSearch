@@ -162,7 +162,7 @@ void main()
 		printf("result of search benchmarking : %d ms %d FPS\n", End - Start, i * 1000 * 1000 / (End - Start + 1));
 		//		_getch();
 		}/**/
-	{
+/*	{
 		char *res;
 		//OCR_LoadFontsFromFile("K_C_M_FontMap.txt");
 		OCR_LoadFontsFromDir("K_C_M", "KCM_");
@@ -241,15 +241,44 @@ void main()
 		}
 		}/**/
 /*	{
+		//try to detect player shields
 		TakeScreenshot(0, 0, 1025, 599);
-
-		LoadCacheOverScreenshot("Screenshot_0015_1025_0599.bmp", 0, 0);
+		//		LoadCacheOverScreenshot("Screenshot_0015_1025_0599.bmp", 0, 0);
+		LoadCacheOverScreenshot("Screenshot_0025_1025_0599.bmp", 0, 0);
+		//KeepGradient(RGB(216, 215, 249), 2.5f);
+		KeepColorsMinInRegion(-1, -1, -1, -1, RGB(216, 215, 249));
+		SaveScreenshot();
+		return;
+	}/**/
+	{
+		//try to remove water zones
+		TakeScreenshot(0, 0, 1025, 599);
+		LoadCacheOverScreenshot("WaterExamples/Screenshot_0012_1025_0599.bmp", 0, 0);
+		GetUniqueColorsInRegion(675, 254, 747, 348);
+		SetGradientToColor(0x00A59B63, 0.162f, TRANSPARENT_COLOR);
+		//KeepColorsMaxInRegion(-1, -1, -1, -1, RGB(99, 166, 181));
+		SaveScreenshot();
+		//check if we can still see player labels
+		KeepGradient(RGB(33, 106, 148), 0.4f);
+		char * tt = ImageSearch_Multiple_PixelCount(0, 50, 33, 21);
+		printf("t = %s\n", tt);
+		SaveScreenshot();
+		return;
+	}/**/
+/*	{
+		//try to detect player labels
+		TakeScreenshot(0, 0, 1025, 599);
+//		LoadCacheOverScreenshot("Screenshot_0015_1025_0599.bmp", 0, 0);
+		LoadCacheOverScreenshot("Screenshot_0025_1025_0599.bmp", 0, 0);
 //		char * ttt = ImageSearch_Multiple_Gradient(RGB(33, 106, 148), 60, 75, 181 - 151, 235 - 220);
 		KeepGradient(RGB(33, 106, 148), 0.4f);
 		//SaveScreenshot();
-		float t = GetPixelRatioInArea(0, 151, 220, 181, 235);
-		printf("t = %f\n", t);
-		char * tt = ImageSearch_Multiple_PixelCount(0, 75, 181 - 151, 235 - 220);
+//		float t = GetPixelRatioInArea(0, 151, 220, 181, 235);
+//		printf("t = %f\n", t);
+//		char * tt = ImageSearch_Multiple_PixelCount(0, 75, 181 - 151, 235 - 220); // found less than half shielded
+		char * tt = ImageSearch_Multiple_PixelCount(0, 50, 33, 21);
+		printf("t = %s\n", tt);
+		SaveScreenshot();
 		return;
 
 		PushToColorKeepList(0x406060);

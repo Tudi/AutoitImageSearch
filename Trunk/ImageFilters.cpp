@@ -292,14 +292,68 @@ void GetUniqueColorsInRegion(int StartX, int StartY, int EndX, int EndY)
 	for (int y = StartY; y < EndY; y++)
 		for (int x = StartX; x < EndX; x++)
 			PixelCollection.insert(CurScreenshot->GetPixel(x, y));
+	float SumRG = 0, SumGB = 0;
+	int PixelCount = 0;
 	for (std::set<unsigned int>::iterator itr = PixelCollection.begin(); itr != PixelCollection.end(); itr++)
 	{
 		int Color = *itr;
-		int R = GetRValue(Color);
+		int B = GetRValue(Color);
 		int G = GetGValue(Color);
-		int B = GetBValue(Color);
-		printf("\n0x%08X \t%d\t%d\t%d", Color,R,G,B);
+		int R = GetBValue(Color);
+		float RG2 = (float)R / (float)G;
+		float GB2 = (float)G / (float)B;
+		int ColorRGB = RGB(R, G, B);
+		printf("\n0x%08X \t%d\t%d\t%d\t%.3f\t%.3f", ColorRGB, R, G, B, RG2, GB2);
+		PixelCount++;
+		SumRG += RG2;
+		SumGB += GB2;
 	}
+	//get the best matching gradient for this region
+	float AVGRG = SumRG / PixelCount;
+	float AVGGB = SumGB / PixelCount;
+	int BestMatchRGB = 0;
+	float BestMatchDeviation = 255;
+	float BestRG, BestGB;
+	for (std::set<unsigned int>::iterator itr = PixelCollection.begin(); itr != PixelCollection.end(); itr++)
+	{
+		int Color = *itr;
+		int B = GetRValue(Color);
+		int G = GetGValue(Color);
+		int R = GetBValue(Color);
+		float RG2 = (float)R / (float)G;
+		float GB2 = (float)G / (float)B;
+		int ColorRGB = RGB(R, G, B);
+		if (abs((AVGRG - RG2)*(AVGGB - GB2)) < BestMatchDeviation)
+		{
+			BestMatchDeviation = abs((AVGRG - RG2)*(AVGGB - GB2));
+			BestMatchRGB = ColorRGB;
+			BestRG = RG2;
+			BestGB = GB2;
+		}
+	}
+	//get the largest deviation from the best match
+	float LargestDeviation = 0;
+	float AvgDeviationRG = 0;
+	float AvgDeviationGB = 0;
+	for (std::set<unsigned int>::iterator itr = PixelCollection.begin(); itr != PixelCollection.end(); itr++)
+	{
+		int Color = *itr;
+		int B = GetRValue(Color);
+		int G = GetGValue(Color);
+		int R = GetBValue(Color);
+		float RG2 = (float)R / (float)G;
+		float GB2 = (float)G / (float)B;
+		if (abs(BestRG - RG2) > LargestDeviation)
+			LargestDeviation = abs(BestRG - RG2);
+		if (abs(BestGB - GB2) > LargestDeviation)
+			LargestDeviation = abs(BestGB - GB2);
+		AvgDeviationRG += abs(BestRG - RG2);
+		AvgDeviationGB += abs(BestGB - GB2);
+	}
+	AvgDeviationRG /= PixelCount;
+	AvgDeviationGB /= PixelCount;
+	printf("\nAvg gradient factors : %.3f\t%.3f\n", AVGRG, AVGGB);
+	printf("Best Gradient to pick : 0x%08X Largest deviation %.3f\t%.3f\t%.3f\n", BestMatchRGB, LargestDeviation, AvgDeviationRG, AvgDeviationGB);
 }
 
 void WINAPI ErrodeRegionToTransparent(int StartX, int StartY, int EndX, int EndY, int RequiredNeighbourCount)
