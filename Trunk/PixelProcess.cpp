@@ -12,10 +12,13 @@ void WINAPI PushToColorKeepList(int Color)
 {
 	if (KeepColorListIndex >= sizeof(KeepColorList) / sizeof(int))
 		return;
-	KeepColorList[KeepColorListIndex++] = Color;
+	int B = GetRValue(Color);
+	int G = GetGValue(Color);
+	int R = GetBValue(Color);
+	KeepColorList[KeepColorListIndex++] = RGB(R,G,B);
 }
 
-int ShouldKeepColor(int Color)
+__forceinline int ShouldKeepColor(int Color)
 {
 	for (int i = 0; i < KeepColorListIndex; i++)
 		if (KeepColorList[i] == Color)
@@ -40,6 +43,20 @@ void WINAPI ApplyColorKeepList(int SetRemainingTo, int SetEliminatedTo)
 			if (ShouldKeepColor(Color))
 				CurScreenshot->Pixels[y*Width + x] = SetRemainingTo;
 			else
+				CurScreenshot->Pixels[y*Width + x] = SetEliminatedTo;
+		}
+}
+
+void WINAPI ApplyColorEliminateListToArea(int SetEliminatedTo, int StartX, int StartY, int EndX, int EndY)
+{
+	if (CurScreenshot == NULL || CurScreenshot->Pixels == NULL)
+		return;
+	int Width = CurScreenshot->GetWidth();
+	for (int y = StartY; y < EndY; y++)
+		for (int x = StartX; x < EndX; x++)
+		{
+			int Color = CurScreenshot->Pixels[y*Width + x];
+			if (ShouldKeepColor(Color))
 				CurScreenshot->Pixels[y*Width + x] = SetEliminatedTo;
 		}
 }
@@ -74,7 +91,7 @@ void WINAPI KeepColorsMinInRegion(int StartX, int StartY, int EndX, int EndY, in
 				int G = GetGValue(Color);
 				int R = GetBValue(Color);
 
-				if (R < RMin || G < GMin || B < BMin)
+				if (R <= RMin || G <= GMin || B <= BMin)
 					CurScreenshot->Pixels[y*Width + x] = TRANSPARENT_COLOR;
 				else
 					CurScreenshot->Pixels[y*Width + x] = 0;

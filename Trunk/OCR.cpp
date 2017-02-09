@@ -99,7 +99,7 @@ void GetCharacterSetColorStatistics()
 	}
 }
 
-void WINAPI OCR_RegisterFont( char *aFilespec, int Font )
+void WINAPI OCR_RegisterFont(char *aFilespec, int Font, int Font2)
 {
 	CachedPicture *cache = CachePicture( aFilespec );
 	if( cache != NULL && cache->Pixels != NULL )
@@ -117,6 +117,7 @@ void WINAPI OCR_RegisterFont( char *aFilespec, int Font )
 			OCRMaxFontHeight = cache->Height;
 
 		cache->OCRCache->AssignedChar = Font;
+		cache->OCRCache->AssignedChar2 = Font2;
 	}
 }
 
@@ -268,8 +269,12 @@ char * WINAPI ReadTextFromScreenshot( int StartX, int StartY, int EndX, int EndY
 //printf( "Best match name is %s - %c with hitcount %d and misscount %d \n", BestMatch->FileName, BestMatch->OCRCache->AssignedChar, BestMatch->OCRCache->LastSearchHitCount, BestMatch->OCRCache->LastSearchMissCount );
 			x = BestMatch->OCRCache->LastSearchX + BestMatch->Width;
 //			sprintf_s( OCRReturnBuff, DEFAULT_STR_BUFFER_SIZE*10, "%s%c", OCRReturnBuff, BestMatch->OCRCache->AssignedChar );
-			if( WriteIndex < DEFAULT_STR_BUFFER_SIZE*10 - 2 )
-				ReturnBuff[ WriteIndex++ ] = BestMatch->OCRCache->AssignedChar;
+			if (WriteIndex < DEFAULT_STR_BUFFER_SIZE * 10 - 2)
+			{
+				ReturnBuff[WriteIndex++] = BestMatch->OCRCache->AssignedChar;
+				if (BestMatch->OCRCache->AssignedChar2)
+					ReturnBuff[WriteIndex++] = BestMatch->OCRCache->AssignedChar2;
+			}
 		}
 	}
 	ReturnBuff[ WriteIndex++ ] = 0;
@@ -291,7 +296,7 @@ void WINAPI OCR_LoadFontsFromFile(char *aFilespec)
 		int res = fscanf_s(f, "%c %s\n", &c, 1, path, sizeof( path ));
 		while (res == 2)
 		{
-			OCR_RegisterFont(path, c);
+			OCR_RegisterFont(path, c, 0);
 			res = fscanf_s(f, "%c %s\n", &c, 1, path, sizeof(path));
 		}
 		fclose(f);
@@ -313,9 +318,12 @@ void WINAPI OCR_LoadFontsFromDir(char *Path, char *SkipFileNameStart)
 			if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) 
 			{
 				char c = fd.cFileName[skiptocharpos];
+				char c2 = 0;
+				if (fd.cFileName[skiptocharpos+1] != '_' )
+					c2 = fd.cFileName[skiptocharpos+1];
 				char FullPath[2500];
 				sprintf_s(FullPath, sizeof(FullPath), "%s/%s", Path, fd.cFileName);
-				OCR_RegisterFont(FullPath, c);
+				OCR_RegisterFont(FullPath, c, c2);
 			}
 		} while (::FindNextFile(hFind, &fd));
 		::FindClose(hFind);

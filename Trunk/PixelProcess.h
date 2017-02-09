@@ -1,5 +1,7 @@
 #pragma once
 
+#define BGR(r,g,b)          ((COLORREF)(((BYTE)(b)|((WORD)((BYTE)(g))<<8))|(((DWORD)(BYTE)(r))<<16)))
+
 //similar to image binarization. Will be used for OCR
 void WINAPI KeepColorSetRest(int SetRest, int SetColors, int Color1);
 void WINAPI KeepColor3SetBoth(int SetRest, int SetColors, int Color1, int Color2, int Color3);
@@ -9,6 +11,7 @@ void WINAPI KeepColorsMaxInRegion(int StartX = -1, int StartY = -1, int EndX = -
 void WINAPI ResetColorKeepList();
 void WINAPI PushToColorKeepList(int Color);
 void WINAPI ApplyColorKeepList(int SetRemainingTo, int SetEliminatedTo);
+void WINAPI ApplyColorEliminateListToArea(int SetEliminatedTo, int StartX = -1, int StartY = -1, int EndX = -1, int EndY = -1);
 void WINAPI KeepGradient(int Color, float MaxChange = 0.3f);
 void WINAPI KeepGradientRegionMinValue(int Color, float MaxChange, int StartX, int StartY, int EndX, int EndY);
 void WINAPI SetGradientToColor(int Color, float MaxChange = 0.3f, int NewColor = TRANSPARENT_COLOR);

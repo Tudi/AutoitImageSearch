@@ -162,7 +162,7 @@ void main()
 		printf("result of search benchmarking : %d ms %d FPS\n", End - Start, i * 1000 * 1000 / (End - Start + 1));
 		//		_getch();
 		}/**/
-	{
+/*	{
 		char *res;
 		//OCR_LoadFontsFromFile("K_C_M_FontMap.txt");
 		OCR_LoadFontsFromDir("K_C_M", "KCM_");
@@ -400,6 +400,94 @@ void main()
 		//SaveScreenshot();
 		KeepColor3SetBoth(0, 0x00FFFFFF, 0x00000080, 0x00008080, 0x00008080);
 		//SaveScreenshot();
+	}/**/
+	{
+		char *res;
+		OCR_LoadFontsFromDir("K_C_M", "KCM_");
+		OCR_LoadFontsFromDir("K_C_M_Old1", "K_C_M_");
+		OCR_LoadFontsFromDir("K_C_M_old2", "KCM_");
+		OCR_LoadFontsFromDir("K_C_M_try3", "KCM_");
+		OCR_LoadFontsFromDir("K_C_M_try4", "KCM_");
+		OCR_LoadFontsFromDir("K_C_M_try5", "KCM_");
+		OCR_LoadFontsFromDir("K_C_M_try6", "KCM_");
+		OCR_LoadFontsFromDir("K_C_M_try7", "KCM_");
+		TakeScreenshot(0, 0, 300, 350);
+		OCR_SetMaxFontSize(20, 20);
+		ResetColorKeepList();
+		PushToColorKeepList(RGB(176, 179, 181));
+		//PushToColorKeepList(RGB(173, 175, 176));
+		//PushToColorKeepList(RGB(173, 176, 176));
+		PushToColorKeepList(RGB(171, 174, 176));
+		PushToColorKeepList(RGB(170, 175, 177));
+		PushToColorKeepList(RGB(170, 174, 177));
+		PushToColorKeepList(RGB(167, 170, 172));
+		std::string path = "CastlepopupExamples2";
+		std::string search_path = path;
+		search_path += "/*.*";
+		std::string SkipUntilFile = "";
+		int FoundFirstFile = SkipUntilFile.length() == 0;
+		int SkipFirstN = 390;
+		int BatchProcessMaxCount = 400;
+		int Index = 0;
+		WIN32_FIND_DATA fd;
+		HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
+		if (hFind != INVALID_HANDLE_VALUE)
+		{
+			do {
+				// read all (real) files in current folder
+				// , delete '!' read other 2 default folder . and ..
+				if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+				{
+					Index++;
+					if (FoundFirstFile == 0)
+					{
+						if (strcmp(fd.cFileName, SkipUntilFile.c_str()) == 0)
+							FoundFirstFile = 1;
+						else
+							continue;
+					}
+					BatchProcessMaxCount--;
+					if (SkipFirstN-- > 0)
+						continue;
+					if ( ( Index & 1 ) == 0)
+						continue;
+					char FullPath[2500];
+					sprintf_s(FullPath, sizeof(FullPath), "%s/%s", path.c_str(), fd.cFileName);
+					printf("%d)Parsing file : %s\n", Index, FullPath);
+					LoadCacheOverScreenshot(FullPath, 0, 0);
+					//SaveScreenshot();
+					//continue;
+					//SaveScreenshot();
+					KeepColorsMinInRegion(446 - 400, 181 - 165, 680 - 400, 205 - 165, RGB(171, 160, 49));
+					//KeepColorsMinInRegion(446 - 400, 181 - 165, 680 - 400, 205 - 165, RGB(182, 170, 53));
+					KeepColorsMinInRegion(500 - 400, 223 - 165, 680 - 400, 240 - 165, 0xA09E9A); // might
+					KeepColorsMinInRegion(446 - 400, 249 - 165, 680 - 400, 265 - 165, 0xA09E9A); // kills
+					ApplyColorEliminateListToArea(0, 405 - 400, 276 - 165, 680 - 400, 295 - 165);
+					KeepColorsMinInRegion(405 - 400, 276 - 165, 680 - 400, 295 - 165, 0xA09E9A); // guild
+					//ApplyColorEliminateListToArea(0, 502 - 400, 469 - 165, 529 - 400, 482 - 165);
+					KeepColorsMinInRegion(502 - 400, 469 - 165, 529 - 400, 482 - 165, 0xA09E9A); // x
+					KeepColorsMinInRegion(543 - 400, 469 - 165, 570 - 400, 482 - 165, 0xA09E9A); // y
+			//SaveScreenshot();
+			//continue;
+					res = OCR_ReadTextLeftToRightSaveUnknownChars(446 - 400, 181 - 165, 680 - 400, 205 - 165);
+					printf("%s\n", res);
+					res = OCR_ReadTextLeftToRightSaveUnknownChars(500 - 400, 223 - 165, 680 - 400, 240 - 165);
+					printf("%s\n", res);
+					res = OCR_ReadTextLeftToRightSaveUnknownChars(554 - 400, 249 - 165, 680 - 400, 265 - 165);
+					printf("%s\n", res);
+					res = OCR_ReadTextLeftToRightSaveUnknownChars(405 - 400, 276 - 165, 680 - 400, 295 - 165);
+					printf("%s\n", res);
+					res = OCR_ReadTextLeftToRightSaveUnknownChars(502 - 400, 469 - 165, 529 - 400, 482 - 165);
+					printf("%s\n", res);
+					res = OCR_ReadTextLeftToRightSaveUnknownChars(543 - 400, 469 - 165, 570 - 400, 482 - 165);
+					printf("%s\n", res);
+				}
+			} while (::FindNextFile(hFind, &fd) && BatchProcessMaxCount > 0 );
+			::FindClose(hFind);
+		}
+
+		//SaveScreenshot();
+		return;
 	}/**/
 #endif
 }

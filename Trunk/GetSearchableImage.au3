@@ -5,6 +5,8 @@ HotKeySet("9", "TakeScreenshotsWithMouse")
 HotKeySet("0", "ContinuesRefinementOfImage")
 HotKeySet("-", "SaveImage")
 HotKeySet("=", "EndScript")
+HotKeySet("5", "SearchNextBestSpot")
+HotKeySet("7", "RefineAtSpot")
 
 HotKeySet("5", "TestCanFindImage")
 
@@ -14,6 +16,12 @@ global $IsInitialScreenshot = 1
 Global $NrOfMouseClicks
 global $MouseCoords[2][2]
 global $ToggleLoop = 0
+
+func SearchNextBestSpot()
+endfunc
+
+func RefineAtSpot()
+endfunc
 
 func ContinuesRefinementOfImage()
 	local $LoopCounter = 0
