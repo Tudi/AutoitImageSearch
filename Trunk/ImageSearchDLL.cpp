@@ -426,8 +426,8 @@ void main()
 		search_path += "/*.*";
 		std::string SkipUntilFile = "";
 		int FoundFirstFile = SkipUntilFile.length() == 0;
-		int SkipFirstN = 390;
-		int BatchProcessMaxCount = 400;
+		int SkipFirstN = 0;
+		int BatchProcessMaxCount = 520;
 		int Index = 0;
 		WIN32_FIND_DATA fd;
 		HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
@@ -483,6 +483,122 @@ void main()
 					printf("%s\n", res);
 				}
 			} while (::FindNextFile(hFind, &fd) && BatchProcessMaxCount > 0 );
+			::FindClose(hFind);
+		}
+
+		//SaveScreenshot();
+		return;
+	}/**/
+/*	{
+		char *res;
+		TakeScreenshot(0, 0, 700, 700);
+		OCR_SetMaxFontSize(20, 20);
+		std::string path = "OCRLowresInput";
+		std::string search_path = path;
+		search_path += "/*.*";
+		std::string SkipUntilFile = "";
+		int FoundFirstFile = SkipUntilFile.length() == 0;
+		int SkipFirstN = 0;
+		int BatchProcessMaxCount = 200;
+		int Index = 0;
+		WIN32_FIND_DATA fd;
+		HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
+		if (hFind != INVALID_HANDLE_VALUE)
+		{
+			do {
+				// read all (real) files in current folder
+				// , delete '!' read other 2 default folder . and ..
+				if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+				{
+					Index++;
+					if (FoundFirstFile == 0)
+					{
+						if (strcmp(fd.cFileName, SkipUntilFile.c_str()) == 0)
+							FoundFirstFile = 1;
+						else
+							continue;
+					}
+					BatchProcessMaxCount--;
+					if (SkipFirstN-- > 0)
+						continue;
+//					if ((Index & 1) == 0)
+//						continue;
+					char FullPath[2500];
+					sprintf_s(FullPath, sizeof(FullPath), "%s/%s", path.c_str(), fd.cFileName);
+					printf("%d)Parsing file : %s\n", Index, FullPath);
+					LoadCacheOverScreenshot(FullPath, 0, 0);
+					//SaveScreenshot();
+					//continue;
+					//SaveScreenshot();
+					//KeepColorsMinInRegion(446 - 400, 181 - 165, 680 - 400, 205 - 165, RGB(171, 160, 49));
+					KeepColorsMinInRegion(369, 183, 650, 405, RGB(150, 151, 154));
+
+					//SaveScreenshot();
+					//continue;
+					//res = OCR_ReadTextLeftToRightSaveUnknownChars(446 - 400, 181 - 165, 680 - 400, 205 - 165);
+					//printf("%s\n", res);
+					res = OCR_ReadTextLeftToRightSaveUnknownChars(406, 235, 630, 251);
+					printf("%s\n", res);
+				}
+			} while (::FindNextFile(hFind, &fd) && BatchProcessMaxCount > 0);
+			::FindClose(hFind);
+		}
+
+		//SaveScreenshot();
+		return;
+	}/**/
+/*	{
+		char *res;
+		TakeScreenshot(0, 0, 1910, 1100);
+		OCR_SetMaxFontSize(20, 20);
+		std::string path = "OCRHighResInput";
+		std::string search_path = path;
+		search_path += "/*.*";
+		std::string SkipUntilFile = "";
+		int FoundFirstFile = SkipUntilFile.length() == 0;
+		int SkipFirstN = 0;
+		int BatchProcessMaxCount = 200;
+		int Index = 0;
+		WIN32_FIND_DATA fd;
+		HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
+		if (hFind != INVALID_HANDLE_VALUE)
+		{
+			do {
+				// read all (real) files in current folder
+				// , delete '!' read other 2 default folder . and ..
+				if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+				{
+					Index++;
+					if (FoundFirstFile == 0)
+					{
+						if (strcmp(fd.cFileName, SkipUntilFile.c_str()) == 0)
+							FoundFirstFile = 1;
+						else
+							continue;
+					}
+					BatchProcessMaxCount--;
+					if (SkipFirstN-- > 0)
+						continue;
+					//					if ((Index & 1) == 0)
+					//						continue;
+					char FullPath[2500];
+					sprintf_s(FullPath, sizeof(FullPath), "%s/%s", path.c_str(), fd.cFileName);
+					printf("%d)Parsing file : %s\n", Index, FullPath);
+					LoadCacheOverScreenshot(FullPath, 0, 0);
+					//SaveScreenshot();
+					//continue;
+					//SaveScreenshot();
+					//KeepColorsMinInRegion(446 - 400, 181 - 165, 680 - 400, 205 - 165, RGB(171, 160, 49));
+					KeepColorsMinInRegion(645, 355, 1195, 810, RGB(201, 201, 203));
+
+					//SaveScreenshot();
+					//continue;
+					//res = OCR_ReadTextLeftToRightSaveUnknownChars(446 - 400, 181 - 165, 680 - 400, 205 - 165);
+					//printf("%s\n", res);
+					res = OCR_ReadTextLeftToRightSaveUnknownChars(722, 461, 1190, 490);
+					printf("%s\n", res);
+				}
+			} while (::FindNextFile(hFind, &fd) && BatchProcessMaxCount > 0);
 			::FindClose(hFind);
 		}
 

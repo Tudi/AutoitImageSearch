@@ -7,6 +7,7 @@ int OCRTransparentColor = TRANSPARENT_COLOR;
 std::set<COLORREF> OCRTextColors;
 int OCRMaxFontWidth = 8;
 int OCRMaxFontHeight = 8;
+int OCRActiveFontSet = 0; // maybe at some point we will have such complex cases that we will use more than one fontset. Maybe
 
 //pinch off 2 bits -> reduce from 24 to 19 bpp. This reduces shade variations. Only worth using if you want to avoid storing too many pixels
 //#define COLOR_REDUCE_MASK	0xFC
@@ -99,7 +100,7 @@ void GetCharacterSetColorStatistics()
 	}
 }
 
-void WINAPI OCR_RegisterFont(char *aFilespec, int Font, int Font2)
+void WINAPI OCR_RegisterFont(char *aFilespec, char *Str)
 {
 	CachedPicture *cache = CachePicture( aFilespec );
 	if( cache != NULL && cache->Pixels != NULL )
@@ -116,8 +117,14 @@ void WINAPI OCR_RegisterFont(char *aFilespec, int Font, int Font2)
 		if( cache->Height > OCRMaxFontHeight )
 			OCRMaxFontHeight = cache->Height;
 
-		cache->OCRCache->AssignedChar = Font;
-		cache->OCRCache->AssignedChar2 = Font2;
+		cache->OCRCache->FontSet = OCRActiveFontSet;	//if we are loading a fontset. Load it into a specific set
+
+		int ind = 0;
+		while (ind < sizeof(cache->OCRCache->AssignedChars) && Str[ind] != 0)
+		{
+			cache->OCRCache->AssignedChars[ind] = Str[ind];
+			ind++;
+		}
 	}
 }
 
@@ -271,9 +278,12 @@ char * WINAPI ReadTextFromScreenshot( int StartX, int StartY, int EndX, int EndY
 //			sprintf_s( OCRReturnBuff, DEFAULT_STR_BUFFER_SIZE*10, "%s%c", OCRReturnBuff, BestMatch->OCRCache->AssignedChar );
 			if (WriteIndex < DEFAULT_STR_BUFFER_SIZE * 10 - 2)
 			{
-				ReturnBuff[WriteIndex++] = BestMatch->OCRCache->AssignedChar;
-				if (BestMatch->OCRCache->AssignedChar2)
-					ReturnBuff[WriteIndex++] = BestMatch->OCRCache->AssignedChar2;
+				char *ImgStr = BestMatch->OCRCache->AssignedChars;
+				while (*ImgStr != 0)
+				{
+					ReturnBuff[WriteIndex++] = *ImgStr;
+					ImgStr++;
+				}
 			}
 		}
 	}
@@ -291,12 +301,13 @@ void WINAPI OCR_LoadFontsFromFile(char *aFilespec)
 	FILE *f = fopen(aFilespec, "rt");
 	if (f)
 	{
-		char c;
+		char c[2];
+		c[1] = 0;
 		char path[32000];
 		int res = fscanf_s(f, "%c %s\n", &c, 1, path, sizeof( path ));
 		while (res == 2)
 		{
-			OCR_RegisterFont(path, c, 0);
+			OCR_RegisterFont(path, c);
 			res = fscanf_s(f, "%c %s\n", &c, 1, path, sizeof(path));
 		}
 		fclose(f);
@@ -317,15 +328,27 @@ void WINAPI OCR_LoadFontsFromDir(char *Path, char *SkipFileNameStart)
 			// , delete '!' read other 2 default folder . and ..
 			if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) 
 			{
-				char c = fd.cFileName[skiptocharpos];
-				char c2 = 0;
-				if (fd.cFileName[skiptocharpos+1] != '_' )
-					c2 = fd.cFileName[skiptocharpos+1];
 				char FullPath[2500];
 				sprintf_s(FullPath, sizeof(FullPath), "%s/%s", Path, fd.cFileName);
-				OCR_RegisterFont(FullPath, c, c2);
+//				printf("caching %s\n", FullPath);
+				char c[50];
+				memset(c, 0, sizeof(c));
+				char *csrc = &fd.cFileName[skiptocharpos];
+				char *c2 = c;
+				while (*csrc != '_'&& *csrc != 0 && *csrc != '.')
+				{
+					*c2 = *csrc;
+					c2++;
+					csrc++;
+				}
+				OCR_RegisterFont(FullPath, c);
 			}
 		} while (::FindNextFile(hFind, &fd));
 		::FindClose(hFind);
 	}
+}
+
+void WINAPI OCR_SetActiveFontSet(int FontSet)
+{
+	OCRActiveFontSet = FontSet;
 }

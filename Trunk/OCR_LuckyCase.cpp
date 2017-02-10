@@ -95,25 +95,19 @@ int GetPixelMatchCount(int *Screenshot, int Width, int StartX, int StartY, int E
 	return ret;
 }
 
-void GenerateAvailableFontFilename(char *Buf, int len, char TheChar, char TheChar2)
+void GenerateAvailableFontFilename(char *Buf, int len, char *TheChars)
 {
 	//generate a new valid filename
 	char NewFilename[500], OldFilename[500];
 	int FileIndex = -1;
-	if (TheChar2 == 0)
-		TheChar2 = '_';
+	if (TheChars == 0)
+		TheChars = "_";
 	do{
 		FileIndex++;
-		sprintf_s(NewFilename, sizeof(NewFilename), "KCM_%c_%d.bmp", TheChar, FileIndex);
+		sprintf_s(NewFilename, sizeof(NewFilename), "KCM_%s_%d.bmp", TheChars, FileIndex);
 		if (_access(NewFilename, 0) == 0)
 			continue;
-		sprintf_s(OldFilename, sizeof(OldFilename), "K_C_M/KCM_%c_%d.bmp", TheChar, FileIndex);
-		if (_access(OldFilename, 0) == 0)
-			continue;
-		sprintf_s(OldFilename, sizeof(OldFilename), "K_C_M/KCM_%c_%d.bmp", toupper(TheChar), FileIndex);
-		if (_access(OldFilename, 0) == 0)
-			continue;
-		sprintf_s(OldFilename, sizeof(OldFilename), "K_C_M/KCM_%c_%d.bmp", tolower(TheChar), FileIndex);
+		sprintf_s(OldFilename, sizeof(OldFilename), "K_C_M/KCM_%s_%d.bmp", TheChars, FileIndex);
 		if (_access(OldFilename, 0) == 0)
 			continue;
 		break;
@@ -132,7 +126,7 @@ OCRStore *FindMatchingFont(int *Img, int Width, int CharStartX, int CharStartY, 
 	{
 		//if this font would be the best match, at what location would it be at ?
 		CachedPicture *FontCache = &PictureCache[c];
-		if (FontCache->OCRCache == NULL || FontCache->OCRCache->PixelCount != PixelCount)
+		if (FontCache->OCRCache == NULL || FontCache->OCRCache->PixelCount != PixelCount || FontCache->OCRCache->FontSet != OCRActiveFontSet)
 			continue;
 		//check if this image is a perfect match
 		int MatchStrength = GetPixelMatchCount(Img, Width, CharStartX, CharStartY, CharEndX, CharEndY, (int*)FontCache->Pixels, FontCache->Width, FontCache->Height);
@@ -144,7 +138,7 @@ OCRStore *FindMatchingFont(int *Img, int Width, int CharStartX, int CharStartY, 
 			{
 				//get the file name from src
 				char Filename[500], Filename2[500];
-				GenerateAvailableFontFilename(Filename, sizeof(Filename), FontCache->OCRCache->AssignedChar, FontCache->OCRCache->AssignedChar2);
+				GenerateAvailableFontFilename(Filename, sizeof(Filename), FontCache->OCRCache->AssignedChars);
 				sprintf(Filename2, "K_C_M/%s", Filename);
 				BOOL success = CopyFile(FontCache->FileName, Filename2, true);
 				if (success == false)
@@ -203,7 +197,7 @@ void OCR_FindMostSimilarFontAndSave(int *Img, int Width, int CharStartX, int Cha
 	if (BestMatchFont && abs( BestMatchFont->OCRCache->PixelCount - BestMatch ) < BestMatchFont->OCRCache->PixelCount * 10 / 100)
 	{
 		char NewFilename[500];
-		GenerateAvailableFontFilename(NewFilename, sizeof(NewFilename), BestMatchFont->OCRCache->AssignedChar, BestMatchFont->OCRCache->AssignedChar2);
+		GenerateAvailableFontFilename(NewFilename, sizeof(NewFilename), BestMatchFont->OCRCache->AssignedChars);
 		SaveScreenshotArea(CharStartX, CharStartY, CharEndX, CharEndY, NewFilename);
 	}
 	else
@@ -280,9 +274,12 @@ char * WINAPI OCR_ReadTextLeftToRightSaveUnknownChars(int StartX, int StartY, in
 		OCRStore *Font = FindMatchingFont(Img, Width, CharStartX, CharStartY, CharEndX, CharEndY);
 		if (Font != 0)
 		{
-			ReturnBuff[WriteIndex++] = Font->AssignedChar;
-			if (Font->AssignedChar2)
-				ReturnBuff[WriteIndex++] = Font->AssignedChar2;
+			char *ImgStr = Font->AssignedChars;
+			while (*ImgStr != 0)
+			{
+				ReturnBuff[WriteIndex++] = *ImgStr;
+				ImgStr++;
+			}
 		}
 		else
 		{
