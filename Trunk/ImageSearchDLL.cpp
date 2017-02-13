@@ -356,16 +356,24 @@ void main()
 	}/**/
 /*	{
 		//try to detect player labels
-		TakeScreenshot(0, 0, 1025, 599);
+		TakeScreenshot(0, 0, 1282, 722);
 //		LoadCacheOverScreenshot("Screenshot_0015_1025_0599.bmp", 0, 0);
-		LoadCacheOverScreenshot("Screenshot_0025_1025_0599.bmp", 0, 0);
+//		LoadCacheOverScreenshot("Screenshot_0025_1025_0599.bmp", 0, 0);
+//		LoadCacheOverScreenshot("CastleTags1200.bmp", 0, 0);
+		TakeScreenshot(0, 0, 1062, 500);
+		LoadCacheOverScreenshot("CastleTags_4.bmp", 0, 0);
 //		char * ttt = ImageSearch_Multiple_Gradient(RGB(33, 106, 148), 60, 75, 181 - 151, 235 - 220);
-		KeepGradient(RGB(33, 106, 148), 0.4f);
-		//SaveScreenshot();
-//		float t = GetPixelRatioInArea(0, 151, 220, 181, 235);
+		//remove water if there is any
+		SetGradientToColor(0x00A59B63, 0.162f, TRANSPARENT_COLOR);
+		SaveScreenshot();
+		//remove anything else left than player tags
+		KeepGradient(RGB(33, 109, 148), 0.4f);
+		SaveScreenshot();
+//		float t = GetPixelRatioInArea(0, 311, 522, 345, 539);
 //		printf("t = %f\n", t);
+		//return;
 //		char * tt = ImageSearch_Multiple_PixelCount(0, 75, 181 - 151, 235 - 220); // found less than half shielded
-		char * tt = ImageSearch_Multiple_PixelCount(0, 50, 33, 21);
+		char * tt = ImageSearch_Multipass_PixelCount(0, 60, 35, 5, 34, 21); // try to find good matches, than try to find worse and worse matches
 		printf("t = %s\n", tt);
 		SaveScreenshot();
 		return;
@@ -401,7 +409,7 @@ void main()
 		KeepColor3SetBoth(0, 0x00FFFFFF, 0x00000080, 0x00008080, 0x00008080);
 		//SaveScreenshot();
 	}/**/
-	{
+/*	{
 		char *res;
 		OCR_LoadFontsFromDir("K_C_M", "KCM_");
 		OCR_LoadFontsFromDir("K_C_M_Old1", "K_C_M_");
@@ -605,5 +613,59 @@ void main()
 		//SaveScreenshot();
 		return;
 	}/**/
+	{
+		char *res;
+		OCR_LoadFontsFromDir("K_C_M_Playernames", "KCM_");
+		OCR_LoadFontsFromDir("K_C_M_Playernames2", "KCM_");
+		TakeScreenshot(0, 0, 401, 381);
+		OCR_SetMaxFontSize(20, 20);
+		std::string path = "CastlepopupExamples3";
+		std::string search_path = path;
+		search_path += "/*.*";
+		std::string SkipUntilFile = "";
+		int FoundFirstFile = SkipUntilFile.length() == 0;
+		int SkipFirstN = 7;
+		int BatchProcessMaxCount = 9;
+		int Index = 0;
+		WIN32_FIND_DATA fd;
+		HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
+		if (hFind != INVALID_HANDLE_VALUE)
+		{
+			do {
+				// read all (real) files in current folder
+				// , delete '!' read other 2 default folder . and ..
+				if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+				{
+					Index++;
+					if (FoundFirstFile == 0)
+					{
+						if (strcmp(fd.cFileName, SkipUntilFile.c_str()) == 0)
+							FoundFirstFile = 1;
+						else
+							continue;
+					}
+					BatchProcessMaxCount--;
+					if (SkipFirstN-- > 0)
+						continue;
+					char FullPath[2500];
+					sprintf_s(FullPath, sizeof(FullPath), "%s/%s", path.c_str(), fd.cFileName);
+					printf("%d)Parsing file : %s\n", Index, FullPath);
+					LoadCacheOverScreenshot(FullPath, 0, 0);
+					//SaveScreenshot();
+					//continue;
+					//SaveScreenshot();
+					KeepColorsMinInRegion(121, 16, 390, 44, RGB(194, 180, 55));
+					SaveScreenshot();
+					//continue;
+					res = OCR_ReadTextLeftToRightSaveUnknownChars(121, 16, 390, 44);
+					printf("%s\n", res);
+				}
+			} while (::FindNextFile(hFind, &fd) && BatchProcessMaxCount > 0);
+			::FindClose(hFind);
+		}
+
+		//SaveScreenshot();
+		return;
+}/**/
 #endif
 }

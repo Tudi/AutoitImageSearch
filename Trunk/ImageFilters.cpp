@@ -417,7 +417,7 @@ void WINAPI KeepColorRangesInRegion(int StartX, int StartY, int EndX, int EndY, 
 				int G = GetGValue(Color);
 				int R = GetBValue(Color);
 
-				if (R < RMin || R > RMax || G < GMin | G > GMax || B < BMin || B > BMax)
+				if (R < RMin || R > RMax || G < GMin || G > GMax || B < BMin || B > BMax)
 					CurScreenshot->Pixels[y*Width + x] = TRANSPARENT_COLOR;
 				else
 					CurScreenshot->Pixels[y*Width + x] = 0;

@@ -91,7 +91,7 @@ void WINAPI KeepColorsMinInRegion(int StartX, int StartY, int EndX, int EndY, in
 				int G = GetGValue(Color);
 				int R = GetBValue(Color);
 
-				if (R <= RMin || G <= GMin || B <= BMin)
+				if (R < RMin || G < GMin || B < BMin)
 					CurScreenshot->Pixels[y*Width + x] = TRANSPARENT_COLOR;
 				else
 					CurScreenshot->Pixels[y*Width + x] = 0;

@@ -9,6 +9,7 @@ EXPORTS
 	ImageSearch_Multiple_ExactMatch
 	ImageSearch_Multiple_Transparent
 	ImageSearch_Multiple_PixelCount
+	ImageSearch_Multipass_PixelCount
 
 	ApplyColorBitmask
 	DecreaseColorCount
