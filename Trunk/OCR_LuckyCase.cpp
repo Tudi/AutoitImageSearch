@@ -107,7 +107,7 @@ void GenerateAvailableFontFilename(char *Buf, int len, char *TheChars)
 		sprintf_s(NewFilename, sizeof(NewFilename), "KCM_%s_%d.bmp", TheChars, FileIndex);
 		if (_access(NewFilename, 0) == 0)
 			continue;
-		sprintf_s(OldFilename, sizeof(OldFilename), "K_C_M_Playernames/KCM_%s_%d.bmp", TheChars, FileIndex);
+		sprintf_s(OldFilename, sizeof(OldFilename), "K_C_M_guild/KCM_%s_%d.bmp", TheChars, FileIndex);
 		if (_access(OldFilename, 0) == 0)
 			continue;
 		break;
@@ -134,12 +134,12 @@ OCRStore *FindMatchingFont(int *Img, int Width, int CharStartX, int CharStartY, 
 		{
 #ifdef MIGRATE_OLD_TO_NEW_ON_FILTER_CHANGE
 			//if font is comming from a differenct directory than copy it to our Font folder. This happens when whe redo the font library and want to clean up unused ones
-			if (FontCache->OCRCache->Migrated == 0 && strstr(FontCache->FileName, "_C_M_Playernames/") != FontCache->FileName + 1)
+			if (FontCache->OCRCache->Migrated == 0 && strstr(FontCache->FileName, "_C_M_guild/") != FontCache->FileName + 1)
 			{
 				//get the file name from src
 				char Filename[500], Filename2[500];
 				GenerateAvailableFontFilename(Filename, sizeof(Filename), FontCache->OCRCache->AssignedChars);
-				sprintf(Filename2, "K_C_M_Playernames/%s", Filename);
+				sprintf(Filename2, "K_C_M_guild/%s", Filename);
 				BOOL success = CopyFile(FontCache->FileName, Filename2, true);
 				if (success == false)
 					printf("failed to copy, debug me\n");
@@ -268,7 +268,7 @@ char * WINAPI OCR_ReadTextLeftToRightSaveUnknownChars(int StartX, int StartY, in
 		if (FindCharacterEnclosingBox(Img, Width, CharStartX, CharStartY, CharEndX, CharEndY) == 0)
 			break;
 		//guessing there were " " characters between the 2 fonts
-		if (CharStartX > PrevFontEnd + 3)
+		if (CharStartX > PrevFontEnd + 5)
 			ReturnBuff[WriteIndex++] = ' ';
 		//maybe we get lucky and guess what this was
 		OCRStore *Font = FindMatchingFont(Img, Width, CharStartX, CharStartY, CharEndX, CharEndY);
