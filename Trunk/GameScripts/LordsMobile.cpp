@@ -1,6 +1,10 @@
 #include "../stdafx.h"
 
 #define REDUCE_PIXELPRECISION_MASK 0x00F0F0F0
+#define RGB_GET_R(Color) ( Color & 0xFF )
+#define RGB_GET_G(Color) ( (Color >> 8 ) & 0xFF)
+#define RGB_GET_B(Color) ( (Color >> 16 )& 0xFF)
+#define STATIC_BGR_RGB(Color) (( RGB_GET_R( Color ) << 16 ) | ( RGB_GET_G( Color ) << 8 ) | ( RGB_GET_B( Color ) ) )
 
 DWORD KoPlayerProcessId = 0;
 HWND KoPlayerWND = 0;
@@ -40,23 +44,38 @@ void WaitKoPlayerGetFocus()
 
 DWORD GetKoPixel(int x, int y)
 {
-	HDC hDC = GetDC(KoPlayerWND);  //I'm not sure if this is right or what exactly it does.
-	DWORD ret = GetPixel(hDC, Ko[0] + x, Ko[1] + y);
-	ReleaseDC(KoPlayerWND, hDC);
-	ret = ret & REDUCE_PIXELPRECISION_MASK;
-	return ret;
+	HDC hDC = GetDC(0);				//I'm not sure if this is right or what exactly it does.
+	COLORREF Color = GetPixel(hDC, Ko[0] + x, Ko[1] + y);
+	ReleaseDC(0, hDC);
+	Color = Color & REDUCE_PIXELPRECISION_MASK;
+	return Color;
+/*	//swap bytes in case we got it in BGR
+	int B = GetRValue(Color);
+	int G = GetGValue(Color);
+	int R = GetBValue(Color);
+	//return the real RGB
+	return RGB(R,G,B);*/
 }
 
-void WaitPixelBecomeColor(int x, int y, int Color)
+int IsPixelAtPos(int x, int y, int Color)
+{
+	int Pixel1 = GetKoPixel(x, y);
+	if (Pixel1 == (Color & REDUCE_PIXELPRECISION_MASK))
+		return 1;
+	return 0;
+}
+
+int WaitPixelBecomeColor(int x, int y, int Color)
 {
 	int tSleep = 100;
 	int Timeout = 3000;
 	Color = Color & REDUCE_PIXELPRECISION_MASK;
-	while (Timeout > 0 && GetKoPixel(x, y) != Color)
+	while (Timeout > 0 && IsPixelAtPos(x, y, Color) == 0 )
 	{
 		Sleep(tSleep);
 		Timeout -= tSleep;
 	}
+	return IsPixelAtPos(x, y, Color);
 }
 
 int WaitPixelChangeColor(int x, int y, int Color)
@@ -74,18 +93,13 @@ int WaitPixelChangeColor(int x, int y, int Color)
 	return ret;
 }
 
-int IsPixelAtPos(int x, int y, int Color)
-{
-	int Pixel1 = GetKoPixel(x, y);
-	if (Pixel1 == (Color & REDUCE_PIXELPRECISION_MASK))
-		return 1;
-	return 0;
-}
-
 void ParseCastlePopup()
 {
-	WaitPixelChangeColor(566, 270, 0x00FFFFFF);
-	WaitPixelChangeColor(569, 301, 0x00FFFFFF);
+	if (WaitPixelBecomeColor(566, 270, 0x00FFFFFF) == 0 && WaitPixelBecomeColor(569, 301, 0x00FFFFFF) == 0)
+	{
+		printf("Castle popup load timemout. Skipping parsing\n");
+		return;
+	}
 	int PopupStartX = 440;
 	int PopupStartY = 200;
 	int PopupEndX = 840;
@@ -94,11 +108,16 @@ void ParseCastlePopup()
 	SaveScreenshot();
 }
 
+void KoLeftClick(int x, int y)
+{
+	LeftClick(Ko[0] + x, Ko[1] + y);
+}
+
 void CloseGenericPopup(int x, int y, int color)
 {
 	if (IsPixelAtPos(x, y, color))
 	{
-		LeftClick(x, y);
+		KoLeftClick(x, y);
 		//wait close window go away
 		WaitPixelChangeColor(x, y, color);
 		Sleep(200);	//extra wait to make sure window will not interpret it as a delayed event and still process it
@@ -107,22 +126,43 @@ void CloseGenericPopup(int x, int y, int color)
 
 void CloseRSSOrCastlePopup()
 {
-	CloseGenericPopup(853, 127, 0x00FFBD36);
+	CloseGenericPopup(853, 127, STATIC_BGR_RGB(0x00FFBD36));
 }
 
 void CloseAllPossiblePopups()
 {
 	//resource or castle popups still visible
 	CloseRSSOrCastlePopup();
-	CloseGenericPopup(1255, 43, 0x00FFBE38); // full screen popups
-	CloseGenericPopup(853, 118, 0x00FFBE39); // if we clicked on rally / battle hall
-	CloseGenericPopup(852, 119, 0x00FFBD37); // if we clicked on scout
-	CloseGenericPopup(853, 126, 0x00FFBD36); // if we clicked on land
-	CloseGenericPopup(819, 431, 0x00FFBA31); // if we clicked on army
+	CloseGenericPopup(1255, 43, STATIC_BGR_RGB(0x00FFBE38)); // full screen popups
+	CloseGenericPopup(853, 118, STATIC_BGR_RGB(0x00FFBE39)); // if we clicked on rally / battle hall
+	CloseGenericPopup(852, 119, STATIC_BGR_RGB(0x00FFBD37)); // if we clicked on scout
+	CloseGenericPopup(853, 126, STATIC_BGR_RGB(0x00FFBD36)); // if we clicked on land
+	CloseGenericPopup(819, 431, STATIC_BGR_RGB(0x00FFBA31)); // if we clicked on army
 }
+/*
+void Detect()
+{
+	POINT p;
+	HDC hDC = GetDC(0);
+	int x, y;
+
+	while (!GetAsyncKeyState(VK_INSERT)) // Press insert to stop
+	{
+		GetCursorPos(&p);
+		x = p.x;
+		y = p.y;
+		hDC = GetDC(0);
+		std::cout << x << " " << y << " " << GetPixel(hDC, x, y) << std::endl;
+		Sleep(50);
+	}
+	ReleaseDC(0, hDC);
+}*/
 
 void CaptureVisibleScreenGetPlayerLabels()
 {
+//	Detect();
+//	return;
+
 	// this will probably only run once to get the process related details
 	GetKoPlayerAndPos();
 
@@ -143,6 +183,8 @@ void CaptureVisibleScreenGetPlayerLabels()
 		printf("Something is wrong. It's impossible to get more than 100 nodes per screen. We got %d\n", SearchResultCount);
 		SearchResultCount = 0;
 	}
+	else
+		printf("See %d node tags on this screen\n", SearchResultCount);
 	//parse each node label
 	for (int i = 0; i < SearchResultCount; i++)
 	{
@@ -154,16 +196,19 @@ void CaptureVisibleScreenGetPlayerLabels()
 		LeftClick(x, y);
 
 		// wait to see if a popup opens
-		WaitPixelBecomeColor(852, 126, 0x00FFBD36);
+		if (WaitPixelBecomeColor(852, 126, STATIC_BGR_RGB(0x00FFBD36)) == 0)
+		{
+			printf("Popup did not become visible ? See pixel 0x%X . Wanted 0x%X \n", GetKoPixel(852, 126), STATIC_BGR_RGB(0x00FFBD36));
+		}
 
 		// check what type of popup opened
-		if (IsPixelAtPos(817, 297, 0x00EFC471) == 1)	// the golden i
+		if (IsPixelAtPos(817, 297, STATIC_BGR_RGB(0x00EFC471)) == 1)	// the golden i
 		{
 			printf("Found resource node at %d %d\n", x, y);
 			//close it
 			CloseRSSOrCastlePopup();
 		}
-		else if (IsPixelAtPos(518, 215, 0x00F3D51E) == 1) // the VIP star
+		else if (IsPixelAtPos(518, 215, STATIC_BGR_RGB(0x00F3D51E) ) == 1) // the VIP star
 		{
 			printf("Found castle at %d %d\n", x, y);
 			// parse if castle
@@ -175,7 +220,7 @@ void CaptureVisibleScreenGetPlayerLabels()
 		{
 			printf("We clicked on something but have no idea what\n");
 		}
-		break;
+//		break;
 	}
 }
 
