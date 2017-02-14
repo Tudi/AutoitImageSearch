@@ -87,6 +87,7 @@ void LocateAndRemoveWaterAndDetectPlayers()
 	//SaveScreenshot();
 	}/**/
 }
+
 void ExtractPlayerName()
 {
 /*	{
@@ -376,7 +377,7 @@ void ExtractPlayerName()
 	{
 		char *res;
 		OCR_LoadFontsFromDir("K_C_M_Playernames", "KCM_");
-		//		OCR_LoadFontsFromDir("K_C_M_Playernames2", "KCM_");
+		OCR_LoadFontsFromDir("K_C_M_Playernames2", "KCM_");
 		TakeScreenshot(0, 0, 401, 381);
 		OCR_SetMaxFontSize(20, 20);
 		std::string path = "CastlepopupExamples3";
@@ -384,8 +385,8 @@ void ExtractPlayerName()
 		search_path += "/*.*";
 		std::string SkipUntilFile = "";
 		int FoundFirstFile = SkipUntilFile.length() == 0;
-		int SkipFirstN = 1;
-		int BatchProcessMaxCount = 188;
+		int SkipFirstN = 0;
+		int BatchProcessMaxCount = 372;
 		int Index = 0;
 		WIN32_FIND_DATA fd;
 		HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
@@ -419,6 +420,8 @@ void ExtractPlayerName()
 					//continue;
 					res = OCR_ReadTextLeftToRightSaveUnknownChars(121, 16, 390, 44);
 					printf("%s\n", res);
+					if (res[strlen(res)-1]=='1')
+						SaveScreenshot();
 				}
 			} while (::FindNextFile(hFind, &fd) && BatchProcessMaxCount > 0);
 			::FindClose(hFind);
@@ -434,6 +437,7 @@ void ExtractKillsMight()
 	{
 		char *res;
 		OCR_LoadFontsFromDir("K_C_M_MightKills", "KCM_");
+		OCR_LoadFontsFromDir("K_C_M_MightKills2", "KCM_");
 		TakeScreenshot(0, 0, 401, 381);
 		OCR_SetMaxFontSize(20, 20);
 		std::string path = "CastlepopupExamples3";
@@ -442,7 +446,7 @@ void ExtractKillsMight()
 		std::string SkipUntilFile = "";
 		int FoundFirstFile = SkipUntilFile.length() == 0;
 		int SkipFirstN = 0;
-		int BatchProcessMaxCount = 188;
+		int BatchProcessMaxCount = 372;
 		int Index = 0;
 		WIN32_FIND_DATA fd;
 		HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
@@ -502,7 +506,7 @@ void ExtractXY()
 		std::string SkipUntilFile = "";
 		int FoundFirstFile = SkipUntilFile.length() == 0;
 		int SkipFirstN = 0;
-		int BatchProcessMaxCount = 188;
+		int BatchProcessMaxCount = 372;
 		int Index = 0;
 		WIN32_FIND_DATA fd;
 		HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
@@ -649,7 +653,7 @@ void ExtractGuild()
 		std::string SkipUntilFile = "";
 		int FoundFirstFile = SkipUntilFile.length() == 0;
 		int SkipFirstN = 0;
-		int BatchProcessMaxCount = 188;
+		int BatchProcessMaxCount = 372;
 		int Index = 0;
 		WIN32_FIND_DATA fd;
 		HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
@@ -680,6 +684,8 @@ void ExtractGuild()
 					//SaveScreenshot();
 					res = OCR_ReadTextLeftToRightSaveUnknownChars(73, 131, 370, 154);
 					printf("%s\n", res);
+					if (res[strlen(res) - 1] == '1')
+						SaveScreenshot();
 				}
 			} while (::FindNextFile(hFind, &fd) && BatchProcessMaxCount > 0);
 			::FindClose(hFind);
@@ -692,5 +698,9 @@ void ExtractGuild()
 
 void RunLordsTesting()
 {
+	//ExtractXY();
+	//ExtractKillsMight();
+	//ExtractPlayerName();
+	//ExtractGuild();
 	ExtractGuild();
 }

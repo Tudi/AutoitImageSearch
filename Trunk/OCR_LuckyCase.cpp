@@ -134,7 +134,7 @@ OCRStore *FindMatchingFont(int *Img, int Width, int CharStartX, int CharStartY, 
 		{
 #ifdef MIGRATE_OLD_TO_NEW_ON_FILTER_CHANGE
 			//if font is comming from a differenct directory than copy it to our Font folder. This happens when whe redo the font library and want to clean up unused ones
-			if (FontCache->OCRCache->Migrated == 0 && strstr(FontCache->FileName, "_C_M_guild/") != FontCache->FileName + 1)
+			if (FontCache->OCRCache->Migrated == 0 && strstr(FontCache->FileName, "K_C_M_guild/") != FontCache->FileName)
 			{
 				//get the file name from src
 				char Filename[500], Filename2[500];
