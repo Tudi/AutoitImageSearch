@@ -232,6 +232,8 @@ HWND FindMainHWND(unsigned long process_id)
 	return data.best_handle;
 }
 
+#define MIN_SLEEP_TIME_MOUSE_ACTION 20
+
 double MouseXScaler = 0.0f;
 double MouseYScaler = 0.0f;
 int screenX = 0;
@@ -258,6 +260,7 @@ void MouseMove(int x, int y)
 	Input.mi.dx = MulDiv(x, 65535, screenX);
 	Input.mi.dy = MulDiv(y, 65535, screenY);
 	::SendInput(1, &Input, sizeof(INPUT));
+	Sleep(MIN_SLEEP_TIME_MOUSE_ACTION);
 }
 
 void LeftClick(int x, int y)
@@ -270,10 +273,12 @@ void LeftClick(int x, int y)
 	Input.type = INPUT_MOUSE;
 	Input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
 	::SendInput(1, &Input, sizeof(INPUT));
+	Sleep(MIN_SLEEP_TIME_MOUSE_ACTION);
 	// left up
 	Input.type = INPUT_MOUSE;
 	Input.mi.dwFlags = MOUSEEVENTF_LEFTUP;
 	::SendInput(1, &Input, sizeof(INPUT));
+	Sleep(MIN_SLEEP_TIME_MOUSE_ACTION);
 }
 
 void MouseDrag(int x1, int y1, int x2, int y2)
@@ -290,6 +295,7 @@ void MouseDrag(int x1, int y1, int x2, int y2)
 	Input.type = INPUT_MOUSE;
 	Input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
 	::SendInput(1, &Input, sizeof(INPUT));
+	Sleep(MIN_SLEEP_TIME_MOUSE_ACTION);
 
 	//move slowly
 	int Dx = x2 - x1;
@@ -297,9 +303,9 @@ void MouseDrag(int x1, int y1, int x2, int y2)
 	int MaxSteps = abs(Dx);
 	if (abs(Dy) > MaxSteps)
 		MaxSteps = abs(Dy);
-	int TotalMoveTime = 1000;
-	int SleepPerStep = 20;
-	int PixelPerStep = TotalMoveTime / SleepPerStep;
+	int TotalMoveTime = 500;
+	int SleepPerStep = 50;
+	int PixelPerStep = MaxSteps / ( TotalMoveTime / SleepPerStep );
 	for (int i = 0; i < MaxSteps; i += PixelPerStep)
 	{
 		int CurX = (int)((float)Dx / (float)MaxSteps * (float)i);
@@ -312,6 +318,7 @@ void MouseDrag(int x1, int y1, int x2, int y2)
 	Input.type = INPUT_MOUSE;
 	Input.mi.dwFlags = MOUSEEVENTF_LEFTUP;
 	::SendInput(1, &Input, sizeof(INPUT));
+	Sleep(MIN_SLEEP_TIME_MOUSE_ACTION);
 }
 /*
 // LeftClick function

@@ -974,7 +974,9 @@ char* WINAPI ImageSearch_Multipass_PixelCount(int Color, int PercentMax, int Per
 					for (int y2 = 0; y2 < AreaHeight; y2++)
 					{
 						memset(&TempBuff[(y + y2) * Width + x], TRANSPARENT_COLOR, AreaWidth*sizeof(int));
+#ifdef _CONSOLE
 memset(&CurScreenshot->Pixels[(y + y2) * Width + x], Percent, AreaWidth*sizeof(int));
+#endif
 						//mark this zone that we can skip processing
 						TempBuff[(y + y2) * Width + x] = 66;
 					}
@@ -1120,7 +1122,9 @@ void ImageSearch_Multipass_PixelCount2(int Color, int PercentMax, int PercentMin
 					for (int y2 = 0; y2 < AreaHeight; y2++)
 					{
 						memset(&TempBuff[(y + y2) * Width + x], TRANSPARENT_COLOR, AreaWidth*sizeof(int));
-						memset(&CurScreenshot->Pixels[(y + y2) * Width + x], Percent, AreaWidth*sizeof(int));
+#ifdef _CONSOLE
+memset(&CurScreenshot->Pixels[(y + y2) * Width + x], Percent, AreaWidth*sizeof(int));
+#endif
 						//mark this zone that we can skip processing
 						TempBuff[(y + y2) * Width + x] = 66;
 					}

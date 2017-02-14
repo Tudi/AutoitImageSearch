@@ -1,6 +1,7 @@
 #include "../stdafx.h"
 
 #define REDUCE_PIXELPRECISION_MASK 0x00F0F0F0
+
 #define RGB_GET_R(Color) ( Color & 0xFF )
 #define RGB_GET_G(Color) ( (Color >> 8 ) & 0xFF)
 #define RGB_GET_B(Color) ( (Color >> 16 )& 0xFF)
@@ -32,14 +33,16 @@ void GetKoPlayerAndPos()
 	}
 }
 
-void WaitKoPlayerGetFocus()
+int IsKoPlayerInFocus()
 {
 	HWND CurWND = GetForegroundWindow();
-	while (KoPlayerWND != CurWND)
-	{
+	return (KoPlayerWND == CurWND);
+}
+
+void WaitKoPlayerGetFocus()
+{
+	while (IsKoPlayerInFocus() == 0 )
 		Sleep(100);
-		CurWND = GetForegroundWindow();
-	}
 }
 
 HDC hDC = 0;
@@ -56,11 +59,11 @@ void ReleasePixelLockDC()
 	hDC = 0;
 }
 
-DWORD GetKoPixel(int x, int y)
+COLORREF GetKoPixel(int x, int y)
 {
-//	HDC hDC = GetDC(0);				//I'm not sure if this is right or what exactly it does.
+	HDC hDC = GetDC(0);				//I'm not sure if this is right or what exactly it does.
 	COLORREF Color = GetPixel(hDC, Ko[0] + x, Ko[1] + y);
-//	ReleaseDC(0, hDC);
+	ReleaseDC(0, hDC);
 	Color = Color & REDUCE_PIXELPRECISION_MASK;
 	return Color;
 /*	//swap bytes in case we got it in BGR
@@ -71,15 +74,15 @@ DWORD GetKoPixel(int x, int y)
 	return RGB(R,G,B);*/
 }
 
-int IsPixelAtPos(int x, int y, int Color)
+int IsPixelAtPos(int x, int y, COLORREF Color)
 {
-	int Pixel1 = GetKoPixel(x, y);
+	COLORREF Pixel1 = GetKoPixel(x, y);
 	if (Pixel1 == (Color & REDUCE_PIXELPRECISION_MASK))
 		return 1;
 	return 0;
 }
 
-int WaitPixelBecomeColor(int x, int y, int Color)
+int WaitPixelBecomeColor(int x, int y, COLORREF Color)
 {
 	int tSleep = 100;
 	int Timeout = 3000;
@@ -92,7 +95,7 @@ int WaitPixelBecomeColor(int x, int y, int Color)
 	return IsPixelAtPos(x, y, Color);
 }
 
-int WaitPixelChangeColor(int x, int y, int Color)
+int WaitPixelChangeColor(int x, int y, COLORREF Color)
 {
 	int ret = 0;
 	int tSleep = 100;
@@ -231,15 +234,18 @@ void KoLeftClick(int x, int y)
 	LeftClick(Ko[0] + x, Ko[1] + y);
 }
 
-void CloseGenericPopup(int x, int y, int color)
+int CloseGenericPopup(int x, int y, int color)
 {
+	int ret = 0;
 	if (IsPixelAtPos(x, y, color))
 	{
 		KoLeftClick(x, y);
 		//wait close window go away
 		WaitPixelChangeColor(x, y, color);
 		Sleep(200);	//extra wait to make sure window will not interpret it as a delayed event and still process it
+		ret = 1;
 	}
+	return ret;
 }
 
 void CloseRSSOrCastlePopup()
@@ -249,13 +255,19 @@ void CloseRSSOrCastlePopup()
 
 void CloseAllPossiblePopups()
 {
+	int ClosedSomething = 0;
 	//resource or castle popups still visible
-	CloseRSSOrCastlePopup();
-	CloseGenericPopup(1255, 43, STATIC_BGR_RGB(0x00FFBE38)); // full screen popups
-	CloseGenericPopup(853, 118, STATIC_BGR_RGB(0x00FFBE39)); // if we clicked on rally / battle hall
-	CloseGenericPopup(852, 119, STATIC_BGR_RGB(0x00FFBD37)); // if we clicked on scout
-	CloseGenericPopup(853, 126, STATIC_BGR_RGB(0x00FFBD36)); // if we clicked on land
-	CloseGenericPopup(819, 431, STATIC_BGR_RGB(0x00FFBA31)); // if we clicked on army
+	ClosedSomething += CloseGenericPopup(853, 127, STATIC_BGR_RGB(0x00FFBD36)); // resource or castle leftover popup
+	ClosedSomething += CloseGenericPopup(1255, 43, STATIC_BGR_RGB(0x00FFBE38)); // full screen popups
+	ClosedSomething += CloseGenericPopup(1235, 43, 0x00FFBE38); // full screen popups
+	ClosedSomething += CloseGenericPopup(1235, 43, STATIC_BGR_RGB(0x00FFBE38)); // full screen popups
+	ClosedSomething += CloseGenericPopup(853, 118, STATIC_BGR_RGB(0x00FFBE39)); // if we clicked on rally / battle hall
+	ClosedSomething += CloseGenericPopup(852, 119, STATIC_BGR_RGB(0x00FFBD37)); // if we clicked on scout
+	ClosedSomething += CloseGenericPopup(853, 126, STATIC_BGR_RGB(0x00FFBD36)); // if we clicked on land
+	ClosedSomething += CloseGenericPopup(819, 431, STATIC_BGR_RGB(0x00FFBA31)); // if we clicked on army
+	//debugging is life
+	if (ClosedSomething)
+		printf("We managed to close some unexpected popup. Continue Execution\n");
 }
 /*
 void Detect()
@@ -282,7 +294,7 @@ void WINAPI CaptureVisibleScreenGetPlayerLabels()
 //	return;
 
 	// lock the DC
-	StartPixelLockDC();
+	//StartPixelLockDC();
 
 	// this will probably only run once to get the process related details
 	GetKoPlayerAndPos();
@@ -300,6 +312,8 @@ void WINAPI CaptureVisibleScreenGetPlayerLabels()
 	//try to debug WTF situations
 	if (SearchResultCount > 100)
 	{
+		SaveScreenshot();
+		TakeScreenshot(Ko[0] + JumpToTurefIconSize, Ko[1] + JumpToTurefIconSize, Ko[0] + Ko[2] - JumpToTurefIconSize, Ko[1] + Ko[3] - JumpToTurefIconSize);
 		SaveScreenshot();
 		printf("Something is wrong. It's impossible to get more than 100 nodes per screen. We got %d\n", SearchResultCount);
 		SearchResultCount = 0;
@@ -330,7 +344,7 @@ void WINAPI CaptureVisibleScreenGetPlayerLabels()
 			//close it
 			CloseRSSOrCastlePopup();
 		}
-		else if (IsPixelAtPos(518, 215, STATIC_BGR_RGB(0x00F3D51E) ) == 1) // the VIP star
+		else if (IsPixelAtPos(613, 500, STATIC_BGR_RGB(0x00337677)) == 1 || IsPixelAtPos(614, 495, STATIC_BGR_RGB(0x00A54A4F)) == 1) // can send resource or can be scouted
 		{
 			printf("Found castle at %d %d\n", x, y);
 			// parse if castle
@@ -343,31 +357,52 @@ void WINAPI CaptureVisibleScreenGetPlayerLabels()
 			printf("We clicked on something but have no idea what\n");
 		}
 //		break;
+
+		//safety break from a possible infinite loop
+		if (GetAsyncKeyState(VK_INSERT) || IsKoPlayerInFocus() == 0)
+			break;
+
 	}
 
 	//no longer get ahold of this DC for now
-	ReleasePixelLockDC();
+	//ReleasePixelLockDC();
 }
 
 void DragScreenToLeft()
 {
-	MouseDrag(Ko[0] + Ko[2] - 2, Ko[1] + Ko[3] / 2, Ko[0] + 2, Ko[1] + Ko[3] / 2);
-	//	MouseDrag(Ko[0] + 2, Ko[1] + Ko[3] / 2, Ko[0] + Ko[2] - 2, Ko[1] + Ko[3] / 2);
+	int SkipDragAmount = 32;
+	MouseDrag(Ko[0] + Ko[2] - SkipDragAmount, Ko[1] + Ko[3] / 2, Ko[0] + SkipDragAmount, Ko[1] + Ko[3] / 2);
 }
 
 void RunLordsMobileTests()
 {
 	//GetKoPlayerAndPos();
-	{
+/*	{
 		GetKoPlayerAndPos();
 		WaitKoPlayerGetFocus();
 		DragScreenToLeft();
 		return;
 	}/**/
-
-	for (int i = 0; i < 2; i++)
+/*	{
+		GetKoPlayerAndPos();
+		WaitKoPlayerGetFocus();
+		CloseAllPossiblePopups();
+		return;
+	}/**/
+	StartCounter();
+	int Start = GetTimeTickI();
+	for (int i = 0; i < 500 / 10; i++)
 	{
+		int End = GetTimeTickI();
+		printf("We made %d slides. We should be at x = %d. Time spent so far %d\n", i, i * 10, (End-Start)/1000/60);
 		CaptureVisibleScreenGetPlayerLabels();
 		DragScreenToLeft();
+
+		//safety break from a possible infinite loop
+		if (GetAsyncKeyState(VK_INSERT) || IsKoPlayerInFocus() == 0)
+			break;
 	}
+
+	printf("fliptablegoinghome.THE END\n");
+	_getch();
 }
