@@ -8,5 +8,9 @@ void GetMaxDesktopResolution( int *Width, int *Height );
 void StartCounter();
 double GetTimeTick();
 unsigned int GetTimeTickI();
+void EnableDebugPriv();
+DWORD GetProcessByExeName(char *ExeName);
+HWND FindMainHWND(unsigned long process_id);
+void LeftClick(int x, int y);
 
 #endif

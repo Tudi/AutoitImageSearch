@@ -15,4 +15,11 @@ char* WINAPI ImageSearch_Multipass_PixelCount(int Color, int PercentStart, int P
 // this is a lot slower than doing it step by step !
 char* WINAPI ImageSearch_Multiple_Gradient(int Color, int GradientMatchPercent, int CountInAreaPercent, int AreaWidth, int AreaHeight);
 
+
+
+
+// ignore these. Using them for a specific case
+void ImageSearch_Multipass_PixelCount2(int Color, int PercentMax, int PercentMin, int PercentStep, int AreaWidth, int AreaHeight);
+extern int SearchResultCount;
+extern int SearchResultXYSAD[500][3];
 #endif

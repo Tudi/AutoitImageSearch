@@ -1,4 +1,5 @@
 #include "StdAfx.h"
+#include <tlhelp32.h>
 
 static unsigned long crc32_tab[] = {
 	  0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL, 0x076dc419L,
@@ -156,3 +157,144 @@ unsigned int GetTimeTickI()
 { 
 	return (unsigned int)GetTimeTick();
 }
+
+void EnableDebugPriv()
+{
+	HANDLE hToken;
+	LUID luid;
+	TOKEN_PRIVILEGES tkp;
+
+	OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken);
+
+	LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &luid);
+
+	tkp.PrivilegeCount = 1;
+	tkp.Privileges[0].Luid = luid;
+	tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+	AdjustTokenPrivileges(hToken, false, &tkp, sizeof(tkp), NULL, NULL);
+
+	CloseHandle(hToken);
+}
+
+DWORD GetProcessByExeName(char *ExeName)
+{
+	PROCESSENTRY32 entry;
+	entry.dwSize = sizeof(PROCESSENTRY32);
+
+	HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
+	DWORD ret = 0;
+	if (Process32First(snapshot, &entry) == TRUE)
+	{
+		do
+		{
+			if (stricmp(entry.szExeFile, ExeName) == 0)
+			{
+				ret = entry.th32ProcessID;
+				break;
+			}
+		} while (Process32Next(snapshot, &entry) == TRUE);
+	}
+
+	CloseHandle(snapshot);
+
+	return ret;
+}
+
+struct handle_data {
+	unsigned long process_id;
+	HWND best_handle;
+};
+
+BOOL is_main_window(HWND handle)
+{
+	return GetWindow(handle, GW_OWNER) == (HWND)0 && IsWindowVisible(handle);
+}
+
+BOOL CALLBACK enum_windows_callback(HWND handle, LPARAM lParam)
+{
+	handle_data& data = *(handle_data*)lParam;
+	unsigned long process_id = 0;
+	GetWindowThreadProcessId(handle, &process_id);
+	if (data.process_id != process_id || !is_main_window(handle)) {
+		return TRUE;
+	}
+	data.best_handle = handle;
+	return FALSE;
+}
+
+HWND FindMainHWND(unsigned long process_id)
+{
+	handle_data data;
+	data.process_id = process_id;
+	data.best_handle = 0;
+	EnumWindows(enum_windows_callback, (LPARAM)&data);
+	return data.best_handle;
+}
+
+double MouseXScaler = 0.0f;
+double MouseYScaler = 0.0f;
+void MouseMove(int x, int y)
+{
+	if (MouseXScaler == 0.0f)
+	{
+		double fScreenWidth = ::GetSystemMetrics(SM_CXSCREEN) - 1;
+		double fScreenHeight = ::GetSystemMetrics(SM_CYSCREEN) - 1;
+		MouseXScaler = (65535.0f / fScreenWidth);
+		MouseYScaler = (65535.0f / fScreenHeight);
+	}
+	INPUT  Input = { 0 };
+	Input.type = INPUT_MOUSE;
+	Input.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
+	Input.mi.dx = (long)(x*MouseXScaler);
+	Input.mi.dy = (long)(y*MouseYScaler);
+	::SendInput(1, &Input, sizeof(INPUT));
+}
+
+void LeftClick(int x, int y)
+{
+	INPUT    Input;
+	memset(&Input, 0, sizeof(Input));
+	MouseMove(x, y);
+	// left down 
+	Input.type = INPUT_MOUSE;
+	Input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+	::SendInput(1, &Input, sizeof(INPUT));
+	// left up
+	Input.type = INPUT_MOUSE;
+	Input.mi.dwFlags = MOUSEEVENTF_LEFTUP;
+	::SendInput(1, &Input, sizeof(INPUT));
+}
+/*
+// LeftClick function
+void LeftClick2()
+{
+	INPUT    Input = { 0 };
+	// left down 
+	Input.type = INPUT_MOUSE;
+	Input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+	::SendInput(1, &Input, sizeof(INPUT));
+	Sleep(200);
+
+	// left up
+	::ZeroMemory(&Input, sizeof(INPUT));
+	Input.type = INPUT_MOUSE;
+	Input.mi.dwFlags = MOUSEEVENTF_LEFTUP;
+	::SendInput(1, &Input, sizeof(INPUT));
+	Sleep(200);
+}
+void LeftClick3(WORD mouseX, WORD mouseY)
+{
+	SendMessage(KoPlayerWND, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(mouseX, mouseY));
+	Sleep(200);
+	SendMessage(KoPlayerWND, WM_LBUTTONUP, MK_LBUTTON, MAKELPARAM(mouseX, mouseY));
+}
+
+void LeftClick4(WORD mouseX, WORD mouseY)
+{
+	SetCursorPos(mouseX, mouseY);
+	mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+	Sleep(200);
+	mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+}
+*/

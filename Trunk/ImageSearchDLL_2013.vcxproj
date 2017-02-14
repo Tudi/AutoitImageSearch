@@ -172,6 +172,7 @@
     </ClCompile>
     <ClCompile Include="debug.cpp" />
     <ClCompile Include="EdgeDetect.cpp" />
+    <ClCompile Include="GameScripts\LordsMobile.cpp" />
     <ClCompile Include="ImageFilters.cpp" />
     <ClCompile Include="ImageSearch.cpp" />
     <ClCompile Include="ImageSearchDLL.cpp" />
@@ -204,6 +205,7 @@
     </CustomBuild>
     <ClInclude Include="debug.h" />
     <ClInclude Include="EdgeDetect.h" />
+    <ClInclude Include="GameScripts\LordsMobile.h" />
     <ClInclude Include="ImageFilters.h" />
     <ClInclude Include="ImageSearch.h" />
     <ClInclude Include="InputProcess.h" />

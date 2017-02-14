@@ -162,6 +162,7 @@ void main()
 		printf("result of search benchmarking : %d ms %d FPS\n", End - Start, i * 1000 * 1000 / (End - Start + 1));
 		//		_getch();
 		}/**/
-	RunLordsTesting();
+	//RunLordsTesting();
+	RunLordsMobileTests();
 #endif
 }

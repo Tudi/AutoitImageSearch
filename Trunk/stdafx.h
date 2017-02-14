@@ -90,6 +90,7 @@
 #ifdef _CONSOLE
 	#include "Benchmarks/Benchmarks.h"
 	#include "Testing/Lords.h"
+	#include "GameScripts/LordsMobile.h"
 #endif
 
 // TODO: reference additional headers your program requires here
