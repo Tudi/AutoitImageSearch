@@ -37,16 +37,30 @@ void WaitKoPlayerGetFocus()
 	HWND CurWND = GetForegroundWindow();
 	while (KoPlayerWND != CurWND)
 	{
-		Sleep(1000);
+		Sleep(100);
 		CurWND = GetForegroundWindow();
 	}
 }
 
+HDC hDC = 0;
+void StartPixelLockDC()
+{
+	if (hDC == 0)
+		hDC = GetDC(0);				//I'm not sure if this is right or what exactly it does.
+}
+
+void ReleasePixelLockDC()
+{
+	if (hDC != 0)
+		ReleaseDC(0, hDC);
+	hDC = 0;
+}
+
 DWORD GetKoPixel(int x, int y)
 {
-	HDC hDC = GetDC(0);				//I'm not sure if this is right or what exactly it does.
+//	HDC hDC = GetDC(0);				//I'm not sure if this is right or what exactly it does.
 	COLORREF Color = GetPixel(hDC, Ko[0] + x, Ko[1] + y);
-	ReleaseDC(0, hDC);
+//	ReleaseDC(0, hDC);
 	Color = Color & REDUCE_PIXELPRECISION_MASK;
 	return Color;
 /*	//swap bytes in case we got it in BGR
@@ -93,6 +107,104 @@ int WaitPixelChangeColor(int x, int y, int Color)
 	return ret;
 }
 
+//Just Dump Everything we can in the same text file. 
+FILE *LocalDumpFile = 0;
+void AppendDataToDB(char*Data)
+{
+	if (LocalDumpFile == 0)
+		LocalDumpFile = fopen("Players.txt", "at");
+	if (Data == NULL)
+		return;
+	if (LocalDumpFile != 0)
+	{
+		if (Data[0]=='\n')
+			fprintf(LocalDumpFile, "\n");
+		else
+			fprintf(LocalDumpFile, "%s\t", Data);
+	}
+}
+
+int GuildCharsLoaded = 0;
+void GetGuildNameFromCastlePopup()
+{
+	OCR_SetActiveFontSet(1,"K_C_M_guild");
+	if (GuildCharsLoaded == 0)
+	{
+		GuildCharsLoaded = 1;
+		OCR_LoadFontsFromDir("K_C_M_guild", "KCM_");
+	}
+	OCR_SetMaxFontSize(20, 20);
+	KeepColorsMinInRegion(73, 131, 370, 154, RGB(173, 174, 176));
+	//SaveScreenshot();
+	char *res = OCR_ReadTextLeftToRightSaveUnknownChars(73, 131, 370, 154);
+	if (OCR_FoundNewFont == 1)
+		SaveScreenshot();
+}
+
+int NameCharsLoaded = 0;
+void GetPlayerNameFromCastlePopup()
+{
+	OCR_SetActiveFontSet(2,"K_C_M_Playernames");
+	if (NameCharsLoaded == 0)
+	{
+		NameCharsLoaded = 1;
+		OCR_LoadFontsFromDir("K_C_M_Playernames", "KCM_");
+	}
+	OCR_SetMaxFontSize(20, 20);
+	KeepColorsMinInRegion(121, 16, 390, 44, RGB(194, 180, 55));
+	//SaveScreenshot();
+	char *res = OCR_ReadTextLeftToRightSaveUnknownChars(121, 16, 390, 44);
+	AppendDataToDB(res);
+	if (OCR_FoundNewFont == 1)
+		SaveScreenshot();
+}
+
+int XYCharsLoaded = 0;
+void GetPlayerXYFromCastlePopup()
+{
+	OCR_SetActiveFontSet(3,"K_C_M_xy");
+	if (XYCharsLoaded == 0)
+	{
+		XYCharsLoaded = 1;
+		OCR_LoadFontsFromDir("K_C_M_xy", "KCM_");
+	}
+	OCR_SetMaxFontSize(20, 20);
+	KeepColorsMinInRegion(187, 363, 220, 379, RGB(166, 172, 175));
+	KeepColorsMinInRegion(235, 363, 266, 379, RGB(166, 172, 175));
+	//SaveScreenshot();
+	char *res;
+	res = OCR_ReadTextLeftToRightSaveUnknownChars(187, 363, 220, 379);
+	AppendDataToDB(res);
+	int tOCR_FoundNewFont = OCR_FoundNewFont;
+	res = OCR_ReadTextLeftToRightSaveUnknownChars(235, 363, 266, 379);
+	AppendDataToDB(res);
+	if (OCR_FoundNewFont == 1 || tOCR_FoundNewFont == 1)
+		SaveScreenshot();
+}
+
+int MightKillsCharsLoaded = 0;
+void GetPlayerMightKillsFromCastlePopup()
+{
+	OCR_SetActiveFontSet(4,"K_C_M_MightKills");
+	if (MightKillsCharsLoaded == 0)
+	{
+		MightKillsCharsLoaded = 1;
+		OCR_LoadFontsFromDir("K_C_M_MightKills", "KCM_");
+	}
+	OCR_SetMaxFontSize(20, 20);
+	KeepColorsMinInRegion(193, 66, 350, 88, RGB(211, 211, 211));
+	KeepColorsMinInRegion(258, 97, 390, 119, RGB(211, 211, 211));
+	//SaveScreenshot();
+	char *res;
+	res = OCR_ReadTextLeftToRightSaveUnknownChars(193, 66, 350, 88);
+	AppendDataToDB(res);
+	int tOCR_FoundNewFont = OCR_FoundNewFont;
+	res = OCR_ReadTextLeftToRightSaveUnknownChars(258, 97, 390, 119);
+	AppendDataToDB(res);
+	if (OCR_FoundNewFont == 1 || tOCR_FoundNewFont == 1)
+		SaveScreenshot();
+}
+
 void ParseCastlePopup()
 {
 	if (WaitPixelBecomeColor(566, 270, 0x00FFFFFF) == 0 && WaitPixelBecomeColor(569, 301, 0x00FFFFFF) == 0)
@@ -106,6 +218,12 @@ void ParseCastlePopup()
 	int PopupEndY = 580;
 	TakeScreenshot(Ko[0] + PopupStartX, Ko[1] + PopupStartY, Ko[0] + PopupEndX, Ko[1] + PopupEndY);
 	SaveScreenshot();
+
+	//GetPlayerNameFromCastlePopup();
+	//GetPlayerMightKillsFromCastlePopup();
+	//GetGuildNameFromCastlePopup();
+	//GetPlayerXYFromCastlePopup();
+	//AppendDataToDB("\n");
 }
 
 void KoLeftClick(int x, int y)
@@ -158,10 +276,13 @@ void Detect()
 	ReleaseDC(0, hDC);
 }*/
 
-void CaptureVisibleScreenGetPlayerLabels()
+void WINAPI CaptureVisibleScreenGetPlayerLabels()
 {
 //	Detect();
 //	return;
+
+	// lock the DC
+	StartPixelLockDC();
 
 	// this will probably only run once to get the process related details
 	GetKoPlayerAndPos();
@@ -189,6 +310,7 @@ void CaptureVisibleScreenGetPlayerLabels()
 	for (int i = 0; i < SearchResultCount; i++)
 	{
 		//try to make sure we do not have any random popups at this stage of the parsing.
+		CloseAllPossiblePopups();
 
 		// click on the position of the level tag
 		int x = SearchResultXYSAD[i][0];
@@ -222,10 +344,30 @@ void CaptureVisibleScreenGetPlayerLabels()
 		}
 //		break;
 	}
+
+	//no longer get ahold of this DC for now
+	ReleasePixelLockDC();
+}
+
+void DragScreenToLeft()
+{
+	MouseDrag(Ko[0] + Ko[2] - 2, Ko[1] + Ko[3] / 2, Ko[0] + 2, Ko[1] + Ko[3] / 2);
+	//	MouseDrag(Ko[0] + 2, Ko[1] + Ko[3] / 2, Ko[0] + Ko[2] - 2, Ko[1] + Ko[3] / 2);
 }
 
 void RunLordsMobileTests()
 {
 	//GetKoPlayerAndPos();
-	CaptureVisibleScreenGetPlayerLabels();
+	{
+		GetKoPlayerAndPos();
+		WaitKoPlayerGetFocus();
+		DragScreenToLeft();
+		return;
+	}/**/
+
+	for (int i = 0; i < 2; i++)
+	{
+		CaptureVisibleScreenGetPlayerLabels();
+		DragScreenToLeft();
+	}
 }

@@ -64,3 +64,4 @@ EXPORTS
 	;Junk Exports. Experimenting with random stuff
 	CycleScreenshots
 	LoadCacheOverScreenshot
+	CaptureVisibleScreenGetPlayerLabels

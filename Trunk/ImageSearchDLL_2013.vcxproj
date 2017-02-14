@@ -111,7 +111,7 @@
     <ClCompile>
       <PreprocessorDefinitions>LIBRARY_EXPORTS;WIN32;NDEBUG;_WINDOWS;_USRDLL;IMAGESEARCHDLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>

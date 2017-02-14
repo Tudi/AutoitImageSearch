@@ -7,3 +7,5 @@
 // !! you should have a binary image at this point !!
 // characters should not touch each other. If they do, use some other OCR !
 char * WINAPI OCR_ReadTextLeftToRightSaveUnknownChars(int StartX, int StartY, int EndX, int EndY);
+
+extern int OCR_FoundNewFont;

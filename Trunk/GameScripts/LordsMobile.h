@@ -1,4 +1,4 @@
 #pragma once
 
 void RunLordsMobileTests();
-void CaptureVisibleScreenGetPlayerLabels();
+void WINAPI CaptureVisibleScreenGetPlayerLabels();

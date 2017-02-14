@@ -107,12 +107,12 @@ void GenerateAvailableFontFilename(char *Buf, int len, char *TheChars)
 		sprintf_s(NewFilename, sizeof(NewFilename), "KCM_%s_%d.bmp", TheChars, FileIndex);
 		if (_access(NewFilename, 0) == 0)
 			continue;
-		sprintf_s(OldFilename, sizeof(OldFilename), "K_C_M_guild/KCM_%s_%d.bmp", TheChars, FileIndex);
+		sprintf_s(OldFilename, sizeof(OldFilename), "%s/KCM_%s_%d.bmp", FontSetName, TheChars, FileIndex);
 		if (_access(OldFilename, 0) == 0)
 			continue;
 		break;
 	} while (1);
-	strcpy(Buf, NewFilename);
+	strcpy_s(Buf, len, NewFilename);
 }
 
 OCRStore *FindMatchingFont(int *Img, int Width, int CharStartX, int CharStartY, int CharEndX, int CharEndY)
@@ -134,12 +134,12 @@ OCRStore *FindMatchingFont(int *Img, int Width, int CharStartX, int CharStartY, 
 		{
 #ifdef MIGRATE_OLD_TO_NEW_ON_FILTER_CHANGE
 			//if font is comming from a differenct directory than copy it to our Font folder. This happens when whe redo the font library and want to clean up unused ones
-			if (FontCache->OCRCache->Migrated == 0 && strstr(FontCache->FileName, "K_C_M_guild/") != FontCache->FileName)
+			if (FontCache->OCRCache->Migrated == 0 && strstr(FontSetName, FontCache->FileName) != FontSetName)
 			{
 				//get the file name from src
 				char Filename[500], Filename2[500];
 				GenerateAvailableFontFilename(Filename, sizeof(Filename), FontCache->OCRCache->AssignedChars);
-				sprintf(Filename2, "K_C_M_guild/%s", Filename);
+				sprintf_s(Filename2, sizeof(Filename2), "%s/%s", FontSetName, Filename);
 				BOOL success = CopyFile(FontCache->FileName, Filename2, true);
 				if (success == false)
 					printf("failed to copy, debug me\n");
@@ -238,10 +238,12 @@ int FindCharacterEnclosingBox(int *Img, int Width, int &CharStartX, int &CharSta
 	return 1;
 }
 
+int OCR_FoundNewFont;
 //start X and Y should be the upper left part of the text
 char * WINAPI OCR_ReadTextLeftToRightSaveUnknownChars(int StartX, int StartY, int EndX, int EndY)
 {
 	FileDebug("Started OCR_ReadTextLeftToRightSaveUnknownChars");
+	OCR_FoundNewFont = 0;
 	if (CurScreenshot->Pixels == NULL)
 	{
 		FileDebug("\tOCR has no screenshot to work on");
@@ -284,7 +286,8 @@ char * WINAPI OCR_ReadTextLeftToRightSaveUnknownChars(int StartX, int StartY, in
 		else
 		{
 			ExtractNewFont(Img, Width, CharStartX, CharStartY, CharEndX, CharEndY);
-			FoundNewFont = 1;
+//			FoundNewFont = 1;
+			OCR_FoundNewFont = 1;
 		}
 
 		CharStartX = CharEndX + 1;
@@ -292,6 +295,6 @@ char * WINAPI OCR_ReadTextLeftToRightSaveUnknownChars(int StartX, int StartY, in
 	}
 	FileDebug("Finished OCR_ReadTextLeftToRightSaveUnknownChars");
 	ReturnBuff[WriteIndex++] = 0;
-	sprintf_s(ReturnBuff, DEFAULT_STR_BUFFER_SIZE * 10, "%s|%d|%d", ReturnBuff, CharStartX, FoundNewFont);
+//	sprintf_s(ReturnBuff, DEFAULT_STR_BUFFER_SIZE * 10, "%s|%d|%d", ReturnBuff, CharStartX, FoundNewFont);
 	return ReturnBuff;
 }

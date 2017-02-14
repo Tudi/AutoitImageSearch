@@ -234,7 +234,7 @@ int IsLocalMaximaSafe(unsigned int *SP, int x1, int y1, int Width, int Height, i
 	int CenterVal = SP[0];
 	for (signed int y = -Radius; y <= Radius; y++)
 		for (signed int x = -Radius * 4; x <= Radius * 4; x += 4)
-			if (IsValidPixelPos(x + x1, y + y1, Width, Height) && SP[(y + y1)*Width + x + x1]>CenterVal)
+			if (IsValidPixelPos(x + x1, y + y1, Width, Height) && (int)SP[(y + y1)*Width + x + x1]>CenterVal)
 				return 0;
 	return 1;
 }

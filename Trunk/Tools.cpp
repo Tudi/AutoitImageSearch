@@ -234,32 +234,80 @@ HWND FindMainHWND(unsigned long process_id)
 
 double MouseXScaler = 0.0f;
 double MouseYScaler = 0.0f;
-void MouseMove(int x, int y)
+int screenX = 0;
+int screenY;
+void InitMouseScaler()
 {
-	if (MouseXScaler == 0.0f)
+	if (screenX == 0)
 	{
-		double fScreenWidth = ::GetSystemMetrics(SM_CXSCREEN) - 1;
-		double fScreenHeight = ::GetSystemMetrics(SM_CYSCREEN) - 1;
+		screenX = GetSystemMetrics(SM_CXSCREEN);
+		screenY = GetSystemMetrics(SM_CYSCREEN);
+		double fScreenWidth = screenX - 1;
+		double fScreenHeight = screenY - 1;
 		MouseXScaler = (65535.0f / fScreenWidth);
 		MouseYScaler = (65535.0f / fScreenHeight);
 	}
+}
+
+void MouseMove(int x, int y)
+{
+	InitMouseScaler();
 	INPUT  Input = { 0 };
 	Input.type = INPUT_MOUSE;
 	Input.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
-	Input.mi.dx = (long)(x*MouseXScaler);
-	Input.mi.dy = (long)(y*MouseYScaler);
+	Input.mi.dx = MulDiv(x, 65535, screenX);
+	Input.mi.dy = MulDiv(y, 65535, screenY);
 	::SendInput(1, &Input, sizeof(INPUT));
 }
 
 void LeftClick(int x, int y)
 {
+	MouseMove(x, y);
+
 	INPUT    Input;
 	memset(&Input, 0, sizeof(Input));
-	MouseMove(x, y);
 	// left down 
 	Input.type = INPUT_MOUSE;
 	Input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
 	::SendInput(1, &Input, sizeof(INPUT));
+	// left up
+	Input.type = INPUT_MOUSE;
+	Input.mi.dwFlags = MOUSEEVENTF_LEFTUP;
+	::SendInput(1, &Input, sizeof(INPUT));
+}
+
+void MouseDrag(int x1, int y1, int x2, int y2)
+{
+	InitMouseScaler();
+
+	//get to the start
+	MouseMove(x1, y1);
+
+	//push down the mouse
+	INPUT    Input;
+	memset(&Input, 0, sizeof(Input));
+	// left down 
+	Input.type = INPUT_MOUSE;
+	Input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+	::SendInput(1, &Input, sizeof(INPUT));
+
+	//move slowly
+	int Dx = x2 - x1;
+	int Dy = y2 - y1;
+	int MaxSteps = abs(Dx);
+	if (abs(Dy) > MaxSteps)
+		MaxSteps = abs(Dy);
+	int TotalMoveTime = 1000;
+	int SleepPerStep = 20;
+	int PixelPerStep = TotalMoveTime / SleepPerStep;
+	for (int i = 0; i < MaxSteps; i += PixelPerStep)
+	{
+		int CurX = (int)((float)Dx / (float)MaxSteps * (float)i);
+		int CurY = (int)((float)Dy / (float)MaxSteps * (float)i);
+		MouseMove(x1 + CurX, y1 + CurY);
+		Sleep(SleepPerStep);
+	}
+
 	// left up
 	Input.type = INPUT_MOUSE;
 	Input.mi.dwFlags = MOUSEEVENTF_LEFTUP;

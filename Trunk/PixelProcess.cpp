@@ -345,7 +345,7 @@ float WINAPI GetPixelRatioInArea(int Color, int StartX, int StartY, int EndX, in
 		for (int x = StartX; x < EndX; x += 1)
 			if (CurScreenshot->Pixels[y * Width + x] == Color)
 				ret++;
-	float AreaSize = (EndX - StartX)*(EndY - StartY);
+	float AreaSize = (float)((EndX - StartX)*(EndY - StartY));
 	FileDebug("Finished CountPixelsInArea");
 	return ret * 100.0f / AreaSize;
 }

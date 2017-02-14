@@ -15,6 +15,10 @@ int OCRActiveFontSet = 0; // maybe at some point we will have such complex cases
 #define COLOR_REDUCE_MASK8	0xF8
 #define COLOR_REDUCE_MASK24	0x00F8F8F8
 
+#ifdef MIGRATE_OLD_TO_NEW_ON_FILTER_CHANGE
+	char FontSetName[150];
+#endif
+
 void WINAPI OCR_SetMaxFontSize(int Width, int Height)
 {
 	OCRMaxFontWidth = Width;
@@ -316,6 +320,16 @@ void WINAPI OCR_LoadFontsFromFile(char *aFilespec)
 
 void WINAPI OCR_LoadFontsFromDir(char *Path, char *SkipFileNameStart)
 {
+/*	//one time font set name initialization
+	if (FontSetNamesInitialized == 0)
+	{
+		memset(FontSetDirectory, 0, sizeof(FontSetDirectory));
+		FontSetNamesInitialized = 1;
+	}
+	//save the first font directory as fontset active directory
+	if (FontSetDirectory[OCRActiveFontSet][0] == 0)
+		strcpy_s(&FontSetDirectory[OCRActiveFontSet][0], sizeof(FontSetDirectory), Path);
+	*/
 	int skiptocharpos = strlen(SkipFileNameStart);
 	std::string search_path = Path;
 	search_path += "/*.*";
@@ -348,7 +362,10 @@ void WINAPI OCR_LoadFontsFromDir(char *Path, char *SkipFileNameStart)
 	}
 }
 
-void WINAPI OCR_SetActiveFontSet(int FontSet)
+void WINAPI OCR_SetActiveFontSet(int FontSet, char *Name)
 {
 	OCRActiveFontSet = FontSet;
+#ifdef MIGRATE_OLD_TO_NEW_ON_FILTER_CHANGE
+	strcpy_s(FontSetName, sizeof(FontSetName), Name);
+#endif
 }
