@@ -45,20 +45,6 @@ void WaitKoPlayerGetFocus()
 		Sleep(100);
 }
 
-HDC hDC = 0;
-void StartPixelLockDC()
-{
-	if (hDC == 0)
-		hDC = GetDC(0);				//I'm not sure if this is right or what exactly it does.
-}
-
-void ReleasePixelLockDC()
-{
-	if (hDC != 0)
-		ReleaseDC(0, hDC);
-	hDC = 0;
-}
-
 COLORREF GetKoPixel(int x, int y)
 {
 	HDC hDC = GetDC(0);				//I'm not sure if this is right or what exactly it does.
@@ -270,32 +256,73 @@ void CloseAllPossiblePopups()
 	if (ClosedSomething)
 		printf("We managed to close some unexpected popup. Continue Execution\n");
 }
-/*
-void Detect()
-{
-	POINT p;
-	HDC hDC = GetDC(0);
-	int x, y;
 
-	while (!GetAsyncKeyState(VK_INSERT)) // Press insert to stop
+void EnterTeleportCordDigit(int Digit)
+{
+	if (Digit == 1)
+		KoLeftClick(870, 295);
+	if (Digit == 2)
+		KoLeftClick(955, 295);
+	if (Digit == 3)
+		KoLeftClick(1045, 295);
+
+	if (Digit == 4)
+		KoLeftClick(870, 360);
+	if (Digit == 5)
+		KoLeftClick(955, 360);
+	if (Digit == 6)
+		KoLeftClick(1045, 360);
+
+	if (Digit == 7)
+		KoLeftClick(870, 425);
+	if (Digit == 8)
+		KoLeftClick(955, 425);
+	if (Digit == 9)
+		KoLeftClick(1045, 425);
+
+	if (Digit == 0)
+		KoLeftClick(890, 490);
+	Sleep(500);
+}
+
+void EnterTeleportCoord(int Coord)
+{
+	if (Coord > 1000)
+		Coord = 1000;
+	//convert number to vect
+	int NumVect[9];
+	int VectLen = 0;
+	while (Coord > 0)
 	{
-		GetCursorPos(&p);
-		x = p.x;
-		y = p.y;
-		hDC = GetDC(0);
-		std::cout << x << " " << y << " " << GetPixel(hDC, x, y) << std::endl;
-		Sleep(50);
+		NumVect[VectLen++] = Coord % 10;
+		Coord /= 10;
 	}
-	ReleaseDC(0, hDC);
-}*/
+	for (int i = VectLen - 1; i >= 0; i--)
+		EnterTeleportCordDigit(NumVect[i]);
+	// push the OK button
+	KoLeftClick(1020, 490);
+	Sleep(500);
+}
+
+void JumpToKingdomLocation(int Kingdom, int x, int y)
+{
+	KoLeftClick(700, 25);
+	Sleep(500);
+	//enter X
+	KoLeftClick(650, 255);
+	Sleep(500);
+	EnterTeleportCoord(x);
+	// y
+	KoLeftClick(775, 255);
+	Sleep(500);
+	EnterTeleportCoord(y);
+	//push go
+	KoLeftClick(645, 375);
+	Sleep(2000);
+}
 
 void WINAPI CaptureVisibleScreenGetPlayerLabels()
 {
-//	Detect();
-//	return;
-
-	// lock the DC
-	//StartPixelLockDC();
 
 	// this will probably only run once to get the process related details
 	GetKoPlayerAndPos();
@@ -327,6 +354,10 @@ void WINAPI CaptureVisibleScreenGetPlayerLabels()
 	//parse each node label
 	for (int i = 0; i < SearchResultCount; i++)
 	{
+		//safety break from a possible infinite loop
+		if (GetAsyncKeyState(VK_INSERT) || IsKoPlayerInFocus() == 0)
+			break;
+
 		//try to make sure we do not have any random popups at this stage of the parsing.
 		CloseAllPossiblePopups();
 
@@ -373,14 +404,43 @@ void WINAPI CaptureVisibleScreenGetPlayerLabels()
 
 	//ake sure there are no popups, so drag can work it's magic
 	CloseAllPossiblePopups();
-	//no longer get ahold of this DC for now
-	//ReleasePixelLockDC();
 }
 
 void DragScreenToLeft()
 {
 	int SkipDragAmount = 32;
 	MouseDrag(Ko[0] + Ko[2] - SkipDragAmount, Ko[1] + Ko[3] / 2, Ko[0] + SkipDragAmount, Ko[1] + Ko[3] / 2);
+}
+
+void ZoomOutToKingdomView()
+{
+}
+
+void ScanKingdomArea(int StartX, int StartY, int EndX, int EndY)
+{
+	GetKoPlayerAndPos();
+	WaitKoPlayerGetFocus();
+	CloseAllPossiblePopups();
+	ZoomOutToKingdomView();
+
+	StartCounter();
+	int Start = GetTimeTickI();
+	for (int y = StartY; y <= EndY; y += 10)
+	{
+		JumpToKingdomLocation(69, StartX, y);
+		for (int x = StartX; x <= EndX; x+=10)
+		{
+			int End = GetTimeTickI();
+			printf("We made %d slides. We should be at x = %d. Time spent so far %d\n", x, x, (End - Start) / 1000 / 60);
+
+			CaptureVisibleScreenGetPlayerLabels();
+			DragScreenToLeft();
+
+			//safety break from a possible infinite loop
+			if (GetAsyncKeyState(VK_INSERT) || IsKoPlayerInFocus() == 0)
+				break;
+		}
+	}
 }
 
 void RunLordsMobileTests()
@@ -398,20 +458,15 @@ void RunLordsMobileTests()
 		CloseAllPossiblePopups();
 		return;
 	}/**/
-	StartCounter();
-	int Start = GetTimeTickI();
-	for (int i = 0; i < 500 / 10; i++)
-	{
-		int End = GetTimeTickI();
-		printf("We made %d slides. We should be at x = %d. Time spent so far %d\n", i, i * 10, (End-Start)/1000/60);
-
-		CaptureVisibleScreenGetPlayerLabels();
-		DragScreenToLeft();
-
-		//safety break from a possible infinite loop
-		if (GetAsyncKeyState(VK_INSERT) || IsKoPlayerInFocus() == 0)
-			break;
-	}
+/*	{
+		GetKoPlayerAndPos();
+		WaitKoPlayerGetFocus();
+		CloseAllPossiblePopups();
+		ZoomOutToKingdomView();
+		JumpToKingdomLocation(69, 0, 110);
+	}/**/
+	// 40 * 50 in 35 mins => 57 screens / min
+	ScanKingdomArea(0, 130, 500, 170);
 
 	printf("fliptablegoinghome.THE END\n");
 	_getch();

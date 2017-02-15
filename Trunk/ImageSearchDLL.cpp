@@ -38,10 +38,11 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 
 void main()
 {
-	StartCounter();
-//	RunSQRTBenchmark(); //fact : sqrt( double) rocks
+	//StartCounter();
+	//RunSQRTBenchmark(); //fact : sqrt( double) rocks
 
-	RunLordsMobileTests();
+	//RunLordsMobileTests();
+	RunLordsTesting();
 
 #if defined( _CONSOLE ) && !defined( _DEBUG )
 //	RunSCreenCaptureBenchmark(); // 350 fps on my pc
@@ -164,6 +165,5 @@ void main()
 		printf("result of search benchmarking : %d ms %d FPS\n", End - Start, i * 1000 * 1000 / (End - Start + 1));
 		//		_getch();
 		}/**/
-	//RunLordsTesting();
 #endif
 }
