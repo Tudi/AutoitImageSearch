@@ -1116,6 +1116,7 @@ void ImageSearch_Multipass_PixelCount2(int Color, int PercentMax, int PercentMin
 					{
 						SearchResultXYSAD[SearchResultCount][0] = retx;
 						SearchResultXYSAD[SearchResultCount][1] = rety;
+						SearchResultXYSAD[SearchResultCount][2] = Ratio;
 						SearchResultCount++;
 					}
 					//mark this zone so we do not find it again

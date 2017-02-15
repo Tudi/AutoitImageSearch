@@ -260,6 +260,7 @@ void CloseAllPossiblePopups()
 	ClosedSomething += CloseGenericPopup(853, 127, STATIC_BGR_RGB(0x00FFBD36)); // resource or castle leftover popup
 	ClosedSomething += CloseGenericPopup(1255, 43, STATIC_BGR_RGB(0x00FFBE38)); // full screen popups
 	ClosedSomething += CloseGenericPopup(1235, 43, 0x00FFBE38); // full screen popups
+	ClosedSomething += CloseGenericPopup(1255, 43, STATIC_BGR_RGB(0x009C504F)); // full screen popups
 	ClosedSomething += CloseGenericPopup(1235, 43, STATIC_BGR_RGB(0x00FFBE38)); // full screen popups
 	ClosedSomething += CloseGenericPopup(853, 118, STATIC_BGR_RGB(0x00FFBE39)); // if we clicked on rally / battle hall
 	ClosedSomething += CloseGenericPopup(852, 119, STATIC_BGR_RGB(0x00FFBD37)); // if we clicked on scout
@@ -302,6 +303,9 @@ void WINAPI CaptureVisibleScreenGetPlayerLabels()
 	// wait for it to get some focus 
 	WaitKoPlayerGetFocus();
 
+	//make sure we did not inherit something strange from last session
+	CloseAllPossiblePopups();
+
 	// depends on the window resolution. As the resolution increases this will increase also
 	int JumpToTurefIconSize = 80;
 	TakeScreenshot(Ko[0]+JumpToTurefIconSize, Ko[1]+JumpToTurefIconSize, Ko[0] + Ko[2] - JumpToTurefIconSize, Ko[1] + Ko[3] - JumpToTurefIconSize);
@@ -331,6 +335,9 @@ void WINAPI CaptureVisibleScreenGetPlayerLabels()
 		int y = SearchResultXYSAD[i][1];
 		LeftClick(x, y);
 
+		//close as soon as possible to not move our screen
+		CloseGenericPopup(819, 431, STATIC_BGR_RGB(0x00FFBA31)); // if we clicked on army
+
 		// wait to see if a popup opens
 		if (WaitPixelBecomeColor(852, 126, STATIC_BGR_RGB(0x00FFBD36)) == 0)
 		{
@@ -354,7 +361,7 @@ void WINAPI CaptureVisibleScreenGetPlayerLabels()
 		}
 		else
 		{
-			printf("We clicked on something but have no idea what\n");
+			printf("We clicked on something but have no idea what at %d %d. Ratio is %d\n", x, y, SearchResultXYSAD[i][2]);
 		}
 //		break;
 
@@ -364,6 +371,8 @@ void WINAPI CaptureVisibleScreenGetPlayerLabels()
 
 	}
 
+	//ake sure there are no popups, so drag can work it's magic
+	CloseAllPossiblePopups();
 	//no longer get ahold of this DC for now
 	//ReleasePixelLockDC();
 }
@@ -395,6 +404,7 @@ void RunLordsMobileTests()
 	{
 		int End = GetTimeTickI();
 		printf("We made %d slides. We should be at x = %d. Time spent so far %d\n", i, i * 10, (End-Start)/1000/60);
+
 		CaptureVisibleScreenGetPlayerLabels();
 		DragScreenToLeft();
 
