@@ -1,7 +1,7 @@
 #ifndef _PICTURE_CACHE_H_
 #define _PICTURE_CACHE_H_
 
-#define MAX_PICTURE_CACHE_COUNT 3500
+#define MAX_PICTURE_CACHE_COUNT 15000
 
 class SimilarSearch;
 class PiramidImage;
@@ -34,6 +34,7 @@ void CheckPrepareToleranceMaps( CachedPicture *cache, int NewTolerance, int Tran
 void WINAPI MoveScreenshotToCache( char *Name );
 void RemoveCacheAlphaChannel( CachedPicture *cache );
 void WINAPI LoadCacheOverScreenshot(char *aFilename, int Atx, int Aty);
+void UnloadLastCache(); //right now only used when training OCR with huge amount of files
 
 extern LIBRARY_API CachedPicture PictureCache[MAX_PICTURE_CACHE_COUNT];
 extern LIBRARY_API int NrPicturesCached;

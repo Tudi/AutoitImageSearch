@@ -10,6 +10,7 @@
 DWORD KoPlayerProcessId = 0;
 HWND KoPlayerWND = 0;
 int Ko[4];
+StorablePlayerInfo CurPlayer;
 
 void GetKoPlayerAndPos()
 {
@@ -98,9 +99,9 @@ int WaitPixelChangeColor(int x, int y, COLORREF Color)
 
 //Just Dump Everything we can in the same text file. 
 FILE *LocalDumpFile = 0;
-void AppendDataToDB(char*Data)
+void AppendDataToDB()
 {
-	if (LocalDumpFile == 0)
+/*	if (LocalDumpFile == 0)
 		LocalDumpFile = fopen("Players.txt", "at");
 	if (Data == NULL)
 		return;
@@ -110,7 +111,7 @@ void AppendDataToDB(char*Data)
 			fprintf(LocalDumpFile, "\n");
 		else
 			fprintf(LocalDumpFile, "%s\t", Data);
-	}
+	}*/
 }
 
 int GuildCharsLoaded = 0;
@@ -127,7 +128,7 @@ void GetGuildNameFromCastlePopup()
 	//SaveScreenshot();
 	char *res = OCR_ReadTextLeftToRightSaveUnknownChars(73, 131, 370, 154);
 	if (OCR_FoundNewFont == 1)
-		SaveScreenshot();
+		CurPlayer.SkipSave = 1;
 }
 
 int NameCharsLoaded = 0;
@@ -143,9 +144,45 @@ void GetPlayerNameFromCastlePopup()
 	KeepColorsMinInRegion(121, 16, 390, 44, RGB(194, 180, 55));
 	//SaveScreenshot();
 	char *res = OCR_ReadTextLeftToRightSaveUnknownChars(121, 16, 390, 44);
-	AppendDataToDB(res);
 	if (OCR_FoundNewFont == 1)
-		SaveScreenshot();
+		CurPlayer.SkipSave = 1;
+}
+
+int IsNumber(char A)
+{
+	if (A >= '0' && A <= '9')
+		return 1;
+	return 0;
+}
+void SkipToNumber(char *res, int &Ind)
+{
+	while (res[Ind] != 0 && res[Ind] != '=' && IsNumber(res[Ind]) == 0)
+		Ind++;
+}
+void AssembleNumber(char *res, int &Ind, int &N)
+{
+	N = 0;
+	while (res[Ind] == ' ' || IsNumber(res[Ind]) == 1)
+	{
+		N = N * 10 + res[Ind] - '0';
+		Ind++;
+	}
+}
+void ParseKXY(char *res, int &k, int &x, int &y)
+{
+	int Ind = 0;
+	//parse until we find the first =
+	SkipToNumber(res, Ind);
+	//assemble K
+	AssembleNumber(res, Ind, k);
+	//parse until we find the first =
+	SkipToNumber(res, Ind);
+	//assemble x
+	AssembleNumber(res, Ind, x);
+	//parse until we find the first =
+	SkipToNumber(res, Ind);
+	//assemble y
+	AssembleNumber(res, Ind, y);
 }
 
 int XYCharsLoaded = 0;
@@ -163,12 +200,12 @@ void GetPlayerXYFromCastlePopup()
 	//SaveScreenshot();
 	char *res;
 	res = OCR_ReadTextLeftToRightSaveUnknownChars(187, 363, 220, 379);
-	AppendDataToDB(res);
 	int tOCR_FoundNewFont = OCR_FoundNewFont;
 	res = OCR_ReadTextLeftToRightSaveUnknownChars(235, 363, 266, 379);
-	AppendDataToDB(res);
 	if (OCR_FoundNewFont == 1 || tOCR_FoundNewFont == 1)
-		SaveScreenshot();
+		CurPlayer.SkipSave = 1;
+	else
+		ParseKXY(res, CurPlayer.k, CurPlayer.x, CurPlayer.y);
 }
 
 int MightKillsCharsLoaded = 0;
@@ -186,12 +223,9 @@ void GetPlayerMightKillsFromCastlePopup()
 	//SaveScreenshot();
 	char *res;
 	res = OCR_ReadTextLeftToRightSaveUnknownChars(193, 66, 350, 88);
-	AppendDataToDB(res);
-	int tOCR_FoundNewFont = OCR_FoundNewFont;
 	res = OCR_ReadTextLeftToRightSaveUnknownChars(258, 97, 390, 119);
-	AppendDataToDB(res);
-	if (OCR_FoundNewFont == 1 || tOCR_FoundNewFont == 1)
-		SaveScreenshot();
+	if (OCR_FoundNewFont == 1)
+		CurPlayer.SkipSave = 1;
 }
 
 void ParseCastlePopup()
@@ -208,11 +242,19 @@ void ParseCastlePopup()
 	TakeScreenshot(Ko[0] + PopupStartX, Ko[1] + PopupStartY, Ko[0] + PopupEndX, Ko[1] + PopupEndY);
 	SaveScreenshot();
 
+	memset(&CurPlayer, 0, sizeof(CurPlayer));
 	//GetPlayerNameFromCastlePopup();
 	//GetPlayerMightKillsFromCastlePopup();
 	//GetGuildNameFromCastlePopup();
-	//GetPlayerXYFromCastlePopup();
-	//AppendDataToDB("\n");
+	GetPlayerXYFromCastlePopup();
+
+	//we did not handle this one. Save it for later processing. Maybe we need to simply decode the new characters
+	if (CurPlayer.SkipSave == 1)
+	{
+		SaveScreenshot();
+	}
+//	else
+//		AppendDataToDB();
 }
 
 void KoLeftClick(int x, int y)
@@ -336,10 +378,11 @@ void WINAPI CaptureVisibleScreenGetPlayerLabels()
 	// depends on the window resolution. As the resolution increases this will increase also
 	int JumpToTurefIconSize = 80;
 	TakeScreenshot(Ko[0]+JumpToTurefIconSize, Ko[1]+JumpToTurefIconSize, Ko[0] + Ko[2] - JumpToTurefIconSize, Ko[1] + Ko[3] - JumpToTurefIconSize);
-	SetGradientToColor(0xA59B63, 0.162f, 0x00FFFFFF);
-	KeepGradient(0x00946D21, 0.4f);
+	SetGradientToColor(0xA59B63, 0.162f, 0x00FFFFFF);	// remove water
+	KeepGradient(0x00946D21, 0.25f);						// keep tags only. Think about shielded players also
 //SaveScreenshot();
-	ImageSearch_Multipass_PixelCount2(0, 60, 35, 5, 34, 21);
+	//ImageSearch_Multipass_PixelCount2(0, 60, 35, 5, 34, 21, 55);
+	ImageSearch_Multipass_PixelCount2(25, 25, 5, 8, 14, 45);
 	//try to debug WTF situations
 	if (SearchResultCount > 100)
 	{
@@ -366,7 +409,7 @@ void WINAPI CaptureVisibleScreenGetPlayerLabels()
 		int y = SearchResultXYSAD[i][1];
 		LeftClick(x, y);
 
-		//close as soon as possible to not move our screen
+		//close as soon as possible to not move our screen. Probably the whole scan is foobar as all click locations are messed up. It will read to random popup screens also 
 		CloseGenericPopup(819, 431, STATIC_BGR_RGB(0x00FFBA31)); // if we clicked on army
 
 		// wait to see if a popup opens
@@ -404,6 +447,7 @@ void WINAPI CaptureVisibleScreenGetPlayerLabels()
 
 	//ake sure there are no popups, so drag can work it's magic
 	CloseAllPossiblePopups();
+
 }
 
 void DragScreenToLeft()
@@ -423,6 +467,9 @@ void ScanKingdomArea(int StartX, int StartY, int EndX, int EndY)
 	CloseAllPossiblePopups();
 	ZoomOutToKingdomView();
 
+	//make sure this does not contain random junk
+	memset(&CurPlayer, 0, sizeof(CurPlayer));
+
 	StartCounter();
 	int Start = GetTimeTickI();
 	for (int y = StartY; y <= EndY; y += 10)
@@ -433,12 +480,20 @@ void ScanKingdomArea(int StartX, int StartY, int EndX, int EndY)
 			int End = GetTimeTickI();
 			printf("We made %d slides. We should be at x = %d. Time spent so far %d\n", x, x, (End - Start) / 1000 / 60);
 
+			CurPlayer.k = -1;	//mark it as invalid
+
 			CaptureVisibleScreenGetPlayerLabels();
-			DragScreenToLeft();
+
+			//if we found a castle, check if we are on the same screen as expected. Resync to expected location in case we clicked on an army or something
+#define ACCEPTED_SCREEN_PRECISION_LOSS 20
+			if (CurPlayer.k != -1 && (CurPlayer.x / ACCEPTED_SCREEN_PRECISION_LOSS != x / ACCEPTED_SCREEN_PRECISION_LOSS || CurPlayer.y / ACCEPTED_SCREEN_PRECISION_LOSS != y / ACCEPTED_SCREEN_PRECISION_LOSS))
+				JumpToKingdomLocation(69, x, y);
+			else
+				DragScreenToLeft(); // we function as expected, we can simply drag the screen to the left
 
 			//safety break from a possible infinite loop
 			if (GetAsyncKeyState(VK_INSERT) || IsKoPlayerInFocus() == 0)
-				break;
+				return;
 		}
 	}
 }
@@ -465,8 +520,10 @@ void RunLordsMobileTests()
 		ZoomOutToKingdomView();
 		JumpToKingdomLocation(69, 0, 110);
 	}/**/
+	// aprox 7 mins / row
 	// 40 * 50 in 35 mins => 57 screens / min
-	ScanKingdomArea(0, 130, 500, 170);
+	// 9 row in 77 minutes
+	ScanKingdomArea(0, 610, 500, 1000);
 
 	printf("fliptablegoinghome.THE END\n");
 	_getch();

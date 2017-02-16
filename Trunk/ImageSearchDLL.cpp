@@ -38,11 +38,11 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 
 void main()
 {
-	//StartCounter();
+	StartCounter();
 	//RunSQRTBenchmark(); //fact : sqrt( double) rocks
 
-	//RunLordsMobileTests();
 	RunLordsTesting();
+	//RunLordsMobileTests();
 
 #if defined( _CONSOLE ) && !defined( _DEBUG )
 //	RunSCreenCaptureBenchmark(); // 350 fps on my pc

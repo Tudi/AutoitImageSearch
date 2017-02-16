@@ -205,3 +205,13 @@ void WINAPI LoadCacheOverScreenshot(char *aFilename, int Atx, int Aty)
 			CurScreenshot->SetPixel(x + Atx, y + Aty, Cache->Pixels[y*Cache->Width + x]);
 	FileDebug("LoadCacheOverScreenshot : End");
 }
+
+void UnloadLastCache()
+{
+	if (NrPicturesCached == 0)
+		return;
+	// PictureCache[NrPicturesCached - 1].LoadedPicture; // leaking this :(
+	_aligned_free(PictureCache[NrPicturesCached - 1].Pixels);
+	PictureCache[NrPicturesCached - 1].Pixels = NULL;
+	NrPicturesCached--;
+}

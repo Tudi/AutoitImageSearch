@@ -73,6 +73,7 @@ void GetCacheColorStatistics( CachedPicture *cache )
 				cache->OCRCache->CountB += 1;
 			} */
 		}
+	cache->OCRCache->Hash = GetImgAreaHash((int*)cache->Pixels, cache->Width, 0, 0, cache->Width, cache->Height);
 }
 
 void GetCharacterSetColorStatistics()
@@ -369,3 +370,62 @@ void WINAPI OCR_SetActiveFontSet(int FontSet, char *Name)
 	strcpy_s(FontSetName, sizeof(FontSetName), Name);
 #endif
 }
+
+//#define USER_REAL_CRC
+#ifdef USER_REAL_CRC
+/* CRC-32C (iSCSI) polynomial in reversed bit order. */
+#define POLY 0x82f63b78
+unsigned int crc32c(unsigned int crc, const unsigned char *buf, size_t len)
+{
+	int k;
+	crc = ~crc;
+	while (len--) 
+	{
+		crc ^= *buf++;
+		for (k = 0; k < 8; k++)
+			crc = crc & 1 ? (crc >> 1) ^ POLY : crc >> 1;
+	}
+	return ~crc;
+}
+//no way safe, but maybe it helps us getting spammed by same character multiple times. Maybe.
+//if there is hash collision, we will need to rerun the training program
+unsigned int GetImgAreaHash(int *Img, int Width, int StartX, int StartY, int EndX, int EndY)
+{
+	unsigned int RequiredShift = (EndY - StartY);
+	unsigned int ret = 0;
+	for (int y = StartY; y < EndY; y++)
+		for (int x = StartX; x < EndX; x++)
+			if (Img[y * Width + x]!=TRANSPARENT_COLOR)
+			{
+				unsigned int tx = (x - StartX);
+				unsigned int ty = (y - StartY);
+				unsigned int Local = tx * RequiredShift + ty;
+				ret = crc32c(ret, (const unsigned char*)&Local,3);
+			}
+	return ret;
+}
+#else
+//close accuracy to real CRC. A bit faster tough
+unsigned int GetImgAreaHash(int *Img, int Width, int StartX, int StartY, int EndX, int EndY)
+{
+	unsigned int RequiredShift = (EndY - StartY);
+	unsigned int ret = 0;
+	unsigned int PixelCount = 0;
+	for (int y = StartY; y < EndY; y++)
+		for (int x = StartX; x < EndX; x++)
+			if (Img[y * Width + x] != TRANSPARENT_COLOR)
+			{
+				unsigned int tx = (x - StartX);
+				unsigned int ty = (y - StartY);
+				unsigned int Local = tx * RequiredShift + ty; // lossless store of one location. This will be overwritten by the next pixel and we loose our precision
+				//			Local += Img[y * Width + x]; // Pixel colors are NOT supported at the moment !. Would need to extend hash size with another 24 bits !
+				ret = ret + Local; // keep a little portion of previous information and add some new one also
+				PixelCount++;
+			}
+
+	ret += (EndX - StartX)*(EndY - StartY) * 1000000;	//encode size in it. Something like that
+	ret += PixelCount * 10000;							//encode size in it. Something like that
+
+	return ret;
+}
+#endif

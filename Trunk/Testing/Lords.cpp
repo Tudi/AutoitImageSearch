@@ -86,6 +86,32 @@ void LocateAndRemoveWaterAndDetectPlayers()
 	KeepColor3SetBoth(0, 0x00FFFFFF, 0x00000080, 0x00008080, 0x00008080);
 	//SaveScreenshot();
 	}/**/
+	{
+		//try to detect player labels
+		TakeScreenshot(0, 0, 1282, 722);
+		LoadCacheOverScreenshot("CastleTags_4.bmp", 0, 0);
+		//remove water if there is any
+		SetGradientToColor(0x00A59B63, 0.162f, TRANSPARENT_COLOR);
+		//SaveScreenshot();
+		//remove anything else left than player tags
+		KeepGradient(RGB(33, 109, 148), 0.25f);
+		SaveScreenshot();
+		//		float t = GetPixelRatioInArea(0, 311, 522, 345, 539);
+		//		printf("t = %f\n", t);
+		//return;
+		ImageSearch_Multipass_PixelCount2(25, 25, 5, 8, 14, 45); // try to find good matches, than try to find worse and worse matches
+		for (int i = 0; i < SearchResultCount; i++)
+		{
+			int x = SearchResultXYSAD[i][0];
+			int y = SearchResultXYSAD[i][1];
+			CurScreenshot->SetPixel(x, y, 0xFF);
+			CurScreenshot->SetPixel(x+1, y+1, 0xFF);
+			CurScreenshot->SetPixel(x+1, y, 0xFF);
+			CurScreenshot->SetPixel(x, y+1, 0xFF);
+		}
+		SaveScreenshot();
+		printf("res count %d\n", SearchResultCount);
+	}
 }
 
 void ExtractPlayerName()
@@ -268,7 +294,7 @@ void ExtractPlayerName()
 		std::string SkipUntilFile = "";
 		int FoundFirstFile = SkipUntilFile.length() == 0;
 		int SkipFirstN = 0;
-		int BatchProcessMaxCount = 200;
+		int BatchProcessMaxCount = SkipFirstN + 2900;
 		int Index = 0;
 		WIN32_FIND_DATA fd;
 		HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
@@ -326,7 +352,7 @@ void ExtractPlayerName()
 		std::string SkipUntilFile = "";
 		int FoundFirstFile = SkipUntilFile.length() == 0;
 		int SkipFirstN = 0;
-		int BatchProcessMaxCount = 200;
+		int BatchProcessMaxCount = SkipFirstN + 2900;
 		int Index = 0;
 		WIN32_FIND_DATA fd;
 		HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
@@ -376,10 +402,11 @@ void ExtractPlayerName()
 	}/**/
 	{
 		char *res;
-		OCR_SetActiveFontSet(2, "K_C_M_Playernames");
+		OCR_SetActiveFontSet(2, "K_C_M_Playernames/");
 		OCR_LoadFontsFromDir("K_C_M_Playernames", "KCM_");
 		OCR_LoadFontsFromDir("K_C_M_Playernames2", "KCM_");
 		OCR_LoadFontsFromDir("K_C_M_Playernames3", "KCM_");
+		OCR_LoadFontsFromDir("K_C_M_Playernames_wide", "KCM_");
 		TakeScreenshot(0, 0, 401, 381);
 		OCR_SetMaxFontSize(20, 20);
 		std::string path = "CastlepopupExamples5";
@@ -387,8 +414,8 @@ void ExtractPlayerName()
 		search_path += "/*.*";
 		std::string SkipUntilFile = "";
 		int FoundFirstFile = SkipUntilFile.length() == 0;
-		int SkipFirstN = 0;
-		int BatchProcessMaxCount = 1010;
+		int SkipFirstN = 2000 * 5;
+		int BatchProcessMaxCount = SkipFirstN + 2000;
 		int Index = 0;
 		WIN32_FIND_DATA fd;
 		HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
@@ -415,16 +442,17 @@ void ExtractPlayerName()
 					//printf("%d)Parsing file : %s\n", Index, FullPath);
 					LoadCacheOverScreenshot(FullPath, 0, 0);
 					//SaveScreenshot();
-					//KeepColorsMinInRegion(121, 16, 390, 44, RGB(194, 180, 55));
-					KeepColorsMinInRegion(121, 16, 390, 44, RGB(178, 165, 50));
+					KeepColorsMinInRegion(121, 16, 399, 44, RGB(194, 180, 55));
+					//KeepColorsMinInRegion(121, 16, 390, 44, RGB(178, 165, 50));
 					//SaveScreenshot();
-					res = OCR_ReadTextLeftToRightSaveUnknownChars(121, 16, 390, 44);
+					res = OCR_ReadTextLeftToRightSaveUnknownChars(121, 16, 399, 44);
 					printf("%s\n", res);
 					if (OCR_FoundNewFont > 0)
 					{
 						printf("Original Filename was %s\n", FullPath);
 						SaveScreenshot();
 					}
+					UnloadLastCache();
 				}
 			} while (::FindNextFile(hFind, &fd) && BatchProcessMaxCount > 0);
 			::FindClose(hFind);
@@ -439,7 +467,7 @@ void ExtractKillsMight()
 {
 	{
 		char *res;
-		OCR_SetActiveFontSet(4, "K_C_M_MightKills");
+		OCR_SetActiveFontSet(4, "K_C_M_MightKills/");
 		OCR_LoadFontsFromDir("K_C_M_MightKills", "KCM_");
 		OCR_LoadFontsFromDir("K_C_M_MightKills2", "KCM_");
 		TakeScreenshot(0, 0, 401, 381);
@@ -449,8 +477,8 @@ void ExtractKillsMight()
 		search_path += "/*.*";
 		std::string SkipUntilFile = "";
 		int FoundFirstFile = SkipUntilFile.length() == 0;
-		int SkipFirstN = 0;
-		int BatchProcessMaxCount = 1010;
+		int SkipFirstN = 2900 * 4;
+		int BatchProcessMaxCount = SkipFirstN + 2900;
 		int Index = 0;
 		WIN32_FIND_DATA fd;
 		HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
@@ -491,6 +519,7 @@ void ExtractKillsMight()
 					printf("%s\n", res);
 					if (tOCR_FoundNewFont > 0)
 						SaveScreenshot();
+					UnloadLastCache();
 				}
 			} while (::FindNextFile(hFind, &fd) && BatchProcessMaxCount > 0);
 			::FindClose(hFind);
@@ -505,7 +534,7 @@ void ExtractXY()
 {
 	{
 		char *res;
-		OCR_SetActiveFontSet(3, "K_C_M_xy");
+		OCR_SetActiveFontSet(3, "K_C_M_xy/");
 		OCR_LoadFontsFromDir("K_C_M_xy", "KCM_");
 		OCR_LoadFontsFromDir("K_C_M_xy2", "KCM_");
 		TakeScreenshot(0, 0, 401, 381);
@@ -515,8 +544,8 @@ void ExtractXY()
 		search_path += "/*.*";
 		std::string SkipUntilFile = "";
 		int FoundFirstFile = SkipUntilFile.length() == 0;
-		int SkipFirstN = 0;
-		int BatchProcessMaxCount = 1010;
+		int SkipFirstN = 2900 * 0;
+		int BatchProcessMaxCount = SkipFirstN + 2900;
 		int Index = 0;
 		WIN32_FIND_DATA fd;
 		HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
@@ -543,12 +572,13 @@ void ExtractXY()
 					printf("%d)Parsing file : %s\n", Index, FullPath);
 					LoadCacheOverScreenshot(FullPath, 0, 0);
 					//SaveScreenshot();
-					KeepColorsMinInRegion(139, 363, 266, 379, RGB(166, 172, 175));
+					KeepColorsMinInRegion(129, 363, 268, 379, RGB(166, 172, 175));
 					//SaveScreenshot();
-					res = OCR_ReadTextLeftToRightSaveUnknownChars(139, 363, 266, 379);
+					res = OCR_ReadTextLeftToRightSaveUnknownChars(129, 363, 268, 379);
 					printf("%s\n", res);
 					if (OCR_FoundNewFont == 1)
 						SaveScreenshot();
+					UnloadLastCache();
 				}
 			} while (::FindNextFile(hFind, &fd) && BatchProcessMaxCount > 0);
 			::FindClose(hFind);
@@ -586,7 +616,7 @@ void ExtractGuild()
 		std::string SkipUntilFile = "";
 		int FoundFirstFile = SkipUntilFile.length() == 0;
 		int SkipFirstN = 0;
-		int BatchProcessMaxCount = 520;
+		int BatchProcessMaxCount = SkipFirstN + 2900;
 		int Index = 0;
 		WIN32_FIND_DATA fd;
 		HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
@@ -651,7 +681,7 @@ void ExtractGuild()
 
 	{
 		char *res;
-		OCR_SetActiveFontSet(1, "K_C_M_guild");
+		OCR_SetActiveFontSet(1, "K_C_M_guild/");
 		OCR_LoadFontsFromDir("K_C_M_guild", "KCM_");
 		OCR_LoadFontsFromDir("K_C_M_guild2", "KCM_");
 		TakeScreenshot(0, 0, 401, 381);
@@ -661,8 +691,8 @@ void ExtractGuild()
 		search_path += "/*.*";
 		std::string SkipUntilFile = "";
 		int FoundFirstFile = SkipUntilFile.length() == 0;
-		int SkipFirstN = 0;
-		int BatchProcessMaxCount = 1010;
+		int SkipFirstN = 2900 * 0;
+		int BatchProcessMaxCount = SkipFirstN + 2900;
 		int Index = 0;
 		WIN32_FIND_DATA fd;
 		HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
@@ -688,6 +718,7 @@ void ExtractGuild()
 					sprintf_s(FullPath, sizeof(FullPath), "%s/%s", path.c_str(), fd.cFileName);
 					printf("%d)Parsing file : %s\n", Index, FullPath);
 					LoadCacheOverScreenshot(FullPath, 0, 0);
+//					LoadCacheOverScreenshot("CastlepopupExamples6/Screenshot_5230_0400_0380.bmp", 0, 0);
 					//SaveScreenshot();
 					KeepColorsMinInRegion(73, 131, 370, 154, RGB(173, 174, 176));
 					//SaveScreenshot();
@@ -698,6 +729,7 @@ void ExtractGuild()
 						printf("Original Filename was %s\n", FullPath);
 						SaveScreenshot();
 					}
+					UnloadLastCache();
 				}
 			} while (::FindNextFile(hFind, &fd) && BatchProcessMaxCount > 0);
 			::FindClose(hFind);
@@ -710,8 +742,25 @@ void ExtractGuild()
 
 void RunLordsTesting()
 {
+	int Start = GetTimeTickI();
 	//ExtractXY();
 	//ExtractKillsMight();
-	ExtractPlayerName();
+	//ExtractPlayerName();
 	//ExtractGuild();
+	LocateAndRemoveWaterAndDetectPlayers();
+	int End = GetTimeTickI();
+
+	// always check if what we do is the right way to do it
+	if (OCR_Statistics_TotalCompares > 0)
+	{
+		printf("OCR statistics - Total compares : %d\n", OCR_Statistics_TotalCompares);
+		printf("OCR statistics - Pixel hash skips : %d -> pass rate %d\n", OCR_Statistics_HashEliminations, OCR_Statistics_HashEliminations * 100 / OCR_Statistics_TotalCompares);
+		printf("OCR statistics - Pixel count skips : %d -> pass rate %d\n", OCR_Statistics_PixelCountEliminations, OCR_Statistics_PixelCountEliminations * 100 / OCR_Statistics_TotalCompares);
+		printf("OCR statistics - Size Skips : %d -> pass rate %d\n", OCR_Statistics_SizeEliminations, OCR_Statistics_SizeEliminations * 100 / OCR_Statistics_TotalCompares);
+		printf("OCR statistics - Pixel matches skips : %d -> pass rate %d\n", OCR_Statistics_PixelCountMatchEliminations, OCR_Statistics_PixelCountMatchEliminations * 100 / OCR_Statistics_TotalCompares);
+		printf("OCR statistics - Real matches : %d\n", OCR_Statistics_RealMatch);
+		printf("OCR statistics - Pixel compares : %d M\n", int(OCR_Statistics_PixelsCompared / 1000000));
+		printf("OCR statistics - Similar compares : %d\n", OCR_Statistics_SimilarSearches);
+		printf("OCR statistics - Time spent : %d\n", End - Start);
+	}
 }

@@ -9,3 +9,11 @@
 char * WINAPI OCR_ReadTextLeftToRightSaveUnknownChars(int StartX, int StartY, int EndX, int EndY);
 
 extern int OCR_FoundNewFont;
+extern int OCR_Statistics_TotalCompares;				//
+extern int OCR_Statistics_SizeEliminations;				// skipped check due to size differences
+extern int OCR_Statistics_PixelCountEliminations;		// skipped check due to pixel differences
+extern int OCR_Statistics_HashEliminations;				// skipped check due to hash differences
+extern int OCR_Statistics_PixelCountMatchEliminations;	// skipped check due to pixel 1 to 1 math differences
+extern int OCR_Statistics_RealMatch;					// number of times it really matched
+extern int OCR_Statistics_SimilarSearches;				// when exact match fails
+extern __int64 OCR_Statistics_PixelsCompared;			// just to now how much room is there for improvement

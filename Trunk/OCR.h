@@ -11,6 +11,7 @@ struct OCRStore
 	int LastSearchX,LastSearchY;
 	int SumR,SumG,SumB,CountR,CountG,CountB,PixelCount;
 	int FontSet;	//in case we use multiple font types
+	unsigned int Hash;
 #ifdef MIGRATE_OLD_TO_NEW_ON_FILTER_CHANGE
 	int Migrated;
 #endif
@@ -26,6 +27,7 @@ void WINAPI OCR_LoadFontsFromDir(char *Path, char *SkipFileNameStart);
 void WINAPI OCR_SetMaxFontSize(int Width, int Height);	// if you put it too large, it will read data from next row. If you put it too small, it might not be able to detect new characters
 char * WINAPI ReadTextFromScreenshot( int StartX, int StartY, int EndX, int EndY );
 void WINAPI OCR_SetActiveFontSet(int FontSet, char *Name);
+unsigned int GetImgAreaHash(int *Img, int Width, int StartX, int StartY, int EndX, int EndY);
 
 extern int OCRMaxFontWidth;
 extern int OCRMaxFontHeight;

@@ -1070,8 +1070,9 @@ char* WINAPI ImageSearch_Multiple_Gradient(int Color, int GradientMatchPercent, 
 	return ReturnBuff;
 }
 
-void ImageSearch_Multipass_PixelCount2(int Color, int PercentMax, int PercentMin, int PercentStep, int AreaWidth, int AreaHeight)
+void ImageSearch_Multipass_PixelCount2(int PercentMax, int PercentMin, int PercentStep, int AreaWidth, int AreaHeight, int OneSearchInRadius)
 {
+	int Color = 0;
 	int MatchesFound = 0;
 	SearchResultCount = 0;
 	FileDebug("Started Image search");
@@ -1084,7 +1085,6 @@ void ImageSearch_Multipass_PixelCount2(int Color, int PercentMax, int PercentMin
 	int Width = CurScreenshot->GetWidth();
 	int Height = CurScreenshot->GetHeight();
 	int AreaSize = AreaWidth * AreaHeight;
-	float AreaSizeP = AreaSize / 100.0f;
 	int *TempBuff = (int*)malloc(Width * Height * sizeof(int));
 	memcpy(TempBuff, CurScreenshot->Pixels, Width * Height * sizeof(int));
 
@@ -1092,19 +1092,21 @@ void ImageSearch_Multipass_PixelCount2(int Color, int PercentMax, int PercentMin
 	{
 		for (int x = 0; x < Width - AreaWidth; x += 1)
 		{
+			int LastJumpY = -1;
 			int PrevBlockCount = -1;
 			for (int y = 0; y < Height - AreaHeight; y += 1)
 			{
 				// this will only help if we plan to find multiple areas with considerable size. ( we will find it at least once right ? )
-				if (TempBuff[y * Width + x] == 66)
+				if (TempBuff[y * Width + x] > TRANSPARENT_COLOR)
 				{
-					y += AreaHeight;
+					y = (TempBuff[y * Width + x] & TRANSPARENT_COLOR); // skip search to this row
 					PrevBlockCount = -1;
+					LastJumpY = y + 1; // if jump over overlapped regions, we will find them more than once
 					continue;
 				}/**/
 				// count Colors
 				int Counter = GetPixelCountRegion(&TempBuff[y * Width + x], Width, Color, PrevBlockCount, AreaWidth, AreaHeight);
-				float Ratio = Counter / AreaSizeP;
+				int Ratio = Counter * 100 / AreaSize;
 				PrevBlockCount = Counter;
 				if (Ratio >= Percent)
 				{
@@ -1120,17 +1122,35 @@ void ImageSearch_Multipass_PixelCount2(int Color, int PercentMax, int PercentMin
 						SearchResultCount++;
 					}
 					//mark this zone so we do not find it again
-					for (int y2 = 0; y2 < AreaHeight; y2++)
+					int XStart = x - OneSearchInRadius;
+					if (XStart < 0)
+						XStart = 0;
+					int XEnd = x + OneSearchInRadius;
+					if (XEnd > Width)
+						XEnd = Width - OneSearchInRadius;
+					int tAreaWidth = (XEnd - XStart)*sizeof(int);
+					int YStart = y - OneSearchInRadius;
+					if (YStart < 0)
+						YStart = 0;
+					int YEnd = y + OneSearchInRadius;
+					if (YEnd >= Height)
+						YEnd = Height - 1;
+					for (int x2 = XStart; x2 <= XEnd; x2++)
+						TempBuff[YStart * Width + x2] = YEnd | 0x0F000000;
+					if (LastJumpY != -1 && LastJumpY>YStart)
+						for (int x2 = XStart; x2 <= XEnd; x2++)
+							TempBuff[LastJumpY * Width + x2] = YEnd | 0x0F000000;	// to be able to jump from 1 box to another
+					for (int y2 = YStart + 1; y2 <= YEnd; y2++)
 					{
-						memset(&TempBuff[(y + y2) * Width + x], TRANSPARENT_COLOR, AreaWidth*sizeof(int));
-#ifdef _CONSOLE
-memset(&CurScreenshot->Pixels[(y + y2) * Width + x], Percent, AreaWidth*sizeof(int));
+//						for (int x2 = XStart; x2 <= XEnd; x2++)
+//							TempBuff[y2 * Width + x2] = YEnd | 0x0F000000;
+//						memset(&TempBuff[y2 * Width + XStart], 0x7F, tAreaWidth);	//if we skip the zone correctly this is not required. When debugging you might want to enable it
+#if defined( _CONSOLE ) && defined( _DEBUG )
+memset(&CurScreenshot->Pixels[y2 * Width + XStart], MatchesFound, tAreaWidth);
 #endif
-						//mark this zone that we can skip processing
-						TempBuff[(y + y2) * Width + x] = 66;
 					}
 					//jump forward with X, there is no need to search this area
-					y += AreaHeight;
+					y = YEnd;
 					PrevBlockCount = -1;
 				}
 			}

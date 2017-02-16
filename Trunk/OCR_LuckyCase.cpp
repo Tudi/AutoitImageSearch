@@ -2,6 +2,15 @@
 // from starting position, search down to left until we manage to find a column with at least 1 pixel
 #include "StdAfx.h"
 
+int OCR_Statistics_TotalCompares = 0;
+int OCR_Statistics_PixelCountMatchEliminations = 0;	// number of times we tought it woudll match
+int OCR_Statistics_RealMatch = 0;					// number of times it really matched
+int OCR_Statistics_SizeEliminations = 0;			// skipped check due to size differences
+int OCR_Statistics_SimilarSearches = 0;				// when exact match fails
+int OCR_Statistics_PixelCountEliminations = 0;		// skipped check due to pixel differences
+int OCR_Statistics_HashEliminations = 0;			// skipped check due to hash differences
+__int64 OCR_Statistics_PixelsCompared = 0;			// just to now how much room is there for improvement
+
 // this is a happy case when characters are separated from each other, the binarized image should have a 1 to 1 match with one of the fonts that we registered
 int OCR_FindNextCharFirstColumn(int *Image, int Width, int &x, int y, int BoxEndX, int BoxEndY)
 {
@@ -91,6 +100,7 @@ int GetPixelMatchCount(int *Screenshot, int Width, int StartX, int StartY, int E
 	for (int y = StartY; y < Endy; y++)
 		for (int x = StartX; x < Endx; x++)
 			if (Font[(y - StartY)*FontWidth + (x - StartX)] != OCRTransparentColor && Screenshot[y * Width + x] == Font[(y - StartY)*FontWidth + (x - StartX)])
+//			if (Screenshot[y * Width + x] == Font[(y - StartY)*FontWidth + (x - StartX)])
 				ret++;
 	return ret;
 }
@@ -115,55 +125,77 @@ void GenerateAvailableFontFilename(char *Buf, int len, char *TheChars)
 	strcpy_s(Buf, len, NewFilename);
 }
 
-OCRStore *FindMatchingFont(int *Img, int Width, int CharStartX, int CharStartY, int CharEndX, int CharEndY)
+OCRStore *FindExactMatchingFont(int *Img, int Width, int CharStartX, int CharStartY, int CharEndX, int CharEndY)
 {
+//#define USE_PIXEL_COUNT_FOR_IMG_MATCH
+#ifdef USE_PIXEL_COUNT_FOR_IMG_MATCH	// hashing seems to replace this. About 0.01% less 1 to 1 image matches. Might not seem a lot, but we might be doing it millsions of times.
 	// count the number of pixels in this region. Helps our mapping search
 	int PixelCount = CountPixelsInArea(Img, Width, CharStartX, CharStartY, CharEndX, CharEndY);
 	if (PixelCount == 0)
-		return 0;
+		return NULL;
+#endif
+	int CharWidth = CharEndX - CharStartX;
+	int CharHeight = CharEndY - CharStartY;
+	OCR_Statistics_PixelsCompared += CharWidth * CharHeight;
+	unsigned int FontHash = GetImgAreaHash(Img, Width, CharStartX, CharStartY, CharEndX, CharEndY); // we will find a match here, we can afford to calculate hash form the start
 	// iterate through all cached pictures and check which ones are fonts
 	for (int c = 0; c < NrPicturesCached; c++)
 	{
 		//if this font would be the best match, at what location would it be at ?
 		CachedPicture *FontCache = &PictureCache[c];
-		if (FontCache->OCRCache == NULL || FontCache->OCRCache->PixelCount != PixelCount || FontCache->OCRCache->FontSet != OCRActiveFontSet)
+		if (FontCache->OCRCache == NULL || FontCache->OCRCache->FontSet != OCRActiveFontSet)
 			continue;
+
+		OCR_Statistics_TotalCompares++;
+
+		//hash should be slightly better than simple pixel count check
+		if (FontCache->OCRCache->Hash != FontHash)
+		{
+			OCR_Statistics_HashEliminations++;
+			continue;
+		}
+
+#ifdef USE_PIXEL_COUNT_FOR_IMG_MATCH	// hashing seems to replace this
+		// very simple comparison. Number of pixels match ?
+		if (FontCache->OCRCache->PixelCount != PixelCount)
+		{
+			OCR_Statistics_PixelCountEliminations++;
+			continue;
+		}
+#endif
+		// if there is a big differnce in size, skip checking the whole font area
+		if (CharWidth != FontCache->Width || CharHeight != FontCache->Height)
+		{
+			OCR_Statistics_SizeEliminations++;
+			continue;
+		}
+		/**/
 		//check if this image is a perfect match
 		int MatchStrength = GetPixelMatchCount(Img, Width, CharStartX, CharStartY, CharEndX, CharEndY, (int*)FontCache->Pixels, FontCache->Width, FontCache->Height);
-		if (MatchStrength == FontCache->OCRCache->PixelCount) // font pixelcount might be a bit smaller as we try to merge multiple versions into 1
+		OCR_Statistics_PixelsCompared += CharWidth * CharHeight;
+		if (MatchStrength != FontCache->OCRCache->PixelCount) // font pixelcount might be a bit smaller as we try to merge multiple versions into 1
 		{
+			OCR_Statistics_PixelCountMatchEliminations++;
+			continue;
+		}
 #ifdef MIGRATE_OLD_TO_NEW_ON_FILTER_CHANGE
-			//if font is comming from a differenct directory than copy it to our Font folder. This happens when whe redo the font library and want to clean up unused ones
-			if (FontCache->OCRCache->Migrated == 0 && strstr(FontSetName, FontCache->FileName) != FontSetName)
-			{
-				//get the file name from src
-				char Filename[500], Filename2[500];
-				GenerateAvailableFontFilename(Filename, sizeof(Filename), FontCache->OCRCache->AssignedChars);
-				sprintf_s(Filename2, sizeof(Filename2), "%s/%s", FontSetName, Filename);
-				BOOL success = CopyFile(FontCache->FileName, Filename2, true);
-				if (success == false)
-					printf("failed to copy, debug me\n");
-				FontCache->OCRCache->Migrated = 1;
-			}
-#endif
-			return FontCache->OCRCache;
-		}
-	}
-	return 0;
-}
-
-//no way safe, but maybe it helps us getting spammed by same character multiple times. Maybe.
-//if there is hash collision, we will need to rerun the training program
-int GetAreaHash(int *Img, int Width, int StartX, int StartY, int EndX, int EndY)
-{
-	int ret = 0;
-	for (int y = StartY; y < EndY; y++)
-		for (int x = StartX; x < EndX; x++)
+		//if font is comming from a differenct directory than copy it to our Font folder. This happens when whe redo the font library and want to clean up unused ones
+		if (FontCache->OCRCache->Migrated == 0 && strstr(FontCache->FileName, FontSetName) != FontCache->FileName)
 		{
-			int Local = (y - StartY) * (x - StartX) + Img[y * Width + x] * 1000;
-			ret += Local;
+			//get the file name from src
+			char Filename[500], Filename2[500];
+			GenerateAvailableFontFilename(Filename, sizeof(Filename), FontCache->OCRCache->AssignedChars);
+			sprintf_s(Filename2, sizeof(Filename2), "%s/%s", FontSetName, Filename);
+			BOOL success = CopyFile(FontCache->FileName, Filename2, true);
+			if (success == false)
+				printf("failed to copy, debug me\n");
+			FontCache->OCRCache->Migrated = 1;
 		}
-	return ret;
+#endif
+		OCR_Statistics_RealMatch++;
+		return FontCache->OCRCache;
+	}
+	return NULL;
 }
 
 void OCR_FindMostSimilarFontAndSave(int *Img, int Width, int CharStartX, int CharStartY, int CharEndX, int CharEndY)
@@ -179,8 +211,12 @@ void OCR_FindMostSimilarFontAndSave(int *Img, int Width, int CharStartX, int Cha
 		CachedPicture *FontCache = &PictureCache[c];
 		if (FontCache->OCRCache == NULL)
 			continue;
+
+		OCR_Statistics_SimilarSearches++;
+
 		if (abs(CharWidth - FontCache->Width) > 3 || abs(CharHeight - FontCache->Height) > 3)
 			continue;
+
 		//there is a chance the new old font location does not perfectly allign. Search in multiple locations for a lucky hit
 		for (int y = -1; y <= 1; y++)
 			for (int x = -1; x <= 1; x++)
@@ -214,7 +250,7 @@ void OCR_FindMostSimilarFontAndSave(int *Img, int Width, int CharStartX, int Cha
 std::set<int> ReportedHashes;
 void ExtractNewFont( int *Img, int Width, int CharStartX, int CharStartY, int CharEndX, int CharEndY)
 {
-	int Hash = GetAreaHash(Img, Width, CharStartX, CharStartY, CharEndX, CharEndY);
+	int Hash = GetImgAreaHash(Img, Width, CharStartX, CharStartY, CharEndX, CharEndY);
 	if (ReportedHashes.find(Hash) != ReportedHashes.end())
 		return;
 	ReportedHashes.insert(Hash);
@@ -273,8 +309,8 @@ char * WINAPI OCR_ReadTextLeftToRightSaveUnknownChars(int StartX, int StartY, in
 		if (CharStartX > PrevFontEnd + 5)
 			ReturnBuff[WriteIndex++] = ' ';
 		//maybe we get lucky and guess what this was
-		OCRStore *Font = FindMatchingFont(Img, Width, CharStartX, CharStartY, CharEndX, CharEndY);
-		if (Font != 0)
+		OCRStore *Font = FindExactMatchingFont(Img, Width, CharStartX, CharStartY, CharEndX, CharEndY);
+		if (Font != NULL)
 		{
 			char *ImgStr = Font->AssignedChars;
 			while (*ImgStr != 0)
