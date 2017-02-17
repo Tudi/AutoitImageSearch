@@ -1,5 +1,9 @@
 #include "../stdafx.h"
 
+#ifdef TEST_OFFLINE_PARSING_OF_PICTURES
+char FullPath[2500];
+#endif
+
 #define REDUCE_PIXELPRECISION_MASK 0x00F0F0F0
 
 DWORD KoPlayerProcessId = 0;
@@ -96,17 +100,19 @@ int WaitPixelChangeColor(int x, int y, COLORREF Color)
 FILE *LocalDumpFile = 0;
 void AppendDataToDB()
 {
-/*	if (LocalDumpFile == 0)
+	if (LocalDumpFile == 0)
 		LocalDumpFile = fopen("Players.txt", "at");
-	if (Data == NULL)
-		return;
 	if (LocalDumpFile != 0)
 	{
-		if (Data[0]=='\n')
-			fprintf(LocalDumpFile, "\n");
-		else
-			fprintf(LocalDumpFile, "%s\t", Data);
-	}*/
+		fprintf(LocalDumpFile, "%d \t %d \t %d", CurPlayer.k, CurPlayer.x, CurPlayer.y);
+		fprintf(LocalDumpFile, " \t %s \t %s", CurPlayer.Name, CurPlayer.Guild);
+		fprintf(LocalDumpFile, " \t %d \t %d", CurPlayer.Might, CurPlayer.Kills);
+		fprintf(LocalDumpFile, " \t %d", CurPlayer.LastUpdateTimestamp);
+#ifdef TEST_OFFLINE_PARSING_OF_PICTURES
+		fprintf(LocalDumpFile, " \t %s", FullPath);
+#endif
+		fprintf(LocalDumpFile, "\n");
+	}
 }
 
 int GuildCharsLoaded = 0;
@@ -122,6 +128,7 @@ void GetGuildNameFromCastlePopup()
 	KeepColorsMinInRegion(73, 131, 370, 154, RGB(173, 174, 176));
 	//SaveScreenshot();
 	char *res = OCR_ReadTextLeftToRightSaveUnknownChars(73, 131, 370, 154);
+	strcpy_s(CurPlayer.Guild, sizeof(CurPlayer.Guild), res);
 	if (OCR_FoundNewFont == 1)
 		CurPlayer.SkipSave = 1;
 }
@@ -136,9 +143,10 @@ void GetPlayerNameFromCastlePopup()
 		OCR_LoadFontsFromDir("K_C_M_Playernames", "KCM_");
 	}
 	OCR_SetMaxFontSize(20, 20);
-	KeepColorsMinInRegion(121, 16, 390, 44, RGB(194, 180, 55));
+	KeepColorsMinInRegion(121, 16, 399, 44, RGB(194, 180, 55));
 	//SaveScreenshot();
-	char *res = OCR_ReadTextLeftToRightSaveUnknownChars(121, 16, 390, 44);
+	char *res = OCR_ReadTextLeftToRightSaveUnknownChars(121, 16, 399, 44);
+	strcpy_s(CurPlayer.Name, sizeof(CurPlayer.Name), res);
 	if (OCR_FoundNewFont == 1)
 		CurPlayer.SkipSave = 1;
 }
@@ -216,13 +224,18 @@ void GetPlayerMightKillsFromCastlePopup()
 	//SaveScreenshot();
 	char *res;
 	res = OCR_ReadTextLeftToRightSaveUnknownChars(193, 66, 350, 88);
+	RemoveCharFromNumberString(res, ',');
+	CurPlayer.Might = atoi(res);
 	res = OCR_ReadTextLeftToRightSaveUnknownChars(258, 97, 390, 119);
+	RemoveCharFromNumberString(res, ',');
+	CurPlayer.Kills = atoi(res);
 	if (OCR_FoundNewFont == 1)
 		CurPlayer.SkipSave = 1;
 }
 
 void ParseCastlePopup()
 {
+#ifndef TEST_OFFLINE_PARSING_OF_PICTURES
 	if (WaitPixelBecomeColor(566, 270, 0x00FFFFFF) == 0 && WaitPixelBecomeColor(569, 301, 0x00FFFFFF) == 0)
 	{
 		printf("Castle popup load timemout. Skipping parsing\n");
@@ -234,11 +247,12 @@ void ParseCastlePopup()
 	int PopupEndY = 580;
 	TakeScreenshot(Ko[0] + PopupStartX, Ko[1] + PopupStartY, Ko[0] + PopupEndX, Ko[1] + PopupEndY);
 	SaveScreenshot();
+#endif
 
 	memset(&CurPlayer, 0, sizeof(CurPlayer));
-	//GetPlayerNameFromCastlePopup();
-	//GetPlayerMightKillsFromCastlePopup();
-	//GetGuildNameFromCastlePopup();
+	GetPlayerNameFromCastlePopup();
+	GetPlayerMightKillsFromCastlePopup();
+	GetGuildNameFromCastlePopup();
 	GetPlayerXYFromCastlePopup();
 
 	//we did not handle this one. Save it for later processing. Maybe we need to simply decode the new characters
@@ -246,8 +260,11 @@ void ParseCastlePopup()
 	{
 		SaveScreenshot();
 	}
-//	else
-//		AppendDataToDB();
+	else
+	{
+		CurPlayer.LastUpdateTimestamp = GetTickCount();
+		AppendDataToDB();
+	}
 }
 
 void KoLeftClick(int x, int y)
@@ -461,13 +478,50 @@ void ZoomOutToKingdomView()
 {
 }
 
-void ScanKingdomArea(int StartX, int StartY, int EndX, int EndY)
+void SaveKingdomScanStatus( int k, int x, int y)
+{
+	FILE *f = fopen("KingdomScanStatus.txt", "wb");
+	if (f)
+	{
+		int buf[3];
+		buf[0] = k;
+		buf[1] = x;
+		buf[2] = y;
+		fwrite(buf, 1, 3 * sizeof(int), f);
+		fclose(f);
+	}
+}
+
+#define COULD_NOT_LOAD_RESTORE_DATA -2
+void RestoreKingdomScanStatus(int &k, int &x, int &y)
+{
+	k = COULD_NOT_LOAD_RESTORE_DATA;
+	FILE *f = fopen("KingdomScanStatus.txt", "rb");
+	if (f)
+	{
+		int buf[3];
+		fread(buf, 1, 3 * sizeof(int), f);
+		k = buf[0];
+		x = buf[1];
+		y = buf[2];
+		fclose(f);
+	}
+}
+
+void ResetKingdomSaveStatus()
+{
+	SaveKingdomScanStatus(COULD_NOT_LOAD_RESTORE_DATA, COULD_NOT_LOAD_RESTORE_DATA, COULD_NOT_LOAD_RESTORE_DATA);
+}
+
+void ScanKingdomArea(int Kingdom, int StartX, int StartY, int EndX, int EndY)
 {
 	GetKoPlayerAndPos();
 	WaitKoPlayerGetFocus();
 	CloseAllPossiblePopups();
 	ZoomOutToKingdomView();
 
+	int RestoreK, RestoreX, RestoreY;
+	RestoreKingdomScanStatus(RestoreK, RestoreX, RestoreY);
 	//make sure this does not contain random junk
 	memset(&CurPlayer, 0, sizeof(CurPlayer));
 
@@ -475,9 +529,18 @@ void ScanKingdomArea(int StartX, int StartY, int EndX, int EndY)
 	int Start = GetTimeTickI();
 	for (int y = StartY; y <= EndY; y += 10)
 	{
-		JumpToKingdomLocation(69, StartX, y);
+		JumpToKingdomLocation(Kingdom, StartX, y);
 		for (int x = StartX; x <= EndX; x+=10)
 		{
+			//try to jump directly to a location where 
+			if (RestoreK != COULD_NOT_LOAD_RESTORE_DATA)
+			{
+				y = RestoreY;
+				x = RestoreX;
+				JumpToKingdomLocation(69, RestoreX, RestoreY);
+				RestoreK = COULD_NOT_LOAD_RESTORE_DATA;
+			}
+
 			int End = GetTimeTickI();
 			printf("We made %d slides. We should be at x = %d. Time spent so far %d\n", x, x, (End - Start) / 1000 / 60);
 
@@ -494,11 +557,55 @@ void ScanKingdomArea(int StartX, int StartY, int EndX, int EndY)
 			else
 				DragScreenToLeft(); // we function as expected, we can simply drag the screen to the left
 
+			SaveKingdomScanStatus(Kingdom, x, y);
 			//safety break from a possible infinite loop
 			if (GetAsyncKeyState(VK_INSERT) || IsKoPlayerInFocus() == 0)
 				return;
 		}
 	}
+}
+
+void OfflineTestCastlePopupParsing()
+{
+	memset(Ko, 0, sizeof(Ko));
+	TakeScreenshot(0, 0, 401, 381);
+	std::string path = "h:/Lords/CastlepopupExamples7";
+	std::string search_path = path;
+	search_path += "/*.*";
+	std::string SkipUntilFile = "";
+	int FoundFirstFile = SkipUntilFile.length() == 0;
+	int SkipFirstN = 1500 * 2;
+	int BatchProcessMaxCount = SkipFirstN + 1500;
+//	int BatchProcessMaxCount = 1;
+	int Index = 0;
+	WIN32_FIND_DATA fd;
+	HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
+	if (hFind == INVALID_HANDLE_VALUE)
+		return;
+	do {
+		// read all (real) files in current folder
+		// , delete '!' read other 2 default folder . and ..
+		if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+		{
+			Index++;
+			if (FoundFirstFile == 0)
+			{
+				if (strcmp(fd.cFileName, SkipUntilFile.c_str()) == 0)
+					FoundFirstFile = 1;
+				else
+					continue;
+			}
+			BatchProcessMaxCount--;
+			if (SkipFirstN-- > 0)
+				continue;
+			sprintf_s(FullPath, sizeof(FullPath), "%s/%s", path.c_str(), fd.cFileName);
+			printf("%d)Parsing file : %s\n", Index, FullPath);
+			LoadCacheOverScreenshot(FullPath, 0, 0);
+			//test it
+			ParseCastlePopup();
+		}
+	} while (::FindNextFile(hFind, &fd) && BatchProcessMaxCount > 0);
+	::FindClose(hFind);
 }
 
 void RunLordsMobileTests()
@@ -523,10 +630,14 @@ void RunLordsMobileTests()
 		ZoomOutToKingdomView();
 		JumpToKingdomLocation(69, 0, 110);
 	}/**/
+	{
+		OfflineTestCastlePopupParsing();
+		return;
+	}/**/
 	// aprox 7 mins / row
 	// 40 * 50 in 35 mins => 57 screens / min
 	// 9 row in 77 minutes
-	ScanKingdomArea(0, 720, 500, 1000);
+	ScanKingdomArea(69, 0, 720, 500, 1000);
 
 	printf("fliptablegoinghome.THE END\n");
 	_getch();

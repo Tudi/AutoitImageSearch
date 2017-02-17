@@ -1,5 +1,7 @@
 #pragma once
 
+#define TEST_OFFLINE_PARSING_OF_PICTURES
+
 void RunLordsMobileTests();
 void WINAPI CaptureVisibleScreenGetPlayerLabels();
 

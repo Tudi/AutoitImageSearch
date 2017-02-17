@@ -238,7 +238,7 @@ void OCR_FindMostSimilarFontAndSave(int *Img, int Width, int CharStartX, int Cha
 	{
 		char NewFilename[500],NewFilename2[500];
 		GenerateAvailableFontFilename(NewFilename, sizeof(NewFilename), BestMatchFont->OCRCache->AssignedChars);
-#ifndef _DEBUG
+#if !defined( _DEBUG) || defined(TEST_OFFLINE_PARSING_OF_PICTURES)
 		sprintf_s(NewFilename2, sizeof(NewFilename2), "%s_%s", FontSetName, NewFilename);
 #else
 		strcpy(NewFilename2, NewFilename);
@@ -250,7 +250,7 @@ void OCR_FindMostSimilarFontAndSave(int *Img, int Width, int CharStartX, int Cha
 		char NewFilename[500];
 		int FileIndex = 0;
 		do{
-#ifndef _DEBUG
+#if !defined( _DEBUG) || defined(TEST_OFFLINE_PARSING_OF_PICTURES)
 			sprintf_s(NewFilename, sizeof(NewFilename), "%s_KCM__%d.bmp", FontSetName, FileIndex++);
 #else
 			sprintf_s(NewFilename, sizeof(NewFilename), "KCM__%d.bmp", FileIndex++);
