@@ -409,7 +409,7 @@ void ExtractPlayerName()
 		OCR_LoadFontsFromDir("K_C_M_Playernames_wide", "KCM_");
 		TakeScreenshot(0, 0, 401, 381);
 		OCR_SetMaxFontSize(20, 20);
-		std::string path = "CastlepopupExamples5";
+		std::string path = "h:/Lords/CastlepopupExamples7";
 		std::string search_path = path;
 		search_path += "/*.*";
 		std::string SkipUntilFile = "";
@@ -472,7 +472,7 @@ void ExtractKillsMight()
 		OCR_LoadFontsFromDir("K_C_M_MightKills2", "KCM_");
 		TakeScreenshot(0, 0, 401, 381);
 		OCR_SetMaxFontSize(20, 20);
-		std::string path = "CastlepopupExamples5";
+		std::string path = "h:/Lords/CastlepopupExamples7";
 		std::string search_path = path;
 		search_path += "/*.*";
 		std::string SkipUntilFile = "";
@@ -539,12 +539,12 @@ void ExtractXY()
 		OCR_LoadFontsFromDir("K_C_M_xy2", "KCM_");
 		TakeScreenshot(0, 0, 401, 381);
 		OCR_SetMaxFontSize(20, 20);
-		std::string path = "CastlepopupExamples5";
+		std::string path = "h:/Lords/CastlepopupExamples7";
 		std::string search_path = path;
 		search_path += "/*.*";
 		std::string SkipUntilFile = "";
 		int FoundFirstFile = SkipUntilFile.length() == 0;
-		int SkipFirstN = 2900 * 0;
+		int SkipFirstN = 2900 * 2;
 		int BatchProcessMaxCount = SkipFirstN + 2900;
 		int Index = 0;
 		WIN32_FIND_DATA fd;
@@ -686,7 +686,7 @@ void ExtractGuild()
 		OCR_LoadFontsFromDir("K_C_M_guild2", "KCM_");
 		TakeScreenshot(0, 0, 401, 381);
 		OCR_SetMaxFontSize(20, 20);
-		std::string path = "CastlepopupExamples5";
+		std::string path = "h:/Lords/CastlepopupExamples7";
 		std::string search_path = path;
 		search_path += "/*.*";
 		std::string SkipUntilFile = "";
@@ -743,11 +743,11 @@ void ExtractGuild()
 void RunLordsTesting()
 {
 	int Start = GetTimeTickI();
-	//ExtractXY();
+	ExtractXY();
 	//ExtractKillsMight();
 	//ExtractPlayerName();
 	//ExtractGuild();
-	LocateAndRemoveWaterAndDetectPlayers();
+	//LocateAndRemoveWaterAndDetectPlayers();
 	int End = GetTimeTickI();
 
 	// always check if what we do is the right way to do it

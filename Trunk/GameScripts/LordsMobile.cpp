@@ -117,7 +117,7 @@ void AppendDataToDB()
 int GuildCharsLoaded = 0;
 void GetGuildNameFromCastlePopup()
 {
-	OCR_SetActiveFontSet(1,"K_C_M_guild");
+	OCR_SetActiveFontSet(1,"K_C_M_guild/");
 	if (GuildCharsLoaded == 0)
 	{
 		GuildCharsLoaded = 1;
@@ -134,7 +134,7 @@ void GetGuildNameFromCastlePopup()
 int NameCharsLoaded = 0;
 void GetPlayerNameFromCastlePopup()
 {
-	OCR_SetActiveFontSet(2,"K_C_M_Playernames");
+	OCR_SetActiveFontSet(2,"K_C_M_Playernames/");
 	if (NameCharsLoaded == 0)
 	{
 		NameCharsLoaded = 1;
@@ -156,7 +156,7 @@ int IsNumber(char A)
 }
 void SkipToNumber(char *res, int &Ind)
 {
-	while (res[Ind] != 0 && res[Ind] != '=' && IsNumber(res[Ind]) == 0)
+	while (res[Ind] != 0 && IsNumber(res[Ind]) == 0)
 		Ind++;
 }
 void AssembleNumber(char *res, int &Ind, int &N)
@@ -164,7 +164,8 @@ void AssembleNumber(char *res, int &Ind, int &N)
 	N = 0;
 	while (res[Ind] == ' ' || IsNumber(res[Ind]) == 1)
 	{
-		N = N * 10 + res[Ind] - '0';
+		if (res[Ind] != ' ')
+			N = N * 10 + res[Ind] - '0';
 		Ind++;
 	}
 }
@@ -188,21 +189,18 @@ void ParseKXY(char *res, int &k, int &x, int &y)
 int XYCharsLoaded = 0;
 void GetPlayerXYFromCastlePopup()
 {
-	OCR_SetActiveFontSet(3,"K_C_M_xy");
+	OCR_SetActiveFontSet(3,"K_C_M_xy/");
 	if (XYCharsLoaded == 0)
 	{
 		XYCharsLoaded = 1;
 		OCR_LoadFontsFromDir("K_C_M_xy", "KCM_");
 	}
 	OCR_SetMaxFontSize(20, 20);
-	KeepColorsMinInRegion(187, 363, 220, 379, RGB(166, 172, 175));
-	KeepColorsMinInRegion(235, 363, 266, 379, RGB(166, 172, 175));
+	KeepColorsMinInRegion(129, 363, 268, 379, RGB(166, 172, 175));
 	//SaveScreenshot();
-	char *res;
-	res = OCR_ReadTextLeftToRightSaveUnknownChars(187, 363, 220, 379);
-	int tOCR_FoundNewFont = OCR_FoundNewFont;
-	res = OCR_ReadTextLeftToRightSaveUnknownChars(235, 363, 266, 379);
-	if (OCR_FoundNewFont == 1 || tOCR_FoundNewFont == 1)
+	char *res = OCR_ReadTextLeftToRightSaveUnknownChars(129, 363, 268, 379);
+	//printf("Tried to read player location %s\n", res);
+	if (OCR_FoundNewFont == 1)
 		CurPlayer.SkipSave = 1;
 	else
 		ParseKXY(res, CurPlayer.k, CurPlayer.x, CurPlayer.y);
@@ -211,7 +209,7 @@ void GetPlayerXYFromCastlePopup()
 int MightKillsCharsLoaded = 0;
 void GetPlayerMightKillsFromCastlePopup()
 {
-	OCR_SetActiveFontSet(4,"K_C_M_MightKills");
+	OCR_SetActiveFontSet(4,"K_C_M_MightKills/");
 	if (MightKillsCharsLoaded == 0)
 	{
 		MightKillsCharsLoaded = 1;
@@ -294,6 +292,8 @@ void CloseAllPossiblePopups()
 	ClosedSomething += CloseGenericPopup(852, 119, STATIC_BGR_RGB(0x00FFBD37)); // if we clicked on scout
 	ClosedSomething += CloseGenericPopup(853, 126, STATIC_BGR_RGB(0x00FFBD36)); // if we clicked on land
 	ClosedSomething += CloseGenericPopup(819, 431, STATIC_BGR_RGB(0x00FFBA31)); // if we clicked on army
+	ClosedSomething += CloseGenericPopup(1516, 473, STATIC_BGR_RGB(0x00FFBD36)); // if we clicked on forest info
+//	ClosedSomething += CloseGenericPopup(1516, 473, STATIC_BGR_RGB(0x00FFBD36)); // connection lost
 	//debugging is life
 	if (ClosedSomething)
 		printf("We managed to close some unexpected popup. Continue Execution\n");
@@ -379,10 +379,10 @@ void WINAPI CaptureVisibleScreenGetPlayerLabels()
 	int JumpToTurefIconSize = 80;
 	TakeScreenshot(Ko[0]+JumpToTurefIconSize, Ko[1]+JumpToTurefIconSize, Ko[0] + Ko[2] - JumpToTurefIconSize, Ko[1] + Ko[3] - JumpToTurefIconSize);
 	SetGradientToColor(0xA59B63, 0.162f, 0x00FFFFFF);	// remove water
-	KeepGradient(0x00946D21, 0.25f);						// keep tags only. Think about shielded players also
+	KeepGradient(0x00946D21, 0.4f);						// keep tags only. Think about shielded players also
 //SaveScreenshot();
-	//ImageSearch_Multipass_PixelCount2(0, 60, 35, 5, 34, 21, 55);
-	ImageSearch_Multipass_PixelCount2(25, 25, 5, 8, 14, 45);
+	ImageSearch_Multipass_PixelCount2(60, 35, 5, 34, 21, 45);
+	//ImageSearch_Multipass_PixelCount2(25, 25, 5, 8, 14, 45);
 	//try to debug WTF situations
 	if (SearchResultCount > 100)
 	{
@@ -485,9 +485,11 @@ void ScanKingdomArea(int StartX, int StartY, int EndX, int EndY)
 			CaptureVisibleScreenGetPlayerLabels();
 
 			//if we found a castle, check if we are on the same screen as expected. Resync to expected location in case we clicked on an army or something
-#define ACCEPTED_SCREEN_PRECISION_LOSS 20
-			if (CurPlayer.k != -1 && (CurPlayer.x / ACCEPTED_SCREEN_PRECISION_LOSS != x / ACCEPTED_SCREEN_PRECISION_LOSS || CurPlayer.y / ACCEPTED_SCREEN_PRECISION_LOSS != y / ACCEPTED_SCREEN_PRECISION_LOSS))
+			if (CurPlayer.k != -1 && (abs(CurPlayer.x - x) > 20 || abs(CurPlayer.y - y) > 10))
+			{
+				printf("\nWe are expecting to be at %d,%d, but we are at %d,%d?. Resync location\n\n", x, y, CurPlayer.x, CurPlayer.y);
 				JumpToKingdomLocation(69, x, y);
+			}
 			else
 				DragScreenToLeft(); // we function as expected, we can simply drag the screen to the left
 
@@ -523,7 +525,7 @@ void RunLordsMobileTests()
 	// aprox 7 mins / row
 	// 40 * 50 in 35 mins => 57 screens / min
 	// 9 row in 77 minutes
-	ScanKingdomArea(0, 610, 500, 1000);
+	ScanKingdomArea(0, 720, 500, 1000);
 
 	printf("fliptablegoinghome.THE END\n");
 	_getch();

@@ -232,16 +232,17 @@ void OCR_FindMostSimilarFontAndSave(int *Img, int Width, int CharStartX, int Cha
 	//maybe it's just a small aberation of an already declared font. Some fontx are 8x8 pixels. 10% represents 6 pixel diference. Which can be enough to confuse it with another font. 'o' -'u' = 4 pixels ?
 	if (BestMatchFont && abs( BestMatchFont->OCRCache->PixelCount - BestMatch ) < BestMatchFont->OCRCache->PixelCount * 10 / 100)
 	{
-		char NewFilename[500];
+		char NewFilename[500],NewFilename2[500];
 		GenerateAvailableFontFilename(NewFilename, sizeof(NewFilename), BestMatchFont->OCRCache->AssignedChars);
-		SaveScreenshotArea(CharStartX, CharStartY, CharEndX, CharEndY, NewFilename);
+		sprintf_s(NewFilename2, sizeof(NewFilename2), "%s_%s", FontSetName, NewFilename);
+		SaveScreenshotArea(CharStartX, CharStartY, CharEndX, CharEndY, NewFilename2);
 	}
 	else
 	{
 		char NewFilename[500];
 		int FileIndex = 0;
 		do{
-			sprintf_s(NewFilename, sizeof(NewFilename), "KCM__%d.bmp", FileIndex++);
+			sprintf_s(NewFilename, sizeof(NewFilename), "%s_KCM__%d.bmp", FontSetName, FileIndex++);
 		} while (_access(NewFilename, 0) == 0 && FileIndex < 1000);
 		SaveScreenshotArea(CharStartX, CharStartY, CharEndX, CharEndY, NewFilename);
 	}

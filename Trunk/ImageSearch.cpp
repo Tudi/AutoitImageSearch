@@ -1097,9 +1097,11 @@ void ImageSearch_Multipass_PixelCount2(int PercentMax, int PercentMin, int Perce
 			for (int y = 0; y < Height - AreaHeight; y += 1)
 			{
 				// this will only help if we plan to find multiple areas with considerable size. ( we will find it at least once right ? )
-				if (TempBuff[y * Width + x] > TRANSPARENT_COLOR)
+				if (TempBuff[y * Width + x] > 0x00FFFFFF)
 				{
-					y = (TempBuff[y * Width + x] & TRANSPARENT_COLOR); // skip search to this row
+					int newY = (TempBuff[y * Width + x] & 0x00FFFFFF); // skip search to this row
+					if (newY > y)
+						y = newY;
 					PrevBlockCount = -1;
 					LastJumpY = y + 1; // if jump over overlapped regions, we will find them more than once
 					continue;
@@ -1114,6 +1116,9 @@ void ImageSearch_Multipass_PixelCount2(int PercentMax, int PercentMin, int Perce
 					MatchesFound++;
 					int retx = x + CurScreenshot->Left;
 					int rety = y + CurScreenshot->Top;
+					//bugtest
+					if (SearchResultCount > 0 && (abs(SearchResultXYSAD[SearchResultCount - 1][0] - retx) < OneSearchInRadius || abs(SearchResultXYSAD[SearchResultCount - 1][1] - rety) < OneSearchInRadius))
+						continue;
 					if (SearchResultCount < sizeof(SearchResultXYSAD) / sizeof(int))
 					{
 						SearchResultXYSAD[SearchResultCount][0] = retx;
@@ -1128,22 +1133,22 @@ void ImageSearch_Multipass_PixelCount2(int PercentMax, int PercentMin, int Perce
 					int XEnd = x + OneSearchInRadius;
 					if (XEnd > Width)
 						XEnd = Width - OneSearchInRadius;
-					int tAreaWidth = (XEnd - XStart)*sizeof(int);
+//					int tAreaWidth = (XEnd - XStart)*sizeof(int);
 					int YStart = y - OneSearchInRadius;
 					if (YStart < 0)
 						YStart = 0;
 					int YEnd = y + OneSearchInRadius;
 					if (YEnd >= Height)
 						YEnd = Height - 1;
-					for (int x2 = XStart; x2 <= XEnd; x2++)
+/*					for (int x2 = XStart; x2 <= XEnd; x2++)
 						TempBuff[YStart * Width + x2] = YEnd | 0x0F000000;
 					if (LastJumpY != -1 && LastJumpY>YStart)
 						for (int x2 = XStart; x2 <= XEnd; x2++)
-							TempBuff[LastJumpY * Width + x2] = YEnd | 0x0F000000;	// to be able to jump from 1 box to another
-					for (int y2 = YStart + 1; y2 <= YEnd; y2++)
+							TempBuff[LastJumpY * Width + x2] = YEnd | 0x0F000000;	// to be able to jump from 1 box to another*/
+					for (int y2 = YStart; y2 <= YEnd; y2++)
 					{
-//						for (int x2 = XStart; x2 <= XEnd; x2++)
-//							TempBuff[y2 * Width + x2] = YEnd | 0x0F000000;
+						for (int x2 = XStart; x2 <= XEnd; x2++)
+							TempBuff[y2 * Width + x2] = YEnd | 0x0F000000;
 //						memset(&TempBuff[y2 * Width + XStart], 0x7F, tAreaWidth);	//if we skip the zone correctly this is not required. When debugging you might want to enable it
 #if defined( _CONSOLE ) && defined( _DEBUG )
 memset(&CurScreenshot->Pixels[y2 * Width + XStart], MatchesFound, tAreaWidth);
