@@ -86,11 +86,20 @@
 #include "ImageSearch.h"
 #include "OCR_LuckyCase.h"
 #include "PixelProcess.h"
+#include <map>
+#include <algorithm>
+#include <vector>
 
 #ifdef _CONSOLE
 	#include "Benchmarks/Benchmarks.h"
 	#include "Testing/Lords.h"
 	#include "GameScripts/LordsMobile.h"
 #endif
+
+#define RGB_GET_R(Color) ( Color & 0xFF )
+#define RGB_GET_G(Color) ( (Color >> 8 ) & 0xFF)
+#define RGB_GET_B(Color) ( (Color >> 16 )& 0xFF)
+#define STATIC_BGR_RGB(Color) (( RGB_GET_R( Color ) << 16 ) | ( RGB_GET_G( Color ) << 8 ) | ( RGB_GET_B( Color ) ) )
+
 
 // TODO: reference additional headers your program requires here

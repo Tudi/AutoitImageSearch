@@ -19,7 +19,8 @@ char* WINAPI ImageSearch_Multiple_Gradient(int Color, int GradientMatchPercent, 
 
 
 // ignore these. Using them for a specific case
-void ImageSearch_Multipass_PixelCount2(int PercentMax, int PercentMin, int PercentStep, int AreaWidth, int AreaHeight, int OneSearchInRadius);
+void ImageSearch_Multipass_PixelCount2(int Color, int PercentMax, int PercentMin, int PercentStep, int AreaWidth, int AreaHeight, int OneSearchInRadius);
+void ImageSearch_Multipass_PixelCount3(int Color, int PercentMin, int AreaWidth, int AreaHeight, int OneSearchInRadius);
 extern int SearchResultCount;
 extern int SearchResultXYSAD[500][3];
 #endif

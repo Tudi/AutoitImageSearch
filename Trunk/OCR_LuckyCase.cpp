@@ -185,7 +185,11 @@ OCRStore *FindExactMatchingFont(int *Img, int Width, int CharStartX, int CharSta
 			//get the file name from src
 			char Filename[500], Filename2[500];
 			GenerateAvailableFontFilename(Filename, sizeof(Filename), FontCache->OCRCache->AssignedChars);
+#ifndef _DEBUG
 			sprintf_s(Filename2, sizeof(Filename2), "%s/%s", FontSetName, Filename);
+#else
+			strcpy(Filename2, Filename);
+#endif
 			BOOL success = CopyFile(FontCache->FileName, Filename2, true);
 			if (success == false)
 				printf("failed to copy, debug me\n");
@@ -234,7 +238,11 @@ void OCR_FindMostSimilarFontAndSave(int *Img, int Width, int CharStartX, int Cha
 	{
 		char NewFilename[500],NewFilename2[500];
 		GenerateAvailableFontFilename(NewFilename, sizeof(NewFilename), BestMatchFont->OCRCache->AssignedChars);
+#ifndef _DEBUG
 		sprintf_s(NewFilename2, sizeof(NewFilename2), "%s_%s", FontSetName, NewFilename);
+#else
+		strcpy(NewFilename2, NewFilename);
+#endif
 		SaveScreenshotArea(CharStartX, CharStartY, CharEndX, CharEndY, NewFilename2);
 	}
 	else
@@ -242,7 +250,11 @@ void OCR_FindMostSimilarFontAndSave(int *Img, int Width, int CharStartX, int Cha
 		char NewFilename[500];
 		int FileIndex = 0;
 		do{
+#ifndef _DEBUG
 			sprintf_s(NewFilename, sizeof(NewFilename), "%s_KCM__%d.bmp", FontSetName, FileIndex++);
+#else
+			sprintf_s(NewFilename, sizeof(NewFilename), "KCM__%d.bmp", FileIndex++);
+#endif
 		} while (_access(NewFilename, 0) == 0 && FileIndex < 1000);
 		SaveScreenshotArea(CharStartX, CharStartY, CharEndX, CharEndY, NewFilename);
 	}
@@ -323,7 +335,6 @@ char * WINAPI OCR_ReadTextLeftToRightSaveUnknownChars(int StartX, int StartY, in
 		else
 		{
 			ExtractNewFont(Img, Width, CharStartX, CharStartY, CharEndX, CharEndY);
-//			FoundNewFont = 1;
 			OCR_FoundNewFont = 1;
 		}
 

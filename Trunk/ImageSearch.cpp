@@ -1070,9 +1070,8 @@ char* WINAPI ImageSearch_Multiple_Gradient(int Color, int GradientMatchPercent, 
 	return ReturnBuff;
 }
 
-void ImageSearch_Multipass_PixelCount2(int PercentMax, int PercentMin, int PercentStep, int AreaWidth, int AreaHeight, int OneSearchInRadius)
+void ImageSearch_Multipass_PixelCount2(int Color, int PercentMax, int PercentMin, int PercentStep, int AreaWidth, int AreaHeight, int OneSearchInRadius)
 {
-	int Color = 0;
 	int MatchesFound = 0;
 	SearchResultCount = 0;
 	FileDebug("Started Image search");
@@ -1090,6 +1089,7 @@ void ImageSearch_Multipass_PixelCount2(int PercentMax, int PercentMin, int Perce
 
 	for (int Percent = PercentMax; Percent >= PercentMin; Percent -= PercentStep)
 	{
+		int tPercent = Percent * AreaSize;
 		for (int x = 0; x < Width - AreaWidth; x += 1)
 		{
 			int LastJumpY = -1;
@@ -1108,9 +1108,9 @@ void ImageSearch_Multipass_PixelCount2(int PercentMax, int PercentMin, int Perce
 				}/**/
 				// count Colors
 				int Counter = GetPixelCountRegion(&TempBuff[y * Width + x], Width, Color, PrevBlockCount, AreaWidth, AreaHeight);
-				int Ratio = Counter * 100 / AreaSize;
+				int Ratio = Counter * 100;
 				PrevBlockCount = Counter;
-				if (Ratio >= Percent)
+				if (Ratio >= tPercent)
 				{
 					// If we got here, there is a match
 					MatchesFound++;
@@ -1133,30 +1133,98 @@ void ImageSearch_Multipass_PixelCount2(int PercentMax, int PercentMin, int Perce
 					int XEnd = x + OneSearchInRadius;
 					if (XEnd > Width)
 						XEnd = Width - OneSearchInRadius;
-//					int tAreaWidth = (XEnd - XStart)*sizeof(int);
 					int YStart = y - OneSearchInRadius;
 					if (YStart < 0)
 						YStart = 0;
 					int YEnd = y + OneSearchInRadius;
 					if (YEnd >= Height)
 						YEnd = Height - 1;
-/*					for (int x2 = XStart; x2 <= XEnd; x2++)
-						TempBuff[YStart * Width + x2] = YEnd | 0x0F000000;
-					if (LastJumpY != -1 && LastJumpY>YStart)
-						for (int x2 = XStart; x2 <= XEnd; x2++)
-							TempBuff[LastJumpY * Width + x2] = YEnd | 0x0F000000;	// to be able to jump from 1 box to another*/
-					for (int y2 = YStart; y2 <= YEnd; y2++)
+					//need to set "everything" or else the next search will reach into our zone. Since we search top-bottom, we would only need to set "AreaHeight" rows at the top
+					for (int y2 = YStart; y2 < YEnd; y2++)
 					{
 						for (int x2 = XStart; x2 <= XEnd; x2++)
 							TempBuff[y2 * Width + x2] = YEnd | 0x0F000000;
-//						memset(&TempBuff[y2 * Width + XStart], 0x7F, tAreaWidth);	//if we skip the zone correctly this is not required. When debugging you might want to enable it
 #if defined( _CONSOLE ) && defined( _DEBUG )
-memset(&CurScreenshot->Pixels[y2 * Width + XStart], MatchesFound, tAreaWidth);
+int tAreaWidth = (XEnd - XStart)*sizeof(int);
+//memset(&CurScreenshot->Pixels[y2 * Width + XStart], MatchesFound, tAreaWidth);
 #endif
 					}
 					//jump forward with X, there is no need to search this area
 					y = YEnd;
 					PrevBlockCount = -1;
+				}
+			}
+		}
+	}
+	if (MatchesFound == 0)
+		FileDebug("\t Image search found no matches");
+
+	free(TempBuff);
+	FileDebug("\tImage search finished");
+	return;
+}
+
+
+void ImageSearch_Multipass_PixelCount3(int Color, int PercentMin, int AreaWidth, int AreaHeight, int OneSearchInRadius)
+{
+	int MatchesFound = 0;
+	SearchResultCount = 0;
+	FileDebug("Started Image search");
+	if (CurScreenshot->Pixels == NULL)
+	{
+		FileDebug("Skipping Image search no screenshot is available");
+		return;
+	}
+
+	int Width = CurScreenshot->GetWidth();
+	int Height = CurScreenshot->GetHeight();
+	int AreaSize = AreaWidth * AreaHeight;
+	int *TempBuff = (int*)malloc(Width * Height * sizeof(int));
+	memcpy(TempBuff, CurScreenshot->Pixels, Width * Height * sizeof(int));
+
+	{
+		int tPercent = PercentMin * AreaSize;
+		for (int x = 0; x < Width - AreaWidth; x += 1)
+		{
+			int PrevBlockCount = -1;
+			for (int y = 0; y < Height - AreaHeight; y += 1)
+			{
+				// count Colors
+				int Counter = GetPixelCountRegion(&TempBuff[y * Width + x], Width, Color, PrevBlockCount, AreaWidth, AreaHeight);
+				int Ratio = Counter * 100;
+				PrevBlockCount = Counter;
+				if (Ratio >= tPercent)
+				{
+					int retx = x + CurScreenshot->Left;
+					int rety = y + CurScreenshot->Top;
+					//check if we have a nearby result
+					int AlreadyExists = 0;
+					for (int i = 0; i < SearchResultCount; i++)
+						if (abs(retx - SearchResultXYSAD[i][0]) < OneSearchInRadius && abs(rety - SearchResultXYSAD[i][1]) < OneSearchInRadius)
+						{
+							AlreadyExists = 1;
+							//this is better? update it
+							if (SearchResultXYSAD[i][2] < Ratio)
+							{
+								SearchResultXYSAD[SearchResultCount][0] = retx;
+								SearchResultXYSAD[SearchResultCount][1] = rety;
+								SearchResultXYSAD[SearchResultCount][2] = Ratio;
+							}
+						}
+					if (AlreadyExists == 0)
+					{
+						// If we got here, there is a match
+						MatchesFound++;
+						if (SearchResultCount < sizeof(SearchResultXYSAD) / sizeof(int))
+						{
+							SearchResultXYSAD[SearchResultCount][0] = retx;
+							SearchResultXYSAD[SearchResultCount][1] = rety;
+							SearchResultXYSAD[SearchResultCount][2] = Ratio;
+							SearchResultCount++;
+						}
+						else
+							return;
+					}
 				}
 			}
 		}

@@ -21,3 +21,7 @@ float WINAPI GetPixelRatioInArea(int Color = -1, int StartX = -1, int StartY = -
 void WINAPI RemoveIfHasStrongerNeighbours(int MinNeighbours, int StartX = -1, int StartY = -1, int EndX = -1, int EndY = -1);
 void WINAPI ErodeNotInLine(int StartX = -1, int StartY = -1, int EndX = -1, int EndY = -1);
 void WINAPI ErodeOnEdgeNeighbours(int EdgeStrength, int StartX = -1, int StartY = -1, int EndX = -1, int EndY = -1);
+void HistorygramInArea(int StartX = -1, int StartY = -1, int EndX = -1, int EndY = -1);
+void KeepColorRange(int RMin, int RMax, int GMin, int GMax, int BMin, int BMax);
+void KeepColorRangeAndGradient(int Color, int MaxChange, int RMin, int RMax, int GMin, int GMax, int BMin, int BMax);
+void WINAPI KeepGradient3(int Color1, float MaxChange1, int Color2, float MaxChange2, int Color3, float MaxChange3);

@@ -15,7 +15,12 @@ void WINAPI PushToColorKeepList(int Color)
 	int B = GetRValue(Color);
 	int G = GetGValue(Color);
 	int R = GetBValue(Color);
-	KeepColorList[KeepColorListIndex++] = RGB(R,G,B);
+	int rgb = RGB(R, G, B);
+	//check if we already have it
+	for (int i = 0; i < KeepColorListIndex; i++)
+		if (KeepColorList[i] == rgb)
+			return;
+	KeepColorList[KeepColorListIndex++] = rgb;
 }
 
 __forceinline int ShouldKeepColor(int Color)
@@ -490,4 +495,159 @@ void WINAPI ErodeOnEdgeNeighbours(int EdgeStrength, int StartX, int StartY, int 
 		}
 	free(TempBuff);
 	FileDebug("Finished ErodeOnEdgeNeighbours");
+}
+
+void HistorygramInArea(int StartX, int StartY, int EndX, int EndY)
+{
+	FileDebug("Started HistorygramInArea");
+	if (CurScreenshot->Pixels == NULL)
+	{
+		FileDebug("WARNING:Screenshot buffer is null when trying to extract gradient!");
+		return;
+	}
+	if (StartX == -1)
+	{
+		StartX = 0;
+		StartY = 0;
+		EndX = CurScreenshot->GetWidth();
+		EndY = CurScreenshot->GetHeight();
+	}
+	//create historygram
+	std::map<int, int> Colors;
+	int Width = CurScreenshot->Right - CurScreenshot->Left;
+	for (int y = StartY; y < EndY; y += 1)
+		for (int x = StartX; x < EndX; x += 1)
+			Colors[CurScreenshot->Pixels[y * Width + x]]++;
+
+	std::map<int, int> Colors2;
+	for (std::map<int, int>::iterator itr = Colors.begin(); itr != Colors.end(); itr++)
+	{
+		//get a unique key
+		int key = itr->second * 1000;
+		while (Colors2.find(key) != Colors2.end())
+			key++;
+		Colors2[key] = itr->first;
+	}
+
+	//print hystorygram
+	for (std::map<int, int>::iterator itr = Colors2.begin(); itr != Colors2.end(); itr++)
+	{
+		int Color = itr->second;
+		int Count = itr->first/1000;
+		int B = GetRValue(Color);
+		int G = GetGValue(Color);
+		int R = GetBValue(Color);
+		float RG = (float)(R) / (float)(G);
+		float GB = (float)(G) / (float)(B);
+		float RB = (float)(R) / (float)(B);
+		printf("0x%X 0x%X %d %f %f %f %d %d %d\n", Color, STATIC_BGR_RGB(Color), Count, RG, GB, RB, R, G, B);
+	}
+	FileDebug("Finished HistorygramInArea");
+	return;
+}
+
+void KeepColorRange(int RMin, int RMax, int GMin, int GMax, int BMin, int BMax)
+{
+	FileDebug("Started KeepColorRange");
+	if (CurScreenshot->Pixels == NULL)
+	{
+		FileDebug("WARNING:Screenshot buffer is null when trying to extract gradient!");
+		return;
+	}
+	int Width = CurScreenshot->Right - CurScreenshot->Left;
+	for (int y = 0; y < CurScreenshot->GetHeight(); y += 1)
+		for (int x = 0; x < CurScreenshot->GetWidth(); x += 1)
+		{
+			int Color = CurScreenshot->Pixels[y * Width + x];
+			float B = GetRValue(Color);
+			float G = GetGValue(Color);
+			float R = GetBValue(Color);
+			if (R >= RMin && R <= RMax && G >= GMin && G <= GMax && B >= BMin && B <= BMax)
+				CurScreenshot->Pixels[y * Width + x] = 0;
+			else
+				CurScreenshot->Pixels[y * Width + x] = TRANSPARENT_COLOR;
+		}
+	FileDebug("Finished KeepColorRange");
+}
+
+void KeepColorRangeAndGradient(int Color, int MaxChange, int RMin, int RMax, int GMin, int GMax, int BMin, int BMax)
+{
+	FileDebug("Started KeepColorRange");
+	if (CurScreenshot->Pixels == NULL)
+	{
+		FileDebug("WARNING:Screenshot buffer is null when trying to extract gradient!");
+		return;
+	}
+	int R1 = GetRValue(Color);
+	int G1 = GetGValue(Color);
+	int B1 = GetBValue(Color);
+	float RG1 = (float)R1 / (float)G1;
+	float GB1 = (float)G1 / (float)B1;
+	int Width = CurScreenshot->Right - CurScreenshot->Left;
+	for (int y = 0; y < CurScreenshot->GetHeight(); y += 1)
+		for (int x = 0; x < CurScreenshot->GetWidth(); x += 1)
+		{
+			int Color = CurScreenshot->Pixels[y * Width + x];
+			float B = GetRValue(Color);
+			float G = GetGValue(Color);
+			float R = GetBValue(Color);
+			if (R >= RMin && R <= RMax && G >= GMin && G <= GMax && B >= BMin && B <= BMax)
+			{
+				float RG2 = (float)R / (float)G;
+				float GB2 = (float)G / (float)B;
+				if (abs(RG2 - RG1) > MaxChange || abs(GB2 - GB1) > MaxChange)
+					CurScreenshot->Pixels[y * Width + x] = TRANSPARENT_COLOR;
+//				else
+//					CurScreenshot->Pixels[y * Width + x] = 0;
+			}
+			else
+				CurScreenshot->Pixels[y * Width + x] = TRANSPARENT_COLOR;
+		}
+	FileDebug("Finished KeepColorRange");
+}
+void WINAPI KeepGradient3(int Color1, float MaxChange1, int Color2, float MaxChange2, int Color3, float MaxChange3)
+{
+	FileDebug("Started KeepGradient2");
+	int R1 = GetRValue(Color1);
+	int G1 = GetGValue(Color1);
+	int B1 = GetBValue(Color1);
+	float RG1 = (float)R1 / (float)G1;
+	float GB1 = (float)G1 / (float)B1;
+	int R2 = GetRValue(Color2);
+	int G2 = GetGValue(Color2);
+	int B2 = GetBValue(Color2);
+	float RG2 = (float)R2 / (float)G2;
+	float GB2 = (float)G2 / (float)B2;
+	int R3 = GetRValue(Color3);
+	int G3 = GetGValue(Color3);
+	int B3 = GetBValue(Color3);
+	float RG3 = (float)R3 / (float)G3;
+	float GB3 = (float)G3 / (float)B3;
+	// human eye can distinguesh about 3db noise ( signal / noise ). We define a gradient to be the same if the expected value / real value is within this margin
+	if (CurScreenshot->Pixels == NULL)
+	{
+		FileDebug("WARNING:Screenshot buffer is null when trying to extract gradient!");
+		return;
+	}
+	int StartX = 0;
+	int StartY = 0;
+	int EndX = CurScreenshot->GetWidth();
+	int EndY = CurScreenshot->GetHeight();
+	int Width = CurScreenshot->Right - CurScreenshot->Left;
+	for (int y = StartY; y < EndY; y += 1)
+		for (int x = StartX; x < EndX; x += 1)
+		{
+			int Color = CurScreenshot->Pixels[y * Width + x];
+			float B2 = GetRValue(Color);
+			float G2 = GetGValue(Color);
+			float R2 = GetBValue(Color);
+			float RG = (float)R2 / (float)G2;
+			float GB = (float)G2 / (float)B2;
+			if (!(abs(RG2 - RG) > MaxChange2 || abs(GB2 - GB) > MaxChange2) && !(abs(RG - RG1) > MaxChange1 || abs(GB - GB1) > MaxChange1) && !(abs(RG - RG3) > MaxChange3 || abs(GB - GB3) > MaxChange3))
+				CurScreenshot->Pixels[y * Width + x] = 0;
+			else
+				CurScreenshot->Pixels[y * Width + x] = TRANSPARENT_COLOR;
+		}
+	FileDebug("Finished KeepGradient2");
+
 }

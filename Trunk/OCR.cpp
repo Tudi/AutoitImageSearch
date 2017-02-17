@@ -343,6 +343,8 @@ void WINAPI OCR_LoadFontsFromDir(char *Path, char *SkipFileNameStart)
 			// , delete '!' read other 2 default folder . and ..
 			if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) 
 			{
+				if (strstr(fd.cFileName, SkipFileNameStart) != fd.cFileName)
+					continue;
 				char FullPath[2500];
 				sprintf_s(FullPath, sizeof(FullPath), "%s/%s", Path, fd.cFileName);
 //				printf("caching %s\n", FullPath);

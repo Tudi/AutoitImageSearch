@@ -2,11 +2,6 @@
 
 #define REDUCE_PIXELPRECISION_MASK 0x00F0F0F0
 
-#define RGB_GET_R(Color) ( Color & 0xFF )
-#define RGB_GET_G(Color) ( (Color >> 8 ) & 0xFF)
-#define RGB_GET_B(Color) ( (Color >> 16 )& 0xFF)
-#define STATIC_BGR_RGB(Color) (( RGB_GET_R( Color ) << 16 ) | ( RGB_GET_G( Color ) << 8 ) | ( RGB_GET_B( Color ) ) )
-
 DWORD KoPlayerProcessId = 0;
 HWND KoPlayerWND = 0;
 int Ko[4];
@@ -377,11 +372,17 @@ void WINAPI CaptureVisibleScreenGetPlayerLabels()
 
 	// depends on the window resolution. As the resolution increases this will increase also
 	int JumpToTurefIconSize = 80;
-	TakeScreenshot(Ko[0]+JumpToTurefIconSize, Ko[1]+JumpToTurefIconSize, Ko[0] + Ko[2] - JumpToTurefIconSize, Ko[1] + Ko[3] - JumpToTurefIconSize);
-	SetGradientToColor(0xA59B63, 0.162f, 0x00FFFFFF);	// remove water
-	KeepGradient(0x00946D21, 0.4f);						// keep tags only. Think about shielded players also
-//SaveScreenshot();
-	ImageSearch_Multipass_PixelCount2(60, 35, 5, 34, 21, 45);
+	TakeScreenshot(Ko[0] + JumpToTurefIconSize, Ko[1] + JumpToTurefIconSize, Ko[0] + Ko[2] - JumpToTurefIconSize, Ko[1] + Ko[3] - JumpToTurefIconSize);
+/*	{
+		SetGradientToColor(0xA59B63, 0.162f, 0x00FFFFFF);	// remove water
+		KeepGradient(0x00946D21, 0.4f);						// keep tags only. Think about shielded players also
+		//SaveScreenshot();
+		ImageSearch_Multipass_PixelCount2(0, 60, 35, 5, 34, 21, 45);
+	}/**/
+	{
+		KeepGradient3(RGB(33, 109, 148), 0.25f, RGB(16, 77, 113), 0.4f, RGB(40, 116, 155), 0.20f);
+		ImageSearch_Multipass_PixelCount3(0, 85, 5, 8, 52);
+	}/**/
 	//ImageSearch_Multipass_PixelCount2(25, 25, 5, 8, 14, 45);
 	//try to debug WTF situations
 	if (SearchResultCount > 100)

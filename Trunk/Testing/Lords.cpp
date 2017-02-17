@@ -89,28 +89,94 @@ void LocateAndRemoveWaterAndDetectPlayers()
 	{
 		//try to detect player labels
 		TakeScreenshot(0, 0, 1282, 722);
-		LoadCacheOverScreenshot("CastleTags_4.bmp", 0, 0);
+		LoadCacheOverScreenshot("CastleTags_6.bmp", 0, 0);
 		//remove water if there is any
-		SetGradientToColor(0x00A59B63, 0.162f, TRANSPARENT_COLOR);
+		//SetGradientToColor(0x00A59B63, 0.162f, TRANSPARENT_COLOR);
 		//SaveScreenshot();
 		//remove anything else left than player tags
-		KeepGradient(RGB(33, 109, 148), 0.25f);
-		SaveScreenshot();
+		//KeepGradient(RGB(33, 109, 148), 0.25f);
+		//SaveScreenshot();
 		//		float t = GetPixelRatioInArea(0, 311, 522, 345, 539);
 		//		printf("t = %f\n", t);
 		//return;
-		ImageSearch_Multipass_PixelCount2(25, 25, 5, 8, 14, 45); // try to find good matches, than try to find worse and worse matches
-		for (int i = 0; i < SearchResultCount; i++)
+		//ApplyColorBitmask(0x00F8F8F8);
+		//SaveScreenshot();
+		//ApplyColorBitmask(0x00F0F0F0);
+		//SaveScreenshot();
+		//HistorygramInArea(242,114,282,136);		return;
+
+/*		{
+			ApplyColorBitmask(0x00F0F0F0);
+
+			ResetColorKeepList();
+			PushToColorKeepList(0x946D21 & 0x00F0F0F0);
+			PushToColorKeepList(0x734D10 & 0x00F0F0F0);
+			PushToColorKeepList(0x6E4F14 & 0x00F0F0F0);
+			PushToColorKeepList(0x704D10 & 0x00F0F0F0);
+			PushToColorKeepList(0x6F4D10 & 0x00F0F0F0);
+			PushToColorKeepList(0x6E4D10 & 0x00F0F0F0);
+			ApplyColorKeepList(0,TRANSPARENT_COLOR);
+			ImageSearch_Multipass_PixelCount2(0, 10, 10, 5, 5, 5, 45); // try to find good matches, than try to find worse and worse matches
+			SaveScreenshot();
+			return;
+		}/**/
+/*		{
+			KeepColorRange(16, 90, 77, 229, 95, 255);
+			SaveScreenshot();
+			ImageSearch_Multipass_PixelCount2(0, 10, 10, 5, 35, 20, 45); // try to find good matches, than try to find worse and worse matches
+			SaveScreenshot();
+			return;
+		}/**/
+/*		{
+			//HistorygramInArea(566, 492, 608, 513);
+			//HistorygramInArea(242, 114, 282, 136);
+			KeepColorRangeAndGradient(RGB(33, 109, 148), 1.0, 16, 255, 77, 255, 95, 255);
+			SaveScreenshot();
+			ImageSearch_Multipass_PixelCount2(0, 10, 10, 5, 35, 20, 45); // try to find good matches, than try to find worse and worse matches
+			SaveScreenshot();
+			return;
+		}/**/
 		{
-			int x = SearchResultXYSAD[i][0];
-			int y = SearchResultXYSAD[i][1];
-			CurScreenshot->SetPixel(x, y, 0xFF);
-			CurScreenshot->SetPixel(x+1, y+1, 0xFF);
-			CurScreenshot->SetPixel(x+1, y, 0xFF);
-			CurScreenshot->SetPixel(x, y+1, 0xFF);
-		}
-		SaveScreenshot();
-		printf("res count %d\n", SearchResultCount);
+			KeepGradient3(RGB(33, 109, 148), 0.25f, RGB(16, 77, 113), 0.4f, RGB(40, 116, 155), 0.20f);
+			//SaveScreenshot();
+			//ImageSearch_Multipass_PixelCount2(0, 10, 10, 100, 40, 21, 45); // try to find good matches, than try to find worse and worse matches
+			//ImageSearch_Multipass_PixelCount2(0, 10, 10, 100, 20, 11, 45); // try to find good matches, than try to find worse and worse matches
+			int rad = 52;
+//			ImageSearch_Multipass_PixelCount3(0, 25, 34, 24, rad);
+			ImageSearch_Multipass_PixelCount3(0, 85, 5, 8, rad);
+//			ImageSearch_Multipass_PixelCount3(0, 60, 8, 12, rad);
+//			ImageSearch_Multipass_PixelCount3(0, 40, 9, 13 , rad);
+//			ImageSearch_Multipass_PixelCount3(0, 40, 10, 14, rad);
+			for (int i = 0; i < SearchResultCount; i++)
+			{
+				int x = SearchResultXYSAD[i][0];
+				int y = SearchResultXYSAD[i][1];
+				for (int y1 = y - rad; y1 < y + rad; y1++)
+					for (int x1 = x - rad; x1 < x + rad;x1++)
+						if (x1 >= 0 && x1<CurScreenshot->GetWidth() && y1 >= 0 && y1<CurScreenshot->GetHeight())
+							CurScreenshot->SetPixel(x1, y1, 0x0F00 + i);
+			}
+			SaveScreenshot();
+			printf("res count %d\n", SearchResultCount);
+			return;
+		}/**/
+/*		{
+			KeepGradient(RGB(33, 109, 148), 0.14f);
+			SaveScreenshot();
+			return;
+			ImageSearch_Multipass_PixelCount2(BGR(33, 109, 148) & 0x00F8F8F8, 25, 25, 5, 4, 6, 45); // try to find good matches, than try to find worse and worse matches
+			for (int i = 0; i < SearchResultCount; i++)
+			{
+				int x = SearchResultXYSAD[i][0];
+				int y = SearchResultXYSAD[i][1];
+				CurScreenshot->SetPixel(x, y, 0xFF);
+				CurScreenshot->SetPixel(x + 1, y + 1, 0xFF);
+				CurScreenshot->SetPixel(x + 1, y, 0xFF);
+				CurScreenshot->SetPixel(x, y + 1, 0xFF);
+			}
+			SaveScreenshot();
+			printf("res count %d\n", SearchResultCount);
+		}/**/
 	}
 }
 
@@ -414,7 +480,7 @@ void ExtractPlayerName()
 		search_path += "/*.*";
 		std::string SkipUntilFile = "";
 		int FoundFirstFile = SkipUntilFile.length() == 0;
-		int SkipFirstN = 2000 * 5;
+		int SkipFirstN = 2000 * 4;
 		int BatchProcessMaxCount = SkipFirstN + 2000;
 		int Index = 0;
 		WIN32_FIND_DATA fd;
@@ -477,7 +543,7 @@ void ExtractKillsMight()
 		search_path += "/*.*";
 		std::string SkipUntilFile = "";
 		int FoundFirstFile = SkipUntilFile.length() == 0;
-		int SkipFirstN = 2900 * 4;
+		int SkipFirstN = 2900 * 0;
 		int BatchProcessMaxCount = SkipFirstN + 2900;
 		int Index = 0;
 		WIN32_FIND_DATA fd;
@@ -544,7 +610,7 @@ void ExtractXY()
 		search_path += "/*.*";
 		std::string SkipUntilFile = "";
 		int FoundFirstFile = SkipUntilFile.length() == 0;
-		int SkipFirstN = 2900 * 2;
+		int SkipFirstN = 2900 * 3;
 		int BatchProcessMaxCount = SkipFirstN + 2900;
 		int Index = 0;
 		WIN32_FIND_DATA fd;
@@ -691,7 +757,7 @@ void ExtractGuild()
 		search_path += "/*.*";
 		std::string SkipUntilFile = "";
 		int FoundFirstFile = SkipUntilFile.length() == 0;
-		int SkipFirstN = 2900 * 0;
+		int SkipFirstN = 2900 * 4;
 		int BatchProcessMaxCount = SkipFirstN + 2900;
 		int Index = 0;
 		WIN32_FIND_DATA fd;
@@ -743,11 +809,11 @@ void ExtractGuild()
 void RunLordsTesting()
 {
 	int Start = GetTimeTickI();
-	ExtractXY();
+	//ExtractXY();
 	//ExtractKillsMight();
 	//ExtractPlayerName();
 	//ExtractGuild();
-	//LocateAndRemoveWaterAndDetectPlayers();
+	LocateAndRemoveWaterAndDetectPlayers();
 	int End = GetTimeTickI();
 
 	// always check if what we do is the right way to do it
