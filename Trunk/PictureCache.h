@@ -1,7 +1,7 @@
 #ifndef _PICTURE_CACHE_H_
 #define _PICTURE_CACHE_H_
 
-#define MAX_PICTURE_CACHE_COUNT 15000
+#define MAX_PICTURE_CACHE_COUNT 3500
 
 class SimilarSearch;
 class PiramidImage;

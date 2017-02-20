@@ -246,7 +246,7 @@ void ParseCastlePopup()
 	int PopupEndX = 840;
 	int PopupEndY = 580;
 	TakeScreenshot(Ko[0] + PopupStartX, Ko[1] + PopupStartY, Ko[0] + PopupEndX, Ko[1] + PopupEndY);
-	SaveScreenshot();
+	//SaveScreenshot();
 #endif
 
 	memset(&CurPlayer, 0, sizeof(CurPlayer));
@@ -305,7 +305,8 @@ void CloseAllPossiblePopups()
 	ClosedSomething += CloseGenericPopup(853, 126, STATIC_BGR_RGB(0x00FFBD36)); // if we clicked on land
 	ClosedSomething += CloseGenericPopup(819, 431, STATIC_BGR_RGB(0x00FFBA31)); // if we clicked on army
 	ClosedSomething += CloseGenericPopup(1516, 473, STATIC_BGR_RGB(0x00FFBD36)); // if we clicked on forest info
-//	ClosedSomething += CloseGenericPopup(1516, 473, STATIC_BGR_RGB(0x00FFBD36)); // connection lost
+//	ClosedSomething += CloseGenericPopup(226, 295, STATIC_BGR_RGB(0x00FFBB33)); // daily login bonus popup
+	ClosedSomething += CloseGenericPopup(854, 121, STATIC_BGR_RGB(0x00FFBA31)); // disconnected
 	//debugging is life
 	if (ClosedSomething)
 		printf("We managed to close some unexpected popup. Continue Execution\n");
@@ -389,16 +390,48 @@ void WINAPI CaptureVisibleScreenGetPlayerLabels()
 
 	// depends on the window resolution. As the resolution increases this will increase also
 	int JumpToTurefIconSize = 80;
-	TakeScreenshot(Ko[0] + JumpToTurefIconSize, Ko[1] + JumpToTurefIconSize, Ko[0] + Ko[2] - JumpToTurefIconSize, Ko[1] + Ko[3] - JumpToTurefIconSize);
+	TakeScreenshot(Ko[0] + JumpToTurefIconSize, Ko[1] + JumpToTurefIconSize, Ko[0] + Ko[2], Ko[1] + Ko[3]);
+	//cut out the icon in the right upper corner
+	{
+		int Width = CurScreenshot->GetWidth();
+		int Height = CurScreenshot->GetHeight();
+		for (int i = 0; i < 130 && i<Height; i++)
+			memset(&CurScreenshot->Pixels[i*Width + Width - 130], TRANSPARENT_COLOR, 130 * sizeof(int));
+	}
 /*	{
 		SetGradientToColor(0xA59B63, 0.162f, 0x00FFFFFF);	// remove water
 		KeepGradient(0x00946D21, 0.4f);						// keep tags only. Think about shielded players also
 		//SaveScreenshot();
-		ImageSearch_Multipass_PixelCount2(0, 60, 35, 5, 34, 21, 45);
+		ImageSearch_Multipass_PixelCount2(0, 60, 30, 5, 34, 21, 45);
+		//SaveScreenshot();
+		//exit(0);
 	}/**/
 	{
 		KeepGradient3(RGB(33, 109, 148), 0.25f, RGB(16, 77, 113), 0.4f, RGB(40, 116, 155), 0.20f);
-		ImageSearch_Multipass_PixelCount3(0, 85, 5, 8, 52);
+		//SaveScreenshot();
+		int rad = 52;
+		ImageSearch_Multipass_PixelCount3(0, 85, 5, 8, rad);
+/*		printf("result count is %d\n", SearchResultCount);
+		for (int i = 0; i < SearchResultCount; i++)
+		{
+			int x = SearchResultXYSAD[i][0] - CurScreenshot->Left;
+			int y = SearchResultXYSAD[i][1] - CurScreenshot->Top;
+			printf("result count is %d %d\n", x, y);
+			for (int y1 = y - rad; y1 < y + rad; y1++)
+				for (int x1 = x - rad; x1 < x + rad; x1++)
+					if (x1 >= 0 && x1<CurScreenshot->GetWidth() && y1 >= 0 && y1<CurScreenshot->GetHeight())
+						CurScreenshot->SetPixel(x1, y1, 0x00FF00 + i);
+		}
+		SaveScreenshot();
+		_getch();
+		exit(0);*/
+	}/**/
+/*	{
+		SetGradientToColor(0xA59B63, 0.162f, 0x00FFFFFF);	// remove water
+		KeepGradient(0x00946D21, 0.4f);						// keep tags only. Think about shielded players also
+		//SaveScreenshot();
+		//ImageSearch_Multipass_PixelCount2(0, 60, 35, 5, 34, 21, 45);
+		ImageSearch_Multipass_PixelCount3(0, 35, 34, 21, 45);
 	}/**/
 	//ImageSearch_Multipass_PixelCount2(25, 25, 5, 8, 14, 45);
 	//try to debug WTF situations
@@ -535,9 +568,12 @@ void ScanKingdomArea(int Kingdom, int StartX, int StartY, int EndX, int EndY)
 			//try to jump directly to a location where 
 			if (RestoreK != COULD_NOT_LOAD_RESTORE_DATA)
 			{
-				y = RestoreY;
-				x = RestoreX;
-				JumpToKingdomLocation(69, RestoreX, RestoreY);
+				if (x != RestoreX && y != RestoreY)
+				{
+					y = RestoreY;
+					x = RestoreX;
+					JumpToKingdomLocation(69, RestoreX, RestoreY);
+				}
 				RestoreK = COULD_NOT_LOAD_RESTORE_DATA;
 			}
 
@@ -555,7 +591,10 @@ void ScanKingdomArea(int Kingdom, int StartX, int StartY, int EndX, int EndY)
 				JumpToKingdomLocation(69, x, y);
 			}
 			else
+			{
 				DragScreenToLeft(); // we function as expected, we can simply drag the screen to the left
+				Sleep(200);
+			}
 
 			SaveKingdomScanStatus(Kingdom, x, y);
 			//safety break from a possible infinite loop
@@ -567,6 +606,7 @@ void ScanKingdomArea(int Kingdom, int StartX, int StartY, int EndX, int EndY)
 
 void OfflineTestCastlePopupParsing()
 {
+#ifdef TEST_OFFLINE_PARSING_OF_PICTURES
 	memset(Ko, 0, sizeof(Ko));
 	TakeScreenshot(0, 0, 401, 381);
 	std::string path = "h:/Lords/CastlepopupExamples7";
@@ -574,7 +614,7 @@ void OfflineTestCastlePopupParsing()
 	search_path += "/*.*";
 	std::string SkipUntilFile = "";
 	int FoundFirstFile = SkipUntilFile.length() == 0;
-	int SkipFirstN = 1500 * 2;
+	int SkipFirstN = 1500 * 0;
 	int BatchProcessMaxCount = SkipFirstN + 1500;
 //	int BatchProcessMaxCount = 1;
 	int Index = 0;
@@ -606,6 +646,7 @@ void OfflineTestCastlePopupParsing()
 		}
 	} while (::FindNextFile(hFind, &fd) && BatchProcessMaxCount > 0);
 	::FindClose(hFind);
+#endif
 }
 
 void RunLordsMobileTests()
@@ -630,14 +671,14 @@ void RunLordsMobileTests()
 		ZoomOutToKingdomView();
 		JumpToKingdomLocation(69, 0, 110);
 	}/**/
-	{
+	/*{
 		OfflineTestCastlePopupParsing();
 		return;
 	}/**/
 	// aprox 7 mins / row
 	// 40 * 50 in 35 mins => 57 screens / min
 	// 9 row in 77 minutes
-	ScanKingdomArea(69, 0, 720, 500, 1000);
+	ScanKingdomArea(69, 0, 0, 500, 500);
 
 	printf("fliptablegoinghome.THE END\n");
 	_getch();

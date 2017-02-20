@@ -1146,7 +1146,7 @@ void ImageSearch_Multipass_PixelCount2(int Color, int PercentMax, int PercentMin
 							TempBuff[y2 * Width + x2] = YEnd | 0x0F000000;
 #if defined( _CONSOLE ) && defined( _DEBUG )
 int tAreaWidth = (XEnd - XStart)*sizeof(int);
-//memset(&CurScreenshot->Pixels[y2 * Width + XStart], MatchesFound, tAreaWidth);
+memset(&CurScreenshot->Pixels[y2 * Width + XStart], MatchesFound, tAreaWidth);
 #endif
 					}
 					//jump forward with X, there is no need to search this area

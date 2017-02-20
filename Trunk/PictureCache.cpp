@@ -67,6 +67,8 @@ CachedPicture *CachePicture( char *aFilespec )
 	PictureCache[NrPicturesCached].NeedsSSCache = true;
 	PictureCache[NrPicturesCached].NeedsSCCache = true;
 
+	PictureCache[NrPicturesCached].OCRCache = NULL;
+
 	NrPicturesCached++;
 	ReleaseDC(NULL, hdc);
 
