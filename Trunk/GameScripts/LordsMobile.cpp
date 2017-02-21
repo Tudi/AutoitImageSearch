@@ -12,6 +12,7 @@ DWORD KoPlayerProcessId = 0;
 HWND KoPlayerWND = 0;
 int Ko[4];
 StorablePlayerInfo CurPlayer;
+StorableResourceTileInfo CurRss;
 int ParseProfileInfo = 0;
 
 void WaitScreeenDragFinish();
@@ -125,7 +126,7 @@ FILE *LocalDumpFile = 0;
 void AppendDataToDB()
 {
 	if (LocalDumpFile == 0)
-		LocalDumpFile = fopen("Players.txt", "at");
+		errno_t er = fopen_s(&LocalDumpFile, "Players.txt", "at");
 	if (LocalDumpFile != 0)
 	{
 		fprintf(LocalDumpFile, "%d \t %d \t %d", CurPlayer.k, CurPlayer.x, CurPlayer.y);
@@ -261,7 +262,7 @@ void GetPlayerMightKillsFromCastlePopup()
 
 void GetPlayerHasPrisoners()
 {
-	if (IsPixelAtPos(431, 415, STATIC_BGR_RGB(0x00D6B263)) || IsPixelAtPos(276, 429, STATIC_BGR_RGB(0x00FFB65A)))
+	if (IsPixelAtPos(431, 415, STATIC_BGR_RGB(0x00D6B263)))
 		CurPlayer.HasPrisoners = time(NULL);
 }
 
@@ -431,7 +432,7 @@ void JumpToKingdomLocation(int Kingdom, int x, int y)
 	Sleep(2000);
 }
 
-void WINAPI CaptureVisibleScreenGetPlayerLabels(int ExpectedKingdom, int ExpectedX, int ExpectedY)
+void CaptureVisibleScreenGetPlayerLabels(int ExpectedKingdom, int ExpectedX, int ExpectedY)
 {
 
 	// this will probably only run once to get the process related details
@@ -598,7 +599,8 @@ void ZoomOutToKingdomView()
 
 void SaveKingdomScanStatus( int k, int x, int y)
 {
-	FILE *f = fopen("KingdomScanStatus.txt", "wb");
+	FILE *f;
+	errno_t er = fopen_s( &f, "KingdomScanStatus.txt", "wb");
 	if (f)
 	{
 		int buf[3];
@@ -614,7 +616,8 @@ void SaveKingdomScanStatus( int k, int x, int y)
 void RestoreKingdomScanStatus(int &k, int &x, int &y)
 {
 	k = COULD_NOT_LOAD_RESTORE_DATA;
-	FILE *f = fopen("KingdomScanStatus.txt", "rb");
+	FILE *f;
+	errno_t er = fopen_s(&f, "KingdomScanStatus.txt", "rb");
 	if (f)
 	{
 		int buf[3];
@@ -656,7 +659,7 @@ void ScanKingdomArea(int Kingdom, int StartX, int StartY, int EndX, int EndY)
 			//try to jump directly to a location where 
 			if (RestoreK != COULD_NOT_LOAD_RESTORE_DATA)
 			{
-				if (x != RestoreX && y != RestoreY && x == 0)
+				if (( x != RestoreX || y != RestoreY ) && x == 0)
 				{
 					y = RestoreY;
 					x = RestoreX;
@@ -778,20 +781,23 @@ void RunLordsMobileTests()
 		DragScreenToRight();
 		return;
 	}/**/
-	int StartX = 0, StartY = 0, EndX = 500, EndY = 1000;
-	FILE *f = fopen("ScanParams.txt", "rt");
+	int Kingdom = 67, StartX = 0, StartY = 0, EndX = 500, EndY = 1000;
+	FILE *f;
+	errno_t er = fopen_s(&f, "ScanParams.txt", "rt");
 	if (f)
 	{
-		fscanf(f, "%d\n", &StartX);
-		fscanf(f, "%d\n", &StartY);
-		fscanf(f, "%d\n", &EndX);
-		fscanf(f, "%d\n", &EndY);
+		fscanf_s(f, "%d\n", &Kingdom);
+		fscanf_s(f, "%d\n", &StartX);
+		fscanf_s(f, "%d\n", &StartX);
+		fscanf_s(f, "%d\n", &StartY);
+		fscanf_s(f, "%d\n", &EndX);
+		fscanf_s(f, "%d\n", &EndY);
 		fclose(f);
 	}
 	// aprox 7 mins / row
 	// 40 * 50 in 35 mins => 57 screens / min
 	// 9 row in 77 minutes
-	ScanKingdomArea(69, StartX, StartY, EndX, EndY);
+	ScanKingdomArea(Kingdom, StartX, StartY, EndX, EndY);
 
 	printf("fliptablegoinghome.THE END\n");
 	_getch();

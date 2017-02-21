@@ -12,10 +12,10 @@ struct StorablePlayerInfo
 	int Kills;
 	char Name[100];
 	char Guild[100];
-	int LastUpdateTimestamp;
+	time_t LastUpdateTimestamp;
 	// to be comming soon
-	int IsBurning;
-	int HasPrisoners;
+	time_t IsBurning;
+	time_t HasPrisoners;
 	int CastleLevel;
 	int PlayerLevel;
 	//char PlayerNick[100];
@@ -35,6 +35,7 @@ struct StorablePlayerInfo
 	int ColloseumBestRank;
 	int ColloseumWonRank;
 	int Bounty;
+	int IsShielded;
 };
 
 struct StorableResourceTileInfo
@@ -43,6 +44,8 @@ struct StorableResourceTileInfo
 	int Level;
 	int RemainingRss;
 	char PlayerName[100];
+	time_t LastUpdateTimestamp;
 };
 
 extern StorablePlayerInfo CurPlayer;
+extern StorableResourceTileInfo CurRss;
