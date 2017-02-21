@@ -6,7 +6,7 @@
 //start X and Y should be the upper left part of the text
 // !! you should have a binary image at this point !!
 // characters should not touch each other. If they do, use some other OCR !
-char * WINAPI OCR_ReadTextLeftToRightSaveUnknownChars(int StartX, int StartY, int EndX, int EndY);
+char * WINAPI OCR_ReadTextLeftToRightSaveUnknownChars(int StartX = -1, int StartY = -1, int EndX = -1, int EndY = -1);
 
 extern int OCR_FoundNewFont;
 extern int OCR_Statistics_TotalCompares;				//

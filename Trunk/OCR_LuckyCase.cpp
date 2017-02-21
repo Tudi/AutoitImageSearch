@@ -64,7 +64,6 @@ int OCR_FindCurrentCharLastRow(int *Image, int Width, int StartX, int EndX, int 
 {
 	for (int y2 = BoxEndY - 1; y2 >= StartY; y2--) // has to go bottom->top or else i will have separate parts
 	{
-		int AllWasTransparent = 1;
 		for (int x2 = StartX; x2 < EndX; x2++)
 			if (Image[y2*Width + x2] != OCRTransparentColor)
 			{
@@ -240,6 +239,7 @@ void OCR_FindMostSimilarFontAndSave(int *Img, int Width, int CharStartX, int Cha
 		GenerateAvailableFontFilename(NewFilename, sizeof(NewFilename), BestMatchFont->OCRCache->AssignedChars);
 #if !defined( _DEBUG) || defined(TEST_OFFLINE_PARSING_OF_PICTURES)
 		sprintf_s(NewFilename2, sizeof(NewFilename2), "%s_%s", FontSetName, NewFilename);
+		printf("Saved font with name %s\n",NewFilename2);
 #else
 		strcpy(NewFilename2, NewFilename);
 #endif
@@ -252,11 +252,14 @@ void OCR_FindMostSimilarFontAndSave(int *Img, int Width, int CharStartX, int Cha
 		do{
 #if !defined( _DEBUG) || defined(TEST_OFFLINE_PARSING_OF_PICTURES)
 			sprintf_s(NewFilename, sizeof(NewFilename), "%s_KCM__%d.bmp", FontSetName, FileIndex++);
+			printf("Saved font with name %s\n",NewFilename);
 #else
 			sprintf_s(NewFilename, sizeof(NewFilename), "KCM__%d.bmp", FileIndex++);
 #endif
 		} while (_access(NewFilename, 0) == 0 && FileIndex < 1000);
+#ifdef _DEBUG	// sadly this is chaotic for release version. Hard to track and might lead to mistakes. Registering wrong font chars will leave an issue forever
 		SaveScreenshotArea(CharStartX, CharStartY, CharEndX, CharEndY, NewFilename);
+#endif
 	}
 }
 
@@ -298,6 +301,13 @@ char * WINAPI OCR_ReadTextLeftToRightSaveUnknownChars(int StartX, int StartY, in
 		FileDebug("\tOCR has no screenshot to work on");
 		return "|0";
 	}
+	if (StartX == -1)
+	{
+		StartX = 0;
+		StartY = 0;
+		EndX = CurScreenshot->GetWidth();
+		EndY = CurScreenshot->GetHeight();
+	}
 	int CharStartX = StartX;
 	int CharStartY;
 	int CharEndX;
@@ -305,11 +315,9 @@ char * WINAPI OCR_ReadTextLeftToRightSaveUnknownChars(int StartX, int StartY, in
 	int SearchRes = 1;
 	int *Img = (int*)CurScreenshot->Pixels;
 	int Width = CurScreenshot->GetWidth();
-	int Height = CurScreenshot->GetHeight();
 	int WriteIndex = 0;
 	ReturnBuff[0] = 0;
 	int PrevFontEnd = StartX;
-	int FoundNewFont = 0;
 	while (SearchRes == 1 && CharStartX < EndX)
 	{
 		CharStartY = StartY;

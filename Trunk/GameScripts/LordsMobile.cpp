@@ -5,11 +5,35 @@ char FullPath[2500];
 #endif
 
 #define REDUCE_PIXELPRECISION_MASK 0x00F0F0F0
+#define RESYNC_ON_X_DIFF			15
+#define RESYNC_ON_Y_DIFF			15
 
 DWORD KoPlayerProcessId = 0;
 HWND KoPlayerWND = 0;
 int Ko[4];
 StorablePlayerInfo CurPlayer;
+int ParseProfileInfo = 0;
+
+void WaitScreeenDragFinish();
+
+void KoLeftClick(int x, int y)
+{
+	LeftClick(Ko[0] + x, Ko[1] + y);
+}
+
+void DragScreenToLeft()
+{
+	int SkipDragAmount = 32;
+	MouseDrag(Ko[0] + Ko[2] - SkipDragAmount, Ko[1] + Ko[3] / 2, Ko[0] + SkipDragAmount, Ko[1] + Ko[3] / 2);
+	WaitScreeenDragFinish();
+}
+
+void DragScreenToRight()
+{
+	int SkipDragAmount = 32;
+	MouseDrag(Ko[0] + 2, Ko[1] + Ko[3] / 2, Ko[0] + Ko[2] - SkipDragAmount, Ko[1] + Ko[3] / 2);
+	WaitScreeenDragFinish();
+}
 
 void GetKoPlayerAndPos()
 {
@@ -107,7 +131,7 @@ void AppendDataToDB()
 		fprintf(LocalDumpFile, "%d \t %d \t %d", CurPlayer.k, CurPlayer.x, CurPlayer.y);
 		fprintf(LocalDumpFile, " \t %s \t %s", CurPlayer.Name, CurPlayer.Guild);
 		fprintf(LocalDumpFile, " \t %d \t %d", CurPlayer.Might, CurPlayer.Kills);
-		fprintf(LocalDumpFile, " \t %d", CurPlayer.LastUpdateTimestamp);
+		fprintf(LocalDumpFile, " \t %d \t %d", CurPlayer.LastUpdateTimestamp, CurPlayer.HasPrisoners);
 #ifdef TEST_OFFLINE_PARSING_OF_PICTURES
 		fprintf(LocalDumpFile, " \t %s", FullPath);
 #endif
@@ -224,13 +248,38 @@ void GetPlayerMightKillsFromCastlePopup()
 	//SaveScreenshot();
 	char *res;
 	res = OCR_ReadTextLeftToRightSaveUnknownChars(193, 66, 350, 88);
+	RemoveCharFromNumberString(res, ' ');
 	RemoveCharFromNumberString(res, ',');
 	CurPlayer.Might = atoi(res);
 	res = OCR_ReadTextLeftToRightSaveUnknownChars(258, 97, 390, 119);
+	RemoveCharFromNumberString(res, ' ');
 	RemoveCharFromNumberString(res, ',');
 	CurPlayer.Kills = atoi(res);
 	if (OCR_FoundNewFont == 1)
 		CurPlayer.SkipSave = 1;
+}
+
+void GetPlayerHasPrisoners()
+{
+	if (IsPixelAtPos(431, 415, STATIC_BGR_RGB(0x00D6B263)) || IsPixelAtPos(276, 429, STATIC_BGR_RGB(0x00FFB65A)))
+		CurPlayer.HasPrisoners = time(NULL);
+}
+
+void GetPlayerIsBurning()
+{
+	// this is an animation. It has a huge chance to fail
+	if (IsPixelAtPos(434, 344, STATIC_BGR_RGB(0x00576469)) || IsPixelAtPos(440, 331, STATIC_BGR_RGB(0x0050565C)))
+		CurPlayer.IsBurning = time(NULL);
+}
+
+void GetProfileInfo()
+{
+	// click view profile
+	KoLeftClick(532, 419);
+	WaitPixelBecomeColor(442, 223, STATIC_BGR_RGB(0x00951B11)); //player tag will pop up
+	//parse attacks and defenses
+	//scroll down
+	//parse colloseum data
 }
 
 void ParseCastlePopup()
@@ -250,26 +299,28 @@ void ParseCastlePopup()
 #endif
 
 	memset(&CurPlayer, 0, sizeof(CurPlayer));
+	GetPlayerHasPrisoners();
+	GetPlayerIsBurning();
 	GetPlayerNameFromCastlePopup();
 	GetPlayerMightKillsFromCastlePopup();
 	GetGuildNameFromCastlePopup();
 	GetPlayerXYFromCastlePopup();
+	if (ParseProfileInfo)
+		GetProfileInfo();
 
 	//we did not handle this one. Save it for later processing. Maybe we need to simply decode the new characters
 	if (CurPlayer.SkipSave == 1)
 	{
+#ifndef TEST_OFFLINE_PARSING_OF_PICTURES
+		TakeScreenshot(Ko[0] + PopupStartX, Ko[1] + PopupStartY, Ko[0] + PopupEndX, Ko[1] + PopupEndY); //take screenshot of the unmurdered image. We will reprocess it later
+#endif
 		SaveScreenshot();
 	}
 	else
 	{
-		CurPlayer.LastUpdateTimestamp = GetTickCount();
+		CurPlayer.LastUpdateTimestamp = time(NULL);
 		AppendDataToDB();
 	}
-}
-
-void KoLeftClick(int x, int y)
-{
-	LeftClick(Ko[0] + x, Ko[1] + y);
 }
 
 int CloseGenericPopup(int x, int y, int color)
@@ -305,7 +356,7 @@ void CloseAllPossiblePopups()
 	ClosedSomething += CloseGenericPopup(853, 126, STATIC_BGR_RGB(0x00FFBD36)); // if we clicked on land
 	ClosedSomething += CloseGenericPopup(819, 431, STATIC_BGR_RGB(0x00FFBA31)); // if we clicked on army
 	ClosedSomething += CloseGenericPopup(1516, 473, STATIC_BGR_RGB(0x00FFBD36)); // if we clicked on forest info
-//	ClosedSomething += CloseGenericPopup(226, 295, STATIC_BGR_RGB(0x00FFBB33)); // daily login bonus popup
+	ClosedSomething += CloseGenericPopup(855, 146, STATIC_BGR_RGB(0x00FFBD37)); // daily login bonus popup
 	ClosedSomething += CloseGenericPopup(854, 121, STATIC_BGR_RGB(0x00FFBA31)); // disconnected
 	//debugging is life
 	if (ClosedSomething)
@@ -361,22 +412,26 @@ void EnterTeleportCoord(int Coord)
 
 void JumpToKingdomLocation(int Kingdom, int x, int y)
 {
+	//in rare cases game blocks and jumping no longer works for some reason
+	DragScreenToRight();
 	KoLeftClick(700, 25);
-	Sleep(500);
+	Sleep(1000);
 	//enter X
 	KoLeftClick(650, 255);
-	Sleep(500);
+	Sleep(1000);
 	EnterTeleportCoord(x);
+	Sleep(1000);
 	// y
 	KoLeftClick(775, 255);
-	Sleep(500);
+	Sleep(1000);
 	EnterTeleportCoord(y);
+	Sleep(1000);
 	//push go
 	KoLeftClick(645, 375);
 	Sleep(2000);
 }
 
-void WINAPI CaptureVisibleScreenGetPlayerLabels()
+void WINAPI CaptureVisibleScreenGetPlayerLabels(int ExpectedKingdom, int ExpectedX, int ExpectedY)
 {
 
 	// this will probably only run once to get the process related details
@@ -390,50 +445,33 @@ void WINAPI CaptureVisibleScreenGetPlayerLabels()
 
 	// depends on the window resolution. As the resolution increases this will increase also
 	int JumpToTurefIconSize = 80;
+	int InfiniteLoopDisabler = 10;
+RestartScreenScan:
+	InfiniteLoopDisabler--;
+	if (InfiniteLoopDisabler < 0)
+		return;
 	TakeScreenshot(Ko[0] + JumpToTurefIconSize, Ko[1] + JumpToTurefIconSize, Ko[0] + Ko[2], Ko[1] + Ko[3]);
 	//cut out the icon in the right upper corner
 	{
 		int Width = CurScreenshot->GetWidth();
 		int Height = CurScreenshot->GetHeight();
-		for (int i = 0; i < 130 && i<Height; i++)
+		for (int i = 0; i < 130 && i < Height; i++)
 			memset(&CurScreenshot->Pixels[i*Width + Width - 130], TRANSPARENT_COLOR, 130 * sizeof(int));
 	}
-/*	{
-		SetGradientToColor(0xA59B63, 0.162f, 0x00FFFFFF);	// remove water
-		KeepGradient(0x00946D21, 0.4f);						// keep tags only. Think about shielded players also
-		//SaveScreenshot();
-		ImageSearch_Multipass_PixelCount2(0, 60, 30, 5, 34, 21, 45);
-		//SaveScreenshot();
-		//exit(0);
-	}/**/
+
+	//remove water and everything else that is not a player tag
+	KeepGradient3(RGB(33, 109, 148), 0.25f, RGB(16, 77, 113), 0.4f, RGB(40, 116, 155), 0.20f);
+	//SaveScreenshot();
+	int rad = 52;
+	ImageSearch_Multipass_PixelCount3(0, 85, 5, 8, rad);
+
+	//whole screen is only background without any loaded tile info ?
+	if (SearchResultCount == 0)
 	{
-		KeepGradient3(RGB(33, 109, 148), 0.25f, RGB(16, 77, 113), 0.4f, RGB(40, 116, 155), 0.20f);
-		//SaveScreenshot();
-		int rad = 52;
-		ImageSearch_Multipass_PixelCount3(0, 85, 5, 8, rad);
-/*		printf("result count is %d\n", SearchResultCount);
-		for (int i = 0; i < SearchResultCount; i++)
-		{
-			int x = SearchResultXYSAD[i][0] - CurScreenshot->Left;
-			int y = SearchResultXYSAD[i][1] - CurScreenshot->Top;
-			printf("result count is %d %d\n", x, y);
-			for (int y1 = y - rad; y1 < y + rad; y1++)
-				for (int x1 = x - rad; x1 < x + rad; x1++)
-					if (x1 >= 0 && x1<CurScreenshot->GetWidth() && y1 >= 0 && y1<CurScreenshot->GetHeight())
-						CurScreenshot->SetPixel(x1, y1, 0x00FF00 + i);
-		}
-		SaveScreenshot();
-		_getch();
-		exit(0);*/
-	}/**/
-/*	{
-		SetGradientToColor(0xA59B63, 0.162f, 0x00FFFFFF);	// remove water
-		KeepGradient(0x00946D21, 0.4f);						// keep tags only. Think about shielded players also
-		//SaveScreenshot();
-		//ImageSearch_Multipass_PixelCount2(0, 60, 35, 5, 34, 21, 45);
-		ImageSearch_Multipass_PixelCount3(0, 35, 34, 21, 45);
-	}/**/
-	//ImageSearch_Multipass_PixelCount2(25, 25, 5, 8, 14, 45);
+		Sleep(1000);
+		goto RestartScreenScan;
+	}
+
 	//try to debug WTF situations
 	if (SearchResultCount > 100)
 	{
@@ -445,12 +483,17 @@ void WINAPI CaptureVisibleScreenGetPlayerLabels()
 	}
 	else
 		printf("See %d node tags on this screen\n", SearchResultCount);
+
 	//parse each node label
 	for (int i = 0; i < SearchResultCount; i++)
 	{
 		//safety break from a possible infinite loop
-		if (GetAsyncKeyState(VK_INSERT) || IsKoPlayerInFocus() == 0)
+		if (GetAsyncKeyState(VK_INSERT))
 			break;
+		memset(&CurPlayer, 0, sizeof(CurPlayer));
+
+		//pause until we get focus again. Might be required when we want to do something in the background
+		WaitKoPlayerGetFocus();
 
 		//try to make sure we do not have any random popups at this stage of the parsing.
 		CloseAllPossiblePopups();
@@ -491,8 +534,18 @@ void WINAPI CaptureVisibleScreenGetPlayerLabels()
 //		break;
 
 		//safety break from a possible infinite loop
-		if (GetAsyncKeyState(VK_INSERT) || IsKoPlayerInFocus() == 0)
+		if (GetAsyncKeyState(VK_INSERT))
 			break;
+
+		//pause until we get focus again. Might be required when we want to do something in the background
+		WaitKoPlayerGetFocus();
+
+		if (CurPlayer.x > 0 && CurPlayer.y > 0 && (abs(CurPlayer.x - ExpectedX) > RESYNC_ON_X_DIFF || abs(CurPlayer.y - ExpectedY) > RESYNC_ON_Y_DIFF))
+		{
+			printf("\nWe are expecting to be at %d,%d, but we are at %d,%d?. Resync location\n\n", ExpectedX, ExpectedY, CurPlayer.x, CurPlayer.y);
+			JumpToKingdomLocation(ExpectedKingdom, ExpectedX, ExpectedY);
+			goto RestartScreenScan;
+		}
 
 	}
 
@@ -501,10 +554,42 @@ void WINAPI CaptureVisibleScreenGetPlayerLabels()
 
 }
 
-void DragScreenToLeft()
+void WaitScreeenDragFinish()
 {
-	int SkipDragAmount = 32;
-	MouseDrag(Ko[0] + Ko[2] - SkipDragAmount, Ko[1] + Ko[3] / 2, Ko[0] + SkipDragAmount, Ko[1] + Ko[3] / 2);
+#define MonitoredPositionCount 4
+	int MonitoredPixels[MonitoredPositionCount][3];
+	memset(MonitoredPixels, 0, sizeof(MonitoredPixels));
+	//define a few locations that we will monitor
+	MonitoredPixels[0][0] = Ko[0] + 100;
+	MonitoredPixels[0][1] = Ko[1] + 100;
+	MonitoredPixels[1][0] = Ko[0] + 200;
+	MonitoredPixels[1][1] = Ko[1] + 200;
+	MonitoredPixels[2][0] = Ko[0] + 300;
+	MonitoredPixels[2][1] = Ko[1] + 300;
+	MonitoredPixels[3][0] = Ko[0] + 400;
+	MonitoredPixels[3][1] = Ko[1] + 400;
+	//get initial values
+	for (int i = 0; i < MonitoredPositionCount; i++)
+		MonitoredPixels[i][2] = GetKoPixel(MonitoredPixels[i][0], MonitoredPixels[i][1]);
+	//see if at least some of them will have the same value over time. If so, we guess the screen stopped moving
+	int SleepTime = 100;
+	int WaitTimeout = 2000;
+	int NeedsMoreWait = 1;
+	while (WaitTimeout > 0 && NeedsMoreWait == 1)
+	{
+		Sleep(SleepTime);
+		NeedsMoreWait -= SleepTime;
+		int SameValueCount = 0;
+		for (int i = 0; i < MonitoredPositionCount; i++)
+		{
+			int NewPixelVal = GetKoPixel(MonitoredPixels[i][0], MonitoredPixels[i][1]);
+			if (MonitoredPixels[i][2] == NewPixelVal)
+				SameValueCount++;
+			MonitoredPixels[i][2] = NewPixelVal;
+		}
+		if (SameValueCount == MonitoredPositionCount / 2)
+			NeedsMoreWait = 0;
+	}
 }
 
 void ZoomOutToKingdomView()
@@ -558,9 +643,12 @@ void ScanKingdomArea(int Kingdom, int StartX, int StartY, int EndX, int EndY)
 	//make sure this does not contain random junk
 	memset(&CurPlayer, 0, sizeof(CurPlayer));
 
+	int StepY = 10;
+	if (StartY < EndY)
+		StepY = -StepY;
 	StartCounter();
 	int Start = GetTimeTickI();
-	for (int y = StartY; y <= EndY; y += 10)
+	for (int y = StartY; (StepY < 0 && y >= EndY) || (StepY > 0 && y <= EndY); y += StepY)
 	{
 		JumpToKingdomLocation(Kingdom, StartX, y);
 		for (int x = StartX; x <= EndX; x+=10)
@@ -568,7 +656,7 @@ void ScanKingdomArea(int Kingdom, int StartX, int StartY, int EndX, int EndY)
 			//try to jump directly to a location where 
 			if (RestoreK != COULD_NOT_LOAD_RESTORE_DATA)
 			{
-				if (x != RestoreX && y != RestoreY)
+				if (x != RestoreX && y != RestoreY && x == 0)
 				{
 					y = RestoreY;
 					x = RestoreX;
@@ -580,12 +668,11 @@ void ScanKingdomArea(int Kingdom, int StartX, int StartY, int EndX, int EndY)
 			int End = GetTimeTickI();
 			printf("We made %d slides. We should be at x = %d. Time spent so far %d\n", x, x, (End - Start) / 1000 / 60);
 
-			CurPlayer.k = -1;	//mark it as invalid
-
-			CaptureVisibleScreenGetPlayerLabels();
+			CurPlayer.x = 0;
+			CaptureVisibleScreenGetPlayerLabels(Kingdom, x, y);
 
 			//if we found a castle, check if we are on the same screen as expected. Resync to expected location in case we clicked on an army or something
-			if (CurPlayer.k != -1 && (abs(CurPlayer.x - x) > 20 || abs(CurPlayer.y - y) > 10))
+			if (CurPlayer.x > 0 && CurPlayer.y > 0 && (abs(CurPlayer.x - x) > RESYNC_ON_X_DIFF || abs(CurPlayer.y - y) > RESYNC_ON_Y_DIFF))
 			{
 				printf("\nWe are expecting to be at %d,%d, but we are at %d,%d?. Resync location\n\n", x, y, CurPlayer.x, CurPlayer.y);
 				JumpToKingdomLocation(69, x, y);
@@ -593,13 +680,18 @@ void ScanKingdomArea(int Kingdom, int StartX, int StartY, int EndX, int EndY)
 			else
 			{
 				DragScreenToLeft(); // we function as expected, we can simply drag the screen to the left
-				Sleep(200);
+//				Sleep(200);
 			}
 
+			//in case we close the program for some reason we could resume next time
 			SaveKingdomScanStatus(Kingdom, x, y);
+
 			//safety break from a possible infinite loop
-			if (GetAsyncKeyState(VK_INSERT) || IsKoPlayerInFocus() == 0)
+			if (GetAsyncKeyState(VK_INSERT))
 				return;
+
+			//pause until we get focus again. Might be required when we want to do something in the background
+			WaitKoPlayerGetFocus();
 		}
 	}
 }
@@ -609,7 +701,8 @@ void OfflineTestCastlePopupParsing()
 #ifdef TEST_OFFLINE_PARSING_OF_PICTURES
 	memset(Ko, 0, sizeof(Ko));
 	TakeScreenshot(0, 0, 401, 381);
-	std::string path = "h:/Lords/CastlepopupExamples7";
+//	std::string path = "h:/Lords/CastlepopupExamples7";
+	std::string path = "CastlepopupExamples8";
 	std::string search_path = path;
 	search_path += "/*.*";
 	std::string SkipUntilFile = "";
@@ -671,14 +764,34 @@ void RunLordsMobileTests()
 		ZoomOutToKingdomView();
 		JumpToKingdomLocation(69, 0, 110);
 	}/**/
-	/*{
+/*	{
 		OfflineTestCastlePopupParsing();
 		return;
 	}/**/
+/*	{
+		ParseProfileInfo = 1;
+		ScanKingdomArea(69, 0, 0, 10, 10);
+	}/**/
+/*	{
+		GetKoPlayerAndPos();
+		WaitKoPlayerGetFocus();
+		DragScreenToRight();
+		return;
+	}/**/
+	int StartX = 0, StartY = 0, EndX = 500, EndY = 1000;
+	FILE *f = fopen("ScanParams.txt", "rt");
+	if (f)
+	{
+		fscanf(f, "%d\n", &StartX);
+		fscanf(f, "%d\n", &StartY);
+		fscanf(f, "%d\n", &EndX);
+		fscanf(f, "%d\n", &EndY);
+		fclose(f);
+	}
 	// aprox 7 mins / row
 	// 40 * 50 in 35 mins => 57 screens / min
 	// 9 row in 77 minutes
-	ScanKingdomArea(69, 0, 0, 500, 500);
+	ScanKingdomArea(69, StartX, StartY, EndX, EndY);
 
 	printf("fliptablegoinghome.THE END\n");
 	_getch();

@@ -3,7 +3,6 @@
 //#define TEST_OFFLINE_PARSING_OF_PICTURES
 
 void RunLordsMobileTests();
-void WINAPI CaptureVisibleScreenGetPlayerLabels();
 
 struct StorablePlayerInfo
 {
@@ -16,6 +15,7 @@ struct StorablePlayerInfo
 	int LastUpdateTimestamp;
 	// to be comming soon
 	int IsBurning;
+	int HasPrisoners;
 	int CastleLevel;
 	int PlayerLevel;
 	//char PlayerNick[100];
@@ -34,6 +34,15 @@ struct StorablePlayerInfo
 	int ColloseumRank;
 	int ColloseumBestRank;
 	int ColloseumWonRank;
+	int Bounty;
+};
+
+struct StorableResourceTileInfo
+{
+	int Type;
+	int Level;
+	int RemainingRss;
+	char PlayerName[100];
 };
 
 extern StorablePlayerInfo CurPlayer;
