@@ -28,6 +28,7 @@ struct StorablePlayerInfo
 	int TroopsKilled;
 	int TroopsLost;
 	int TroopsHealed;
+	int TroopsWounded;
 	int TurfsDestroyed;
 	int TurfsLost;
 	int MightDestroyed;

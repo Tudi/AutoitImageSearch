@@ -1115,7 +1115,7 @@ void WINAPI RemoveCharFromNumberString(char *str, char c)
 	int WriteIndex = 0;
 	while (str[ReadIndex] != 0 && ReadIndex < 65536)
 	{
-		while (str[ReadIndex] == c)
+		while (str[ReadIndex] == c && ReadIndex < 65536)
 			ReadIndex++;
 		str[WriteIndex] = str[ReadIndex];
 		ReadIndex++;

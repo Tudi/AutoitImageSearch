@@ -306,6 +306,8 @@ void MouseDrag(int x1, int y1, int x2, int y2)
 	int TotalMoveTime = 500;
 	int SleepPerStep = 50;
 	int PixelPerStep = MaxSteps / ( TotalMoveTime / SleepPerStep );
+	if (PixelPerStep <= 0)
+		PixelPerStep = 1;
 	for (int i = 0; i < MaxSteps; i += PixelPerStep)
 	{
 		int CurX = (int)((float)Dx / (float)MaxSteps * (float)i);
@@ -313,6 +315,14 @@ void MouseDrag(int x1, int y1, int x2, int y2)
 		MouseMove(x1 + CurX, y1 + CurY);
 		Sleep(SleepPerStep);
 	}
+
+	//to avoid the scrool by inertia effect we move it a bit backwards
+	/*{
+		int CurX = (int)((float)Dx / (float)MaxSteps * (float)(MaxSteps-1));
+		int CurY = (int)((float)Dy / (float)MaxSteps * (float)(MaxSteps-1));
+		MouseMove(x1 + CurX, y1 + CurY);
+		Sleep(SleepPerStep);
+	}/**/
 
 	// left up
 	Input.type = INPUT_MOUSE;

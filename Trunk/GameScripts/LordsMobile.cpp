@@ -14,6 +14,7 @@ int Ko[4];
 StorablePlayerInfo CurPlayer;
 StorableResourceTileInfo CurRss;
 int ParseProfileInfo = 0;
+int ParseProfileInfo2 = 0;
 
 void WaitScreeenDragFinish();
 
@@ -25,14 +26,16 @@ void KoLeftClick(int x, int y)
 void DragScreenToLeft()
 {
 	int SkipDragAmount = 32;
-	MouseDrag(Ko[0] + Ko[2] - SkipDragAmount, Ko[1] + Ko[3] / 2, Ko[0] + SkipDragAmount, Ko[1] + Ko[3] / 2);
+	MouseDrag(Ko[0] + Ko[2] - SkipDragAmount, Ko[1] + Ko[3] / 2, Ko[0] + SkipDragAmount - 2, Ko[1] + Ko[3] / 2);
+	MouseDrag(Ko[0] + SkipDragAmount - 2, Ko[1] + Ko[3] / 2, Ko[0] + SkipDragAmount, Ko[1] + Ko[3] / 2); // avoid inertia
 	WaitScreeenDragFinish();
 }
 
 void DragScreenToRight()
 {
 	int SkipDragAmount = 32;
-	MouseDrag(Ko[0] + 2, Ko[1] + Ko[3] / 2, Ko[0] + Ko[2] - SkipDragAmount, Ko[1] + Ko[3] / 2);
+	MouseDrag(Ko[0] + 2, Ko[1] + Ko[3] / 2, Ko[0] + Ko[2] - SkipDragAmount - 2, Ko[1] + Ko[3] / 2);
+	MouseDrag(Ko[0] + Ko[2] - SkipDragAmount - 2, Ko[1] + Ko[3] / 2, Ko[0] + Ko[2] - SkipDragAmount, Ko[1] + Ko[3] / 2);// avoid inertia
 	WaitScreeenDragFinish();
 }
 
@@ -144,7 +147,7 @@ void AppendDataToDB()
 		fprintf(LocalDumpFile, " \t %s \t %s", CurPlayer.Name, CurPlayer.Guild);
 		fprintf(LocalDumpFile, " \t %d \t %d", CurPlayer.Might, CurPlayer.Kills);
 		fprintf(LocalDumpFile, " \t %d \t %d", (int)CurPlayer.LastUpdateTimestamp, (int)CurPlayer.HasPrisoners);
-		fprintf(LocalDumpFile, " \t %d \t %d", CurPlayer.VIPLevel, CurPlayer.GuildRank);
+		fprintf(LocalDumpFile, " \t %d \t %d \t %d", CurPlayer.VIPLevel, CurPlayer.GuildRank, CurPlayer.PlayerLevel);
 #ifdef TEST_OFFLINE_PARSING_OF_PICTURES
 		fprintf(LocalDumpFile, " \t %s", FullPath);
 #endif
@@ -165,7 +168,7 @@ void GetVIPLevelFromCastlePopup()
 	KeepColorsMinInRegion(66, 17, 90, 36, RGB(189, 174, 102));
 	//SaveScreenshot();
 	char *res = OCR_ReadTextLeftToRightSaveUnknownChars(66, 17, 90, 36);
-	RemoveCharFromNumberString(res, ' ');
+	if (res[0] != '0')RemoveCharFromNumberString(res, ' ');
 	CurPlayer.VIPLevel = atoi(res);
 	if (OCR_FoundNewFont == 1)
 		CurPlayer.SkipSave = 1;
@@ -280,12 +283,12 @@ void GetPlayerMightKillsFromCastlePopup()
 	//SaveScreenshot();
 	char *res;
 	res = OCR_ReadTextLeftToRightSaveUnknownChars(193, 66, 350, 88);
-	RemoveCharFromNumberString(res, ' ');
-	RemoveCharFromNumberString(res, ',');
+	if (res[0] != '0')RemoveCharFromNumberString(res, ' ');
+	if (res[0] != '0')RemoveCharFromNumberString(res, ',');
 	CurPlayer.Might = atoi(res);
 	res = OCR_ReadTextLeftToRightSaveUnknownChars(258, 97, 390, 119);
-	RemoveCharFromNumberString(res, ' ');
-	RemoveCharFromNumberString(res, ',');
+	if (res[0] != '0')RemoveCharFromNumberString(res, ' ');
+	if (res[0] != '0')RemoveCharFromNumberString(res, ',');
 	CurPlayer.Kills = atoi(res);
 	if (OCR_FoundNewFont == 1)
 		CurPlayer.SkipSave = 1;
@@ -326,12 +329,174 @@ void GetPlayerIsBurning()
 		CurPlayer.IsBurning = time(NULL);
 }
 
+int PlayerLevelCharsLoaded = 0;
+void GetPlayerLevelProfilePopup()
+{
+	OCR_SetActiveFontSet(4, "K_C_M_PLevel/");
+	if (PlayerLevelCharsLoaded == 0)
+	{
+		PlayerLevelCharsLoaded = 1;
+		OCR_LoadFontsFromDir("K_C_M_PLevel", "KCM_");
+	}
+	OCR_SetMaxFontSize(20, 20);
+	TakeScreenshot(Ko[0] + 446, Ko[1] + 225, Ko[0] + 476, Ko[1] + 248); //take screenshot of the unmurdered image. We will reprocess it later
+	//SaveScreenshot();
+	KeepColorsMinInRegion(-1, -1, -1, -1, RGB(168, 168, 103));
+	//SaveScreenshot();
+	char *res;
+	res = OCR_ReadTextLeftToRightSaveUnknownChars(-1, -1, -1, -1);
+	if (OCR_FoundNewFont == 0)
+	{
+		if (res[0] != '0')	RemoveCharFromNumberString(res, ' ');
+		CurPlayer.PlayerLevel = atoi(res);
+	}
+	else
+	{
+		TakeScreenshot(Ko[0] + 446, Ko[1] + 225, Ko[0] + 476, Ko[1] + 248); //take screenshot of the unmurdered image. We will reprocess it later
+		SaveScreenshot();
+	}
+}
+
+int PlayerProfileCharsLoaded = 0;
+void GetPlayerProfileInfo1()
+{
+	OCR_SetActiveFontSet(4, "K_C_M_PProfile/");
+	if (PlayerProfileCharsLoaded == 0)
+	{
+		PlayerProfileCharsLoaded = 1;
+		OCR_LoadFontsFromDir("K_C_M_PProfile", "KCM_");
+	}
+	OCR_SetMaxFontSize(20, 20);
+	TakeScreenshot(Ko[0] + 653, Ko[1] + 292, Ko[0] + 850, Ko[1] + 683); //take screenshot of the unmurdered image. We will reprocess it later
+//	SaveScreenshot();
+	KeepColorsMinInRegion(-1, -1, -1, -1, RGB(192, 188, 137));
+//	SaveScreenshot();
+	char *res;
+	int LogScreenshot = 0;
+	res = OCR_ReadTextLeftToRightSaveUnknownChars(5, 6, 150, 24);
+	if (res[0] != '0')RemoveCharFromNumberString(res, ' ');
+	if (res[0] != '0')RemoveCharFromNumberString(res, ',');
+	if (OCR_FoundNewFont == 0)
+		CurPlayer.SuccessfulAttacks = atoi(res);
+	else
+		LogScreenshot += OCR_FoundNewFont;
+
+	res = OCR_ReadTextLeftToRightSaveUnknownChars(5, 43, 150, 60);
+	if (res[0] != '0')RemoveCharFromNumberString(res, ' ');
+	if (res[0] != '0')RemoveCharFromNumberString(res, ',');
+	LogScreenshot += OCR_FoundNewFont;
+	if (OCR_FoundNewFont == 0)
+		CurPlayer.FailedAttacks = atoi(res);
+	else
+		LogScreenshot += OCR_FoundNewFont;
+
+	res = OCR_ReadTextLeftToRightSaveUnknownChars(5, 79, 150, 96);
+	if (res[0] != '0')RemoveCharFromNumberString(res, ' ');
+	if (res[0] != '0')RemoveCharFromNumberString(res, ',');
+	LogScreenshot += OCR_FoundNewFont;
+	if (OCR_FoundNewFont == 0)
+		CurPlayer.SuccessfulDefenses = atoi(res);
+	else
+		LogScreenshot += OCR_FoundNewFont;
+
+	res = OCR_ReadTextLeftToRightSaveUnknownChars(5, 115, 150, 132);
+	if (res[0] != '0')RemoveCharFromNumberString(res, ' ');
+	if (res[0] != '0')RemoveCharFromNumberString(res, ',');
+	LogScreenshot += OCR_FoundNewFont;
+	if (OCR_FoundNewFont == 0)
+		CurPlayer.FailedDefenses = atoi(res);
+	else
+		LogScreenshot += OCR_FoundNewFont;
+
+	res = OCR_ReadTextLeftToRightSaveUnknownChars(5, 187, 150, 204);
+	if (res[0] != '0')RemoveCharFromNumberString(res, ' ');
+	if (res[0] != '0')RemoveCharFromNumberString(res, ',');
+	LogScreenshot += OCR_FoundNewFont;
+	if (OCR_FoundNewFont == 0)
+		CurPlayer.TroopsKilled = atoi(res);
+	else
+		LogScreenshot += OCR_FoundNewFont;
+
+	res = OCR_ReadTextLeftToRightSaveUnknownChars(5, 259, 150, 276);
+	if (res[0] != '0')RemoveCharFromNumberString(res, ' ');
+	if (res[0] != '0')RemoveCharFromNumberString(res, ',');
+	LogScreenshot += OCR_FoundNewFont;
+	if (OCR_FoundNewFont == 0)
+		CurPlayer.TroopsLost = atoi(res);
+	else
+		LogScreenshot += OCR_FoundNewFont;
+
+	res = OCR_ReadTextLeftToRightSaveUnknownChars(5, 331, 150, 348);
+	if (res[0] != '0')RemoveCharFromNumberString(res, ' ');
+	if (res[0] != '0')RemoveCharFromNumberString(res, ',');
+	LogScreenshot += OCR_FoundNewFont;
+	if (OCR_FoundNewFont == 0)
+		CurPlayer.TroopsHealed = atoi(res);
+	else
+		LogScreenshot += OCR_FoundNewFont;
+
+	res = OCR_ReadTextLeftToRightSaveUnknownChars(5, 367, 150, 384);
+	if (res[0] != '0')RemoveCharFromNumberString(res, ' ');
+	if (res[0] != '0')RemoveCharFromNumberString(res, ',');
+	LogScreenshot += OCR_FoundNewFont;
+	if (OCR_FoundNewFont == 0)
+		CurPlayer.TroopsWounded = atoi(res);
+	else
+		LogScreenshot += OCR_FoundNewFont;
+
+	if (LogScreenshot != 0)
+	{
+		TakeScreenshot(Ko[0] + 653, Ko[1] + 292, Ko[0] + 850, Ko[1] + 683); //take screenshot of the unmurdered image. We will reprocess it later
+		SaveScreenshot();
+	}
+
+	//drag the screen a bit up
+	MouseDrag(Ko[0] + Ko[2] / 2, Ko[1] + Ko[3] / 2 + 100, Ko[0] + Ko[2] / 2, Ko[1] + Ko[3] / 3 - 2);
+	MouseDrag(Ko[0] + Ko[2] / 2, Ko[1] + Ko[3] / 3 - 2, Ko[0] + Ko[2] / 2, Ko[1] + Ko[3] / 3);
+
+	//new window to process
+	TakeScreenshot(Ko[0] + 653, Ko[1] + 471, Ko[0] + 850, Ko[1] + 579); //take screenshot of the unmurdered image. We will reprocess it later
+//	SaveScreenshot();
+	KeepColorsMinInRegion(-1, -1, -1, -1, RGB(192, 188, 137));
+//	SaveScreenshot();
+	LogScreenshot = 0;
+
+	if (LogScreenshot != 0)
+	{
+		TakeScreenshot(Ko[0] + 653, Ko[1] + 471, Ko[0] + 850, Ko[1] + 579); //take screenshot of the unmurdered image. We will reprocess it later
+		SaveScreenshot();
+	}
+
+	res = OCR_ReadTextLeftToRightSaveUnknownChars(5, 367, 150, 384);
+	if (res[0] != '0')RemoveCharFromNumberString(res, ' ');
+	if (res[0] != '0')RemoveCharFromNumberString(res, ',');
+	LogScreenshot += OCR_FoundNewFont;
+	if (OCR_FoundNewFont == 0)
+		CurPlayer.TroopsWounded = atoi(res);
+	else
+		LogScreenshot += OCR_FoundNewFont; 
+}
+
+
 void GetProfileInfo()
 {
-	// click view profile
-	KoLeftClick(532, 419);
-	WaitPixelBecomeColor(442, 223, STATIC_BGR_RGB(0x00951B11)); //player tag will pop up
+	// click view profile. If we can not find the button than stop clicking random stuff
+	if (!IsPixelAtPos(532, 421, STATIC_BGR_RGB(0x002A7584)) && !IsPixelAtPos(532, 421, (0x002A7584)))
+		return;
+	KoLeftClick(532, 421);
+	//player tag will pop up
+	if (WaitPixelBecomeColor(442, 223, STATIC_BGR_RGB(0x00951B11)) == 0)
+	{
+		printf("Player level screen load timout !\n");
+	}
+	//parse player level
+	GetPlayerLevelProfilePopup();
+	if (ParseProfileInfo2 == 0)
+		return;
+	//open advanced player info
+	//KoLeftClick(220, 125);
 	//parse attacks and defenses
+	//GetPlayerProfileInfo1();
 	//scroll down
 	//parse colloseum data
 }
@@ -362,8 +527,12 @@ void ParseCastlePopup()
 	GetGuildNameFromCastlePopup();
 	GetPlayerXYFromCastlePopup();
 	GetVIPLevelFromCastlePopup();
+
+	//must be last thing as we are changing popup windows
 	if (ParseProfileInfo)
+	{
 		GetProfileInfo();
+	}
 
 	//we did not handle this one. Save it for later processing. Maybe we need to simply decode the new characters
 	if (CurPlayer.SkipSave == 1)
@@ -847,6 +1016,26 @@ void RunLordsMobileTests()
 		ParseCastlePopup();
 		return;
 	}/**/
+/*	{
+		GetKoPlayerAndPos();
+		WaitKoPlayerGetFocus();
+		GetProfileInfo();
+		return;
+	}/**/
+/*	{
+		GetKoPlayerAndPos();
+		WaitKoPlayerGetFocus();
+		MouseDrag(Ko[0] + Ko[2] / 2, Ko[1] + Ko[3] / 2 + 100, Ko[0] + Ko[2] / 2, Ko[1] + Ko[3] / 3 - 2);
+		MouseDrag(Ko[0] + Ko[2] / 2, Ko[1] + Ko[3] / 3 - 2, Ko[0] + Ko[2] / 2, Ko[1] + Ko[3] / 3);
+		WaitScreeenDragFinish();
+		return;
+	}/**/
+	{
+		GetKoPlayerAndPos();
+		WaitKoPlayerGetFocus();
+		GetPlayerProfileInfo1();
+		return;
+	}/**/
 	int Kingdom = 67, StartX = 0, StartY = 0, EndX = 500, EndY = 1000;
 	FILE *f;
 	errno_t er = fopen_s(&f, "ScanParams.txt", "rt");
@@ -858,6 +1047,7 @@ void RunLordsMobileTests()
 		fscanf_s(f, "%d\n", &EndX);
 		fscanf_s(f, "%d\n", &EndY); 
 		fscanf_s(f, "%d\n", &ParseProfileInfo);
+		fscanf_s(f, "%d\n", &ParseProfileInfo2);
 		fclose(f);
 	}
 	// aprox 7 mins / row
