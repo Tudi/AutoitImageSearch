@@ -654,6 +654,66 @@ void ExtractXY()
 	}/**/
 }
 
+void ExtractVIP()
+{
+	{
+		char *res;
+		OCR_SetActiveFontSet(3, "K_C_M_VIP/");
+		OCR_LoadFontsFromDir("K_C_M_VIP", "KCM_");
+//		OCR_LoadFontsFromDir("K_C_M_xy2", "KCM_");
+		TakeScreenshot(0, 0, 401, 381);
+		OCR_SetMaxFontSize(20, 20);
+		std::string path = "h:/Lords/CastlepopupExamples5";
+		std::string search_path = path;
+		search_path += "/*.*";
+		std::string SkipUntilFile = "";
+		int FoundFirstFile = SkipUntilFile.length() == 0;
+		int SkipFirstN = 2900 * 2;
+		int BatchProcessMaxCount = SkipFirstN + 2900;
+		int Index = 0;
+		WIN32_FIND_DATA fd;
+		HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
+		if (hFind != INVALID_HANDLE_VALUE)
+		{
+			do {
+				// read all (real) files in current folder
+				// , delete '!' read other 2 default folder . and ..
+				if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+				{
+					Index++;
+					if (FoundFirstFile == 0)
+					{
+						if (strcmp(fd.cFileName, SkipUntilFile.c_str()) == 0)
+							FoundFirstFile = 1;
+						else
+							continue;
+					}
+					BatchProcessMaxCount--;
+					if (SkipFirstN-- > 0)
+						continue;
+					char FullPath[2500];
+					sprintf_s(FullPath, sizeof(FullPath), "%s/%s", path.c_str(), fd.cFileName);
+					printf("%d)Parsing file : %s\n", Index, FullPath);
+					LoadCacheOverScreenshot(FullPath, 0, 0);
+					//SaveScreenshot();
+					//KeepColorsMinInRegion(66, 17, 90, 36, RGB(214, 199, 128));
+					KeepColorsMinInRegion(66, 17, 90, 36, RGB(189, 174, 102));
+					//SaveScreenshot();
+					//break;
+					res = OCR_ReadTextLeftToRightSaveUnknownChars(66, 17, 90, 36);
+					printf("%s\n", res);
+					if (OCR_FoundNewFont == 1)
+						SaveScreenshot();
+					UnloadLastCache();
+				}
+			} while (::FindNextFile(hFind, &fd) && BatchProcessMaxCount > 0);
+			::FindClose(hFind);
+		}
+		//SaveScreenshot();
+		return;
+	}/**/
+}
+
 void ExtractGuild()
 {
 /*	{
@@ -813,7 +873,8 @@ void RunLordsTesting()
 	//ExtractKillsMight();
 	//ExtractPlayerName();
 	//ExtractGuild();
-	LocateAndRemoveWaterAndDetectPlayers();
+	//LocateAndRemoveWaterAndDetectPlayers();
+	ExtractVIP();
 	int End = GetTimeTickI();
 
 	// always check if what we do is the right way to do it

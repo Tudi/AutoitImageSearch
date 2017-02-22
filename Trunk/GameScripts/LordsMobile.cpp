@@ -93,6 +93,17 @@ int IsPixelAtPos(int x, int y, COLORREF Color)
 	return 0;
 }
 
+int IsPixelAtPosCurScreenShotRel(int x, int y, COLORREF Color)
+{
+	if (x > CurScreenshot->GetWidth() || y > CurScreenshot->GetHeight())
+		return 0;
+	COLORREF Pixel1 = CurScreenshot->Pixels[y * CurScreenshot->GetWidth() + x];
+//printf("at %d,%d has %X instead %X => %X %X\n", x, y, Pixel1, Color, (Pixel1 & REDUCE_PIXELPRECISION_MASK), (Color & REDUCE_PIXELPRECISION_MASK));
+	if ((Pixel1 & REDUCE_PIXELPRECISION_MASK) == (Color & REDUCE_PIXELPRECISION_MASK))
+		return 1;
+	return 0;
+}
+
 int WaitPixelBecomeColor(int x, int y, COLORREF Color)
 {
 	int tSleep = 100;
@@ -132,12 +143,32 @@ void AppendDataToDB()
 		fprintf(LocalDumpFile, "%d \t %d \t %d", CurPlayer.k, CurPlayer.x, CurPlayer.y);
 		fprintf(LocalDumpFile, " \t %s \t %s", CurPlayer.Name, CurPlayer.Guild);
 		fprintf(LocalDumpFile, " \t %d \t %d", CurPlayer.Might, CurPlayer.Kills);
-		fprintf(LocalDumpFile, " \t %d \t %d", CurPlayer.LastUpdateTimestamp, CurPlayer.HasPrisoners);
+		fprintf(LocalDumpFile, " \t %d \t %d", (int)CurPlayer.LastUpdateTimestamp, (int)CurPlayer.HasPrisoners);
+		fprintf(LocalDumpFile, " \t %d \t %d", CurPlayer.VIPLevel, CurPlayer.GuildRank);
 #ifdef TEST_OFFLINE_PARSING_OF_PICTURES
 		fprintf(LocalDumpFile, " \t %s", FullPath);
 #endif
 		fprintf(LocalDumpFile, "\n");
 	}
+}
+
+int VIPCharsLoaded = 0;
+void GetVIPLevelFromCastlePopup()
+{
+	OCR_SetActiveFontSet(1, "K_C_M_VIP/");
+	if (VIPCharsLoaded == 0)
+	{
+		VIPCharsLoaded = 1;
+		OCR_LoadFontsFromDir("K_C_M_VIP", "KCM_");
+	}
+	OCR_SetMaxFontSize(20, 20);
+	KeepColorsMinInRegion(66, 17, 90, 36, RGB(189, 174, 102));
+	//SaveScreenshot();
+	char *res = OCR_ReadTextLeftToRightSaveUnknownChars(66, 17, 90, 36);
+	RemoveCharFromNumberString(res, ' ');
+	CurPlayer.VIPLevel = atoi(res);
+	if (OCR_FoundNewFont == 1)
+		CurPlayer.SkipSave = 1;
 }
 
 int GuildCharsLoaded = 0;
@@ -262,8 +293,30 @@ void GetPlayerMightKillsFromCastlePopup()
 
 void GetPlayerHasPrisoners()
 {
-	if (IsPixelAtPos(431, 415, STATIC_BGR_RGB(0x00D6B263)))
+//	printf("prisoners see pixel 0x%X\n", GetKoPixel(431, 415));
+	if (IsPixelAtPos(431, 415, STATIC_BGR_RGB(0x00D6B263)) || IsPixelAtPos(431, 415, 0x00D6B263))
+	{
+		printf("Castle has prisoners\n");
 		CurPlayer.HasPrisoners = time(NULL);
+	}
+}
+
+void GetPlayerGuildRank()
+{
+//	for (int y = 23; y <= 26; y++)
+//		for (int x = 23; x <= 26; x++)
+//			IsPixelAtPosCurScreenShotRel(x, y, BGR(137, 137, 137));
+
+	if (IsPixelAtPosCurScreenShotRel(25, 25, BGR(53, 53, 53)) || IsPixelAtPosCurScreenShotRel(21, 19, BGR(49, 52, 49)))
+		CurPlayer.GuildRank = 1;
+	else if (IsPixelAtPosCurScreenShotRel(25, 25, BGR(137, 137, 137)) || IsPixelAtPosCurScreenShotRel(17, 20, BGR(41, 44, 57)))
+		CurPlayer.GuildRank = 2;
+	else if (IsPixelAtPosCurScreenShotRel(25, 25, BGR(104, 102, 84)) || IsPixelAtPosCurScreenShotRel(14, 21, BGR(49, 48, 8)))
+		CurPlayer.GuildRank = 3;
+	else if (IsPixelAtPosCurScreenShotRel(25, 25, BGR(53, 35, 16)) || IsPixelAtPosCurScreenShotRel(14, 21, BGR(49, 32, 0)))
+		CurPlayer.GuildRank = 4;
+	else if (IsPixelAtPosCurScreenShotRel(25, 25, BGR(86, 35, 35)) || IsPixelAtPosCurScreenShotRel(30, 31, BGR(114, 34, 17)))
+		CurPlayer.GuildRank = 5;
 }
 
 void GetPlayerIsBurning()
@@ -300,12 +353,15 @@ void ParseCastlePopup()
 #endif
 
 	memset(&CurPlayer, 0, sizeof(CurPlayer));
+
 	GetPlayerHasPrisoners();
+	GetPlayerGuildRank();
 	GetPlayerIsBurning();
 	GetPlayerNameFromCastlePopup();
 	GetPlayerMightKillsFromCastlePopup();
 	GetGuildNameFromCastlePopup();
 	GetPlayerXYFromCastlePopup();
+	GetVIPLevelFromCastlePopup();
 	if (ParseProfileInfo)
 		GetProfileInfo();
 
@@ -314,8 +370,8 @@ void ParseCastlePopup()
 	{
 #ifndef TEST_OFFLINE_PARSING_OF_PICTURES
 		TakeScreenshot(Ko[0] + PopupStartX, Ko[1] + PopupStartY, Ko[0] + PopupEndX, Ko[1] + PopupEndY); //take screenshot of the unmurdered image. We will reprocess it later
-#endif
 		SaveScreenshot();
+#endif
 	}
 	else
 	{
@@ -647,7 +703,7 @@ void ScanKingdomArea(int Kingdom, int StartX, int StartY, int EndX, int EndY)
 	memset(&CurPlayer, 0, sizeof(CurPlayer));
 
 	int StepY = 10;
-	if (StartY < EndY)
+	if (StartY > EndY)
 		StepY = -StepY;
 	StartCounter();
 	int Start = GetTimeTickI();
@@ -704,8 +760,7 @@ void OfflineTestCastlePopupParsing()
 #ifdef TEST_OFFLINE_PARSING_OF_PICTURES
 	memset(Ko, 0, sizeof(Ko));
 	TakeScreenshot(0, 0, 401, 381);
-//	std::string path = "h:/Lords/CastlepopupExamples7";
-	std::string path = "CastlepopupExamples8";
+	std::string path = "h:/Lords/CastlepopupExamples8";
 	std::string search_path = path;
 	search_path += "/*.*";
 	std::string SkipUntilFile = "";
@@ -739,6 +794,11 @@ void OfflineTestCastlePopupParsing()
 			LoadCacheOverScreenshot(FullPath, 0, 0);
 			//test it
 			ParseCastlePopup();
+			if (CurPlayer.SkipSave == 1)
+			{
+				LoadCacheOverScreenshot(FullPath, 0, 0);
+				SaveScreenshot();
+			}
 		}
 	} while (::FindNextFile(hFind, &fd) && BatchProcessMaxCount > 0);
 	::FindClose(hFind);
@@ -781,6 +841,12 @@ void RunLordsMobileTests()
 		DragScreenToRight();
 		return;
 	}/**/
+/*	{
+		GetKoPlayerAndPos();
+		WaitKoPlayerGetFocus();
+		ParseCastlePopup();
+		return;
+	}/**/
 	int Kingdom = 67, StartX = 0, StartY = 0, EndX = 500, EndY = 1000;
 	FILE *f;
 	errno_t er = fopen_s(&f, "ScanParams.txt", "rt");
@@ -788,10 +854,10 @@ void RunLordsMobileTests()
 	{
 		fscanf_s(f, "%d\n", &Kingdom);
 		fscanf_s(f, "%d\n", &StartX);
-		fscanf_s(f, "%d\n", &StartX);
 		fscanf_s(f, "%d\n", &StartY);
 		fscanf_s(f, "%d\n", &EndX);
-		fscanf_s(f, "%d\n", &EndY);
+		fscanf_s(f, "%d\n", &EndY); 
+		fscanf_s(f, "%d\n", &ParseProfileInfo);
 		fclose(f);
 	}
 	// aprox 7 mins / row

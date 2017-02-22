@@ -251,7 +251,10 @@ void OCR_FindMostSimilarFontAndSave(int *Img, int Width, int CharStartX, int Cha
 		int FileIndex = 0;
 		do{
 #if !defined( _DEBUG) || defined(TEST_OFFLINE_PARSING_OF_PICTURES)
-			sprintf_s(NewFilename, sizeof(NewFilename), "%s_KCM__%d.bmp", FontSetName, FileIndex++);
+			char TFontSetName[500];
+			strcpy(TFontSetName, FontSetName);
+			TFontSetName[strlen(FontSetName)-2]=0;
+			sprintf_s(NewFilename, sizeof(NewFilename), "%s_KCM__%d.bmp", TFontSetName, FileIndex++);
 			printf("Saved font with name %s\n",NewFilename);
 #else
 			sprintf_s(NewFilename, sizeof(NewFilename), "KCM__%d.bmp", FileIndex++);

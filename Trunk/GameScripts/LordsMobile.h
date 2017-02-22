@@ -19,7 +19,8 @@ struct StorablePlayerInfo
 	int CastleLevel;
 	int PlayerLevel;
 	//char PlayerNick[100];
-	int VIP;
+	int VIPLevel;
+	int GuildRank;
 	int SuccessfulAttacks;
 	int FailedAttacks;
 	int SuccessfulDefenses;
