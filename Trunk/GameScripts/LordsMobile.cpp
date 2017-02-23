@@ -26,16 +26,14 @@ void KoLeftClick(int x, int y)
 void DragScreenToLeft()
 {
 	int SkipDragAmount = 32;
-	MouseDrag(Ko[0] + Ko[2] - SkipDragAmount, Ko[1] + Ko[3] / 2, Ko[0] + SkipDragAmount - 2, Ko[1] + Ko[3] / 2);
-	MouseDrag(Ko[0] + SkipDragAmount - 2, Ko[1] + Ko[3] / 2, Ko[0] + SkipDragAmount, Ko[1] + Ko[3] / 2); // avoid inertia
+	MouseDrag(Ko[0] + Ko[2] - SkipDragAmount, Ko[1] + Ko[3] / 2, Ko[0] + SkipDragAmount, Ko[1] + Ko[3] / 2);
 	WaitScreeenDragFinish();
 }
 
 void DragScreenToRight()
 {
 	int SkipDragAmount = 32;
-	MouseDrag(Ko[0] + 2, Ko[1] + Ko[3] / 2, Ko[0] + Ko[2] - SkipDragAmount - 2, Ko[1] + Ko[3] / 2);
-	MouseDrag(Ko[0] + Ko[2] - SkipDragAmount - 2, Ko[1] + Ko[3] / 2, Ko[0] + Ko[2] - SkipDragAmount, Ko[1] + Ko[3] / 2);// avoid inertia
+	MouseDrag(Ko[0] + 2, Ko[1] + Ko[3] / 2, Ko[0] + Ko[2] - SkipDragAmount, Ko[1] + Ko[3] / 2);
 	WaitScreeenDragFinish();
 }
 
@@ -91,6 +89,7 @@ COLORREF GetKoPixel(int x, int y)
 int IsPixelAtPos(int x, int y, COLORREF Color)
 {
 	COLORREF Pixel1 = GetKoPixel(x, y);
+//printf("at %d,%d has %X instead %X => %X %X\n", x, y, Pixel1, Color, (Pixel1 & REDUCE_PIXELPRECISION_MASK), (Color & REDUCE_PIXELPRECISION_MASK));
 	if (Pixel1 == (Color & REDUCE_PIXELPRECISION_MASK))
 		return 1;
 	return 0;
@@ -148,11 +147,56 @@ void AppendDataToDB()
 		fprintf(LocalDumpFile, " \t %d \t %d", CurPlayer.Might, CurPlayer.Kills);
 		fprintf(LocalDumpFile, " \t %d \t %d", (int)CurPlayer.LastUpdateTimestamp, (int)CurPlayer.HasPrisoners);
 		fprintf(LocalDumpFile, " \t %d \t %d \t %d", CurPlayer.VIPLevel, CurPlayer.GuildRank, CurPlayer.PlayerLevel);
+		fprintf(LocalDumpFile, " \t %d \t %d \t %d", CurPlayer.SuccessfulAttacks, CurPlayer.FailedAttacks, CurPlayer.SuccessfulDefenses);
+		fprintf(LocalDumpFile, " \t %d \t %d \t %d", CurPlayer.FailedDefenses, CurPlayer.TroopsKilled, CurPlayer.TroopsLost);
+		fprintf(LocalDumpFile, " \t %d \t %d \t %d", CurPlayer.TroopsHealed, CurPlayer.TroopsWounded, CurPlayer.TurfsDestroyed);
+		fprintf(LocalDumpFile, " \t %d \t %d \t %d", CurPlayer.TurfsLost, CurPlayer.MightDestroyed, 0);
 #ifdef TEST_OFFLINE_PARSING_OF_PICTURES
 		fprintf(LocalDumpFile, " \t %s", FullPath);
 #endif
 		fprintf(LocalDumpFile, "\n");
+		fflush(LocalDumpFile);
 	}
+}
+
+int CloseGenericPopup(int x, int y, int color)
+{
+	int ret = 0;
+	if (IsPixelAtPos(x, y, color))
+	{
+		KoLeftClick(x, y);
+		//wait close window go away
+		WaitPixelChangeColor(x, y, color);
+		Sleep(300);	//extra wait to make sure window will not interpret it as a delayed event and still process it
+		ret = 1;
+	}
+	return ret;
+}
+
+void CloseRSSOrCastlePopup()
+{
+	CloseGenericPopup(853, 127, STATIC_BGR_RGB(0x00FFBD36));
+}
+
+void CloseAllPossiblePopups()
+{
+	int ClosedSomething = 0;
+	//resource or castle popups still visible
+	ClosedSomething += CloseGenericPopup(853, 127, STATIC_BGR_RGB(0x00FFBD36)); // resource or castle leftover popup
+	ClosedSomething += CloseGenericPopup(1255, 43, STATIC_BGR_RGB(0x00FFBE38)); // full screen popups
+	ClosedSomething += CloseGenericPopup(1235, 43, 0x00FFBE38); // full screen popups
+	ClosedSomething += CloseGenericPopup(1255, 43, STATIC_BGR_RGB(0x009C504F)); // full screen popups
+	ClosedSomething += CloseGenericPopup(1235, 43, STATIC_BGR_RGB(0x00FFBE38)); // full screen popups
+	ClosedSomething += CloseGenericPopup(853, 118, STATIC_BGR_RGB(0x00FFBE39)); // if we clicked on rally / battle hall
+	ClosedSomething += CloseGenericPopup(852, 119, STATIC_BGR_RGB(0x00FFBD37)); // if we clicked on scout
+	ClosedSomething += CloseGenericPopup(853, 126, STATIC_BGR_RGB(0x00FFBD36)); // if we clicked on land
+	ClosedSomething += CloseGenericPopup(819, 431, STATIC_BGR_RGB(0x00FFBA31)); // if we clicked on army
+	ClosedSomething += CloseGenericPopup(1516, 473, STATIC_BGR_RGB(0x00FFBD36)); // if we clicked on forest info
+	ClosedSomething += CloseGenericPopup(855, 146, STATIC_BGR_RGB(0x00FFBD37)); // daily login bonus popup
+	ClosedSomething += CloseGenericPopup(854, 121, STATIC_BGR_RGB(0x00FFBA31)); // disconnected
+	//debugging is life
+	if (ClosedSomething)
+		printf("We managed to close some unexpected popup. Continue Execution\n");
 }
 
 int VIPCharsLoaded = 0;
@@ -258,9 +302,9 @@ void GetPlayerXYFromCastlePopup()
 		OCR_LoadFontsFromDir("K_C_M_xy", "KCM_");
 	}
 	OCR_SetMaxFontSize(20, 20);
-	KeepColorsMinInRegion(129, 363, 268, 379, RGB(166, 172, 175));
+	KeepColorsMinInRegion(125, 363, 274, 379, RGB(166, 172, 175));
 	//SaveScreenshot();
-	char *res = OCR_ReadTextLeftToRightSaveUnknownChars(129, 363, 268, 379);
+	char *res = OCR_ReadTextLeftToRightSaveUnknownChars(125, 363, 274, 379);
 	//printf("Tried to read player location %s\n", res);
 	if (OCR_FoundNewFont == 1)
 		CurPlayer.SkipSave = 1;
@@ -369,7 +413,7 @@ void GetPlayerProfileInfo1()
 	OCR_SetMaxFontSize(20, 20);
 	TakeScreenshot(Ko[0] + 653, Ko[1] + 292, Ko[0] + 850, Ko[1] + 683); //take screenshot of the unmurdered image. We will reprocess it later
 //	SaveScreenshot();
-	KeepColorsMinInRegion(-1, -1, -1, -1, RGB(192, 188, 137));
+	KeepColorsMinInRegion(-1, -1, -1, -1, RGB(231, 219, 150));
 //	SaveScreenshot();
 	char *res;
 	int LogScreenshot = 0;
@@ -449,56 +493,97 @@ void GetPlayerProfileInfo1()
 		TakeScreenshot(Ko[0] + 653, Ko[1] + 292, Ko[0] + 850, Ko[1] + 683); //take screenshot of the unmurdered image. We will reprocess it later
 		SaveScreenshot();
 	}
-
+	goto FINISH_THIS_LATER;
+	Sleep(500);
 	//drag the screen a bit up
-	MouseDrag(Ko[0] + Ko[2] / 2, Ko[1] + Ko[3] / 2 + 100, Ko[0] + Ko[2] / 2, Ko[1] + Ko[3] / 3 - 2);
-	MouseDrag(Ko[0] + Ko[2] / 2, Ko[1] + Ko[3] / 3 - 2, Ko[0] + Ko[2] / 2, Ko[1] + Ko[3] / 3);
+	MouseDrag(Ko[0] + Ko[2] / 2, Ko[1] + Ko[3] / 2 + 100, Ko[0] + Ko[2] / 2, Ko[1] + Ko[3] / 3);
+	KoLeftClick(Ko[0] + Ko[2] / 2, Ko[1] + Ko[3] / 3); // make the movement stop instantly
+	Sleep(500);
 
 	//new window to process
 	TakeScreenshot(Ko[0] + 653, Ko[1] + 471, Ko[0] + 850, Ko[1] + 579); //take screenshot of the unmurdered image. We will reprocess it later
-//	SaveScreenshot();
-	KeepColorsMinInRegion(-1, -1, -1, -1, RGB(192, 188, 137));
-//	SaveScreenshot();
+	SaveScreenshot();
+	KeepColorsMinInRegion(-1, -1, -1, -1, RGB(231, 219, 150));
+	SaveScreenshot();
 	LogScreenshot = 0;
+
+	res = OCR_ReadTextLeftToRightSaveUnknownChars(8, 15, 150, 32);
+	if (res[0] != '0')RemoveCharFromNumberString(res, ' ');
+	if (res[0] != '0')RemoveCharFromNumberString(res, ',');
+	LogScreenshot += OCR_FoundNewFont;
+	if (OCR_FoundNewFont == 0)
+		CurPlayer.TurfsDestroyed = atoi(res);
+	else
+		LogScreenshot += OCR_FoundNewFont; 
+
+	res = OCR_ReadTextLeftToRightSaveUnknownChars(8, 51, 150, 68);
+	if (res[0] != '0')RemoveCharFromNumberString(res, ' ');
+	if (res[0] != '0')RemoveCharFromNumberString(res, ',');
+	LogScreenshot += OCR_FoundNewFont;
+	if (OCR_FoundNewFont == 0)
+		CurPlayer.TurfsLost = atoi(res);
+	else
+		LogScreenshot += OCR_FoundNewFont;
+
+	res = OCR_ReadTextLeftToRightSaveUnknownChars(8, 87, 150, 104);
+	if (res[0] != '0')RemoveCharFromNumberString(res, ' ');
+	if (res[0] != '0')RemoveCharFromNumberString(res, ',');
+	LogScreenshot += OCR_FoundNewFont;
+	if (OCR_FoundNewFont == 0)
+		CurPlayer.MightDestroyed = atoi(res);
+	else
+		LogScreenshot += OCR_FoundNewFont;
 
 	if (LogScreenshot != 0)
 	{
 		TakeScreenshot(Ko[0] + 653, Ko[1] + 471, Ko[0] + 850, Ko[1] + 579); //take screenshot of the unmurdered image. We will reprocess it later
 		SaveScreenshot();
 	}
-
-	res = OCR_ReadTextLeftToRightSaveUnknownChars(5, 367, 150, 384);
-	if (res[0] != '0')RemoveCharFromNumberString(res, ' ');
-	if (res[0] != '0')RemoveCharFromNumberString(res, ',');
-	LogScreenshot += OCR_FoundNewFont;
-	if (OCR_FoundNewFont == 0)
-		CurPlayer.TroopsWounded = atoi(res);
-	else
-		LogScreenshot += OCR_FoundNewFont; 
+	FINISH_THIS_LATER:
+	//close the popup ( we will close the second one later )
+	Sleep(400);
+	CloseAllPossiblePopups();
+	Sleep(100);
+	CloseAllPossiblePopups();
 }
 
 
 void GetProfileInfo()
 {
+	printf("Started parsing player info window\n");
 	// click view profile. If we can not find the button than stop clicking random stuff
 	if (!IsPixelAtPos(532, 421, STATIC_BGR_RGB(0x002A7584)) && !IsPixelAtPos(532, 421, (0x002A7584)))
+	{
+		printf("Could not find profile view button. Skipping profile scan\n");
 		return;
+	}
 	KoLeftClick(532, 421);
 	//player tag will pop up
 	if (WaitPixelBecomeColor(442, 223, STATIC_BGR_RGB(0x00951B11)) == 0)
 	{
 		printf("Player level screen load timout !\n");
+		return;
 	}
+	printf("parsing player level\n");
 	//parse player level
 	GetPlayerLevelProfilePopup();
 	if (ParseProfileInfo2 == 0)
+	{
+		printf("End parsing player info\n");
+		Sleep(300);
+		CloseAllPossiblePopups();
 		return;
+	}
 	//open advanced player info
-	//KoLeftClick(220, 125);
+	KoLeftClick(220, 125);
+	if (WaitPixelBecomeColor(528, 233, RGB(242, 196, 125)) == 0)
+	{
+//		IsPixelAtPos(528, 233, RGB(242, 196, 125));
+		printf("Player advanced info screen load timout !\n");
+		return;
+	}
 	//parse attacks and defenses
-	//GetPlayerProfileInfo1();
-	//scroll down
-	//parse colloseum data
+	GetPlayerProfileInfo1();
 }
 
 void ParseCastlePopup()
@@ -547,46 +632,6 @@ void ParseCastlePopup()
 		CurPlayer.LastUpdateTimestamp = time(NULL);
 		AppendDataToDB();
 	}
-}
-
-int CloseGenericPopup(int x, int y, int color)
-{
-	int ret = 0;
-	if (IsPixelAtPos(x, y, color))
-	{
-		KoLeftClick(x, y);
-		//wait close window go away
-		WaitPixelChangeColor(x, y, color);
-		Sleep(200);	//extra wait to make sure window will not interpret it as a delayed event and still process it
-		ret = 1;
-	}
-	return ret;
-}
-
-void CloseRSSOrCastlePopup()
-{
-	CloseGenericPopup(853, 127, STATIC_BGR_RGB(0x00FFBD36));
-}
-
-void CloseAllPossiblePopups()
-{
-	int ClosedSomething = 0;
-	//resource or castle popups still visible
-	ClosedSomething += CloseGenericPopup(853, 127, STATIC_BGR_RGB(0x00FFBD36)); // resource or castle leftover popup
-	ClosedSomething += CloseGenericPopup(1255, 43, STATIC_BGR_RGB(0x00FFBE38)); // full screen popups
-	ClosedSomething += CloseGenericPopup(1235, 43, 0x00FFBE38); // full screen popups
-	ClosedSomething += CloseGenericPopup(1255, 43, STATIC_BGR_RGB(0x009C504F)); // full screen popups
-	ClosedSomething += CloseGenericPopup(1235, 43, STATIC_BGR_RGB(0x00FFBE38)); // full screen popups
-	ClosedSomething += CloseGenericPopup(853, 118, STATIC_BGR_RGB(0x00FFBE39)); // if we clicked on rally / battle hall
-	ClosedSomething += CloseGenericPopup(852, 119, STATIC_BGR_RGB(0x00FFBD37)); // if we clicked on scout
-	ClosedSomething += CloseGenericPopup(853, 126, STATIC_BGR_RGB(0x00FFBD36)); // if we clicked on land
-	ClosedSomething += CloseGenericPopup(819, 431, STATIC_BGR_RGB(0x00FFBA31)); // if we clicked on army
-	ClosedSomething += CloseGenericPopup(1516, 473, STATIC_BGR_RGB(0x00FFBD36)); // if we clicked on forest info
-	ClosedSomething += CloseGenericPopup(855, 146, STATIC_BGR_RGB(0x00FFBD37)); // daily login bonus popup
-	ClosedSomething += CloseGenericPopup(854, 121, STATIC_BGR_RGB(0x00FFBA31)); // disconnected
-	//debugging is life
-	if (ClosedSomething)
-		printf("We managed to close some unexpected popup. Continue Execution\n");
 }
 
 void EnterTeleportCordDigit(int Digit)
@@ -878,7 +923,8 @@ void ScanKingdomArea(int Kingdom, int StartX, int StartY, int EndX, int EndY)
 	int Start = GetTimeTickI();
 	for (int y = StartY; (StepY < 0 && y >= EndY) || (StepY > 0 && y <= EndY); y += StepY)
 	{
-		JumpToKingdomLocation(Kingdom, StartX, y);
+		if (RestoreK == COULD_NOT_LOAD_RESTORE_DATA)
+			JumpToKingdomLocation(Kingdom, StartX, y);
 		for (int x = StartX; x <= EndX; x+=10)
 		{
 			//try to jump directly to a location where 
@@ -929,7 +975,7 @@ void OfflineTestCastlePopupParsing()
 #ifdef TEST_OFFLINE_PARSING_OF_PICTURES
 	memset(Ko, 0, sizeof(Ko));
 	TakeScreenshot(0, 0, 401, 381);
-	std::string path = "h:/Lords/CastlepopupExamples8";
+	std::string path = "h:/Lords/CastlepopupExamples9";
 	std::string search_path = path;
 	search_path += "/*.*";
 	std::string SkipUntilFile = "";
@@ -959,12 +1005,13 @@ void OfflineTestCastlePopupParsing()
 			if (SkipFirstN-- > 0)
 				continue;
 			sprintf_s(FullPath, sizeof(FullPath), "%s/%s", path.c_str(), fd.cFileName);
-			printf("%d)Parsing file : %s\n", Index, FullPath);
+//			printf("%d)Parsing file : %s\n", Index, FullPath);
 			LoadCacheOverScreenshot(FullPath, 0, 0);
 			//test it
 			ParseCastlePopup();
 			if (CurPlayer.SkipSave == 1)
 			{
+				printf("%d)Issue with file : %s\n", Index, FullPath);
 				LoadCacheOverScreenshot(FullPath, 0, 0);
 				SaveScreenshot();
 			}
@@ -995,10 +1042,6 @@ void RunLordsMobileTests()
 		CloseAllPossiblePopups();
 		ZoomOutToKingdomView();
 		JumpToKingdomLocation(69, 0, 110);
-	}/**/
-/*	{
-		OfflineTestCastlePopupParsing();
-		return;
 	}/**/
 /*	{
 		ParseProfileInfo = 1;
@@ -1033,7 +1076,18 @@ void RunLordsMobileTests()
 	{
 		GetKoPlayerAndPos();
 		WaitKoPlayerGetFocus();
+		ParseProfileInfo = ParseProfileInfo2 = 1;
+		CaptureVisibleScreenGetPlayerLabels(-1, 354, 689);
+		return;
+	}/**/
+/*	{
+		GetKoPlayerAndPos();
+		WaitKoPlayerGetFocus();
 		GetPlayerProfileInfo1();
+		return;
+	}/**/
+/*	{
+		OfflineTestCastlePopupParsing();
 		return;
 	}/**/
 	int Kingdom = 67, StartX = 0, StartY = 0, EndX = 500, EndY = 1000;
@@ -1049,6 +1103,12 @@ void RunLordsMobileTests()
 		fscanf_s(f, "%d\n", &ParseProfileInfo);
 		fscanf_s(f, "%d\n", &ParseProfileInfo2);
 		fclose(f);
+		if (ParseProfileInfo)
+		{
+			printf("advanced profile info parsing is enabled\n");
+			if (ParseProfileInfo2)
+				printf("Second level advanced profile info scanning is enabled\n");
+		}
 	}
 	// aprox 7 mins / row
 	// 40 * 50 in 35 mins => 57 screens / min

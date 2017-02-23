@@ -260,9 +260,9 @@ void OCR_FindMostSimilarFontAndSave(int *Img, int Width, int CharStartX, int Cha
 			sprintf_s(NewFilename, sizeof(NewFilename), "KCM__%d.bmp", FileIndex++);
 #endif
 		} while (_access(NewFilename, 0) == 0 && FileIndex < 1000);
-#ifdef _DEBUG	// sadly this is chaotic for release version. Hard to track and might lead to mistakes. Registering wrong font chars will leave an issue forever
+//#ifdef _DEBUG	// sadly this is chaotic for release version. Hard to track and might lead to mistakes. Registering wrong font chars will leave an issue forever
 		SaveScreenshotArea(CharStartX, CharStartY, CharEndX, CharEndY, NewFilename);
-#endif
+//#endif
 	}
 }
 

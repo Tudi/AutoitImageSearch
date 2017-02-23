@@ -10,8 +10,8 @@ struct StorablePlayerInfo
 	int k, x, y;
 	int Might;
 	int Kills;
-	char Name[100];
-	char Guild[100];
+	char Name[500];
+	char Guild[500];
 	time_t LastUpdateTimestamp;
 	// to be comming soon
 	time_t IsBurning;
@@ -32,6 +32,7 @@ struct StorablePlayerInfo
 	int TurfsDestroyed;
 	int TurfsLost;
 	int MightDestroyed;
+
 	int ResourceGathered;
 	int ColloseumRank;
 	int ColloseumBestRank;
