@@ -4,6 +4,8 @@
 char FullPath[2500];
 #endif
 
+#define JUST_CLICK_NO_PARSE_ADVANCED
+
 #define REDUCE_PIXELPRECISION_MASK 0x00F0F0F0
 #define RESYNC_ON_X_DIFF			15
 #define RESYNC_ON_Y_DIFF			15
@@ -119,11 +121,10 @@ int WaitPixelBecomeColor(int x, int y, COLORREF Color)
 	return IsPixelAtPos(x, y, Color);
 }
 
-int WaitPixelChangeColor(int x, int y, COLORREF Color)
+int WaitPixelChangeColor(int x, int y, COLORREF Color, int Timeout)
 {
 	int ret = 0;
 	int tSleep = 100;
-	int Timeout = 3000;
 	Color = Color & REDUCE_PIXELPRECISION_MASK;
 	while (Timeout > 0 && GetKoPixel(x, y) == Color)
 	{
@@ -159,15 +160,15 @@ void AppendDataToDB()
 	}
 }
 
-int CloseGenericPopup(int x, int y, int color)
+int CloseGenericPopup(int x, int y, int color, int SleepFor, int Timeout)
 {
 	int ret = 0;
 	if (IsPixelAtPos(x, y, color))
 	{
 		KoLeftClick(x, y);
 		//wait close window go away
-		WaitPixelChangeColor(x, y, color);
-		Sleep(300);	//extra wait to make sure window will not interpret it as a delayed event and still process it
+		WaitPixelChangeColor(x, y, color, Timeout);
+		Sleep(SleepFor);	//extra wait to make sure window will not interpret it as a delayed event and still process it
 		ret = 1;
 	}
 	return ret;
@@ -180,23 +181,26 @@ void CloseRSSOrCastlePopup()
 
 void CloseAllPossiblePopups()
 {
-	int ClosedSomething = 0;
-	//resource or castle popups still visible
-	ClosedSomething += CloseGenericPopup(853, 127, STATIC_BGR_RGB(0x00FFBD36)); // resource or castle leftover popup
-	ClosedSomething += CloseGenericPopup(1255, 43, STATIC_BGR_RGB(0x00FFBE38)); // full screen popups
-	ClosedSomething += CloseGenericPopup(1235, 43, 0x00FFBE38); // full screen popups
-	ClosedSomething += CloseGenericPopup(1255, 43, STATIC_BGR_RGB(0x009C504F)); // full screen popups
-	ClosedSomething += CloseGenericPopup(1235, 43, STATIC_BGR_RGB(0x00FFBE38)); // full screen popups
-	ClosedSomething += CloseGenericPopup(853, 118, STATIC_BGR_RGB(0x00FFBE39)); // if we clicked on rally / battle hall
-	ClosedSomething += CloseGenericPopup(852, 119, STATIC_BGR_RGB(0x00FFBD37)); // if we clicked on scout
-	ClosedSomething += CloseGenericPopup(853, 126, STATIC_BGR_RGB(0x00FFBD36)); // if we clicked on land
-	ClosedSomething += CloseGenericPopup(819, 431, STATIC_BGR_RGB(0x00FFBA31)); // if we clicked on army
-	ClosedSomething += CloseGenericPopup(1516, 473, STATIC_BGR_RGB(0x00FFBD36)); // if we clicked on forest info
-	ClosedSomething += CloseGenericPopup(855, 146, STATIC_BGR_RGB(0x00FFBD37)); // daily login bonus popup
-	ClosedSomething += CloseGenericPopup(854, 121, STATIC_BGR_RGB(0x00FFBA31)); // disconnected
-	//debugging is life
-	if (ClosedSomething)
-		printf("We managed to close some unexpected popup. Continue Execution\n");
+	int ClosedSomething;
+	do {
+		ClosedSomething = 0;
+		//resource or castle popups still visible
+		ClosedSomething += CloseGenericPopup(853, 127, STATIC_BGR_RGB(0x00FFBD36)); // resource or castle leftover popup
+		ClosedSomething += CloseGenericPopup(1255, 43, STATIC_BGR_RGB(0x00FFBE38),400, 400); // full screen popups
+		ClosedSomething += CloseGenericPopup(1235, 43, 0x00FFBE38); // full screen popups
+		ClosedSomething += CloseGenericPopup(1255, 43, STATIC_BGR_RGB(0x009C504F), 400, 400); // full screen popups
+		ClosedSomething += CloseGenericPopup(1235, 43, STATIC_BGR_RGB(0x00FFBE38), 400, 400); // full screen popups
+		ClosedSomething += CloseGenericPopup(853, 118, STATIC_BGR_RGB(0x00FFBE39)); // if we clicked on rally / battle hall
+		ClosedSomething += CloseGenericPopup(852, 119, STATIC_BGR_RGB(0x00FFBD37)); // if we clicked on scout
+		ClosedSomething += CloseGenericPopup(853, 126, STATIC_BGR_RGB(0x00FFBD36)); // if we clicked on land
+		ClosedSomething += CloseGenericPopup(819, 431, STATIC_BGR_RGB(0x00FFBA31)); // if we clicked on army
+		ClosedSomething += CloseGenericPopup(1516, 473, STATIC_BGR_RGB(0x00FFBD36)); // if we clicked on forest info
+		ClosedSomething += CloseGenericPopup(855, 146, STATIC_BGR_RGB(0x00FFBD37)); // daily login bonus popup
+		ClosedSomething += CloseGenericPopup(854, 121, STATIC_BGR_RGB(0x00FFBA31)); // disconnected
+		//debugging is life
+		if (ClosedSomething)
+			printf("We managed to close some unexpected popup. Continue Execution\n");
+	} while (ClosedSomething != 0);
 }
 
 int VIPCharsLoaded = 0;
@@ -323,14 +327,14 @@ void GetPlayerMightKillsFromCastlePopup()
 	}
 	OCR_SetMaxFontSize(20, 20);
 	KeepColorsMinInRegion(193, 66, 350, 88, RGB(211, 211, 211));
-	KeepColorsMinInRegion(258, 97, 390, 119, RGB(211, 211, 211));
+	KeepColorsMinInRegion(250, 97, 390, 119, RGB(211, 211, 211));
 	//SaveScreenshot();
 	char *res;
 	res = OCR_ReadTextLeftToRightSaveUnknownChars(193, 66, 350, 88);
 	if (res[0] != '0')RemoveCharFromNumberString(res, ' ');
 	if (res[0] != '0')RemoveCharFromNumberString(res, ',');
 	CurPlayer.Might = atoi(res);
-	res = OCR_ReadTextLeftToRightSaveUnknownChars(258, 97, 390, 119);
+	res = OCR_ReadTextLeftToRightSaveUnknownChars(250, 97, 390, 119);
 	if (res[0] != '0')RemoveCharFromNumberString(res, ' ');
 	if (res[0] != '0')RemoveCharFromNumberString(res, ',');
 	CurPlayer.Kills = atoi(res);
@@ -353,7 +357,7 @@ void GetPlayerGuildRank()
 //	for (int y = 23; y <= 26; y++)
 //		for (int x = 23; x <= 26; x++)
 //			IsPixelAtPosCurScreenShotRel(x, y, BGR(137, 137, 137));
-
+#ifndef JUST_CLICK_NO_PARSE_ADVANCED
 	if (IsPixelAtPosCurScreenShotRel(25, 25, BGR(53, 53, 53)) || IsPixelAtPosCurScreenShotRel(21, 19, BGR(49, 52, 49)))
 		CurPlayer.GuildRank = 1;
 	else if (IsPixelAtPosCurScreenShotRel(25, 25, BGR(137, 137, 137)) || IsPixelAtPosCurScreenShotRel(17, 20, BGR(41, 44, 57)))
@@ -364,6 +368,7 @@ void GetPlayerGuildRank()
 		CurPlayer.GuildRank = 4;
 	else if (IsPixelAtPosCurScreenShotRel(25, 25, BGR(86, 35, 35)) || IsPixelAtPosCurScreenShotRel(30, 31, BGR(114, 34, 17)))
 		CurPlayer.GuildRank = 5;
+#endif
 }
 
 void GetPlayerIsBurning()
@@ -541,9 +546,7 @@ void GetPlayerProfileInfo1()
 	}
 	FINISH_THIS_LATER:
 	//close the popup ( we will close the second one later )
-	Sleep(400);
-	CloseAllPossiblePopups();
-	Sleep(100);
+	Sleep(200);
 	CloseAllPossiblePopups();
 }
 
@@ -564,18 +567,21 @@ void GetProfileInfo()
 		printf("Player level screen load timout !\n");
 		return;
 	}
+#ifndef JUST_CLICK_NO_PARSE_ADVANCED
 	printf("parsing player level\n");
 	//parse player level
 	GetPlayerLevelProfilePopup();
+#endif
 	if (ParseProfileInfo2 == 0)
 	{
 		printf("End parsing player info\n");
-		Sleep(300);
+//		Sleep(300);
 		CloseAllPossiblePopups();
 		return;
 	}
 	//open advanced player info
 	KoLeftClick(220, 125);
+#ifndef JUST_CLICK_NO_PARSE_ADVANCED
 	if (WaitPixelBecomeColor(528, 233, RGB(242, 196, 125)) == 0)
 	{
 //		IsPixelAtPos(528, 233, RGB(242, 196, 125));
@@ -584,6 +590,7 @@ void GetProfileInfo()
 	}
 	//parse attacks and defenses
 	GetPlayerProfileInfo1();
+#endif
 }
 
 void ParseCastlePopup()
@@ -664,8 +671,8 @@ void EnterTeleportCordDigit(int Digit)
 
 void EnterTeleportCoord(int Coord)
 {
-	if (Coord > 1000)
-		Coord = 1000;
+	if (Coord > 1030)
+		Coord = 1030;
 	//convert number to vect
 	int NumVect[9];
 	int VectLen = 0;
@@ -882,7 +889,6 @@ void SaveKingdomScanStatus( int k, int x, int y)
 	}
 }
 
-#define COULD_NOT_LOAD_RESTORE_DATA -2
 void RestoreKingdomScanStatus(int &k, int &x, int &y)
 {
 	k = COULD_NOT_LOAD_RESTORE_DATA;
@@ -975,7 +981,8 @@ void OfflineTestCastlePopupParsing()
 #ifdef TEST_OFFLINE_PARSING_OF_PICTURES
 	memset(Ko, 0, sizeof(Ko));
 	TakeScreenshot(0, 0, 401, 381);
-	std::string path = "h:/Lords/CastlepopupExamples9";
+//	std::string path = "h:/Lords/CastlepopupExamples9";
+	std::string path = "CastlepopupExamples11";
 	std::string search_path = path;
 	search_path += "/*.*";
 	std::string SkipUntilFile = "";
@@ -1011,6 +1018,7 @@ void OfflineTestCastlePopupParsing()
 			ParseCastlePopup();
 			if (CurPlayer.SkipSave == 1)
 			{
+				SaveScreenshot();
 				printf("%d)Issue with file : %s\n", Index, FullPath);
 				LoadCacheOverScreenshot(FullPath, 0, 0);
 				SaveScreenshot();
@@ -1073,7 +1081,7 @@ void RunLordsMobileTests()
 		WaitScreeenDragFinish();
 		return;
 	}/**/
-	{
+/*	{
 		GetKoPlayerAndPos();
 		WaitKoPlayerGetFocus();
 		ParseProfileInfo = ParseProfileInfo2 = 1;

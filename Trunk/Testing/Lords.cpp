@@ -89,7 +89,7 @@ void LocateAndRemoveWaterAndDetectPlayers()
 	{
 		//try to detect player labels
 		TakeScreenshot(0, 0, 1282, 722);
-		LoadCacheOverScreenshot("CastleTags_6.bmp", 0, 0);
+		LoadCacheOverScreenshot("WaterExamples/Screenshot_0000_1281_0719.bmp", 0, 0);
 		//remove water if there is any
 		//SetGradientToColor(0x00A59B63, 0.162f, TRANSPARENT_COLOR);
 		//SaveScreenshot();
@@ -137,8 +137,8 @@ void LocateAndRemoveWaterAndDetectPlayers()
 			return;
 		}/**/
 		{
-			KeepGradient3(RGB(33, 109, 148), 0.25f, RGB(16, 77, 113), 0.4f, RGB(40, 116, 155), 0.20f);
-			//SaveScreenshot();
+			KeepGradient3(RGB(33, 109, 148), 0.12f, RGB(16, 77, 113), 0.4f, RGB(40, 116, 155), 0.20f);
+			SaveScreenshot();
 			//ImageSearch_Multipass_PixelCount2(0, 10, 10, 100, 40, 21, 45); // try to find good matches, than try to find worse and worse matches
 			//ImageSearch_Multipass_PixelCount2(0, 10, 10, 100, 20, 11, 45); // try to find good matches, than try to find worse and worse matches
 			int rad = 52;
@@ -873,7 +873,10 @@ void RunLordsTesting()
 	//ExtractKillsMight();
 	//ExtractPlayerName();
 	//ExtractGuild();
-	//LocateAndRemoveWaterAndDetectPlayers();
+	{
+		LocateAndRemoveWaterAndDetectPlayers();
+		return;
+	}
 	ExtractVIP();
 	int End = GetTimeTickI();
 

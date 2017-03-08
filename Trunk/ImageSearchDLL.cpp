@@ -42,7 +42,8 @@ void main()
 	//RunSQRTBenchmark(); //fact : sqrt( double) rocks
 
 	//RunLordsTesting();
-	RunLordsMobileTests();
+	//RunLordsMobileTests();
+	RunLordsMobileTestsNoOCR();
 
 #if defined( _CONSOLE ) && !defined( _DEBUG )
 //	RunSCreenCaptureBenchmark(); // 350 fps on my pc

@@ -173,6 +173,7 @@
     <ClCompile Include="debug.cpp" />
     <ClCompile Include="EdgeDetect.cpp" />
     <ClCompile Include="GameScripts\LordsMobile.cpp" />
+    <ClCompile Include="GameScripts\LordsMobile_NoOCR.cpp" />
     <ClCompile Include="ImageFilters.cpp" />
     <ClCompile Include="ImageSearch.cpp" />
     <ClCompile Include="ImageSearchDLL.cpp" />
