@@ -44,6 +44,9 @@ void ParseCastlePopup2()
 
 void CaptureVisibleScreenGetPlayerLabels2(int ExpectedKingdom, int ExpectedX, int ExpectedY)
 {
+	//maybe we just want to update player positions and namechanges
+	if (ParseCastleInfo == 0)
+		return;
 
 	// this will probably only run once to get the process related details
 	GetKoPlayerAndPos();
@@ -217,6 +220,7 @@ void RunLordsMobileTestsNoOCR()
 		fscanf_s(f, "%d\n", &StartY);
 		fscanf_s(f, "%d\n", &EndX);
 		fscanf_s(f, "%d\n", &EndY);
+		fscanf_s(f, "%d\n", &ParseCastleInfo);
 		fscanf_s(f, "%d\n", &ParseProfileInfo);
 		fscanf_s(f, "%d\n", &ParseProfileInfo2);
 		fclose(f);

@@ -15,6 +15,7 @@ HWND KoPlayerWND = 0;
 int Ko[4];
 StorablePlayerInfo CurPlayer;
 StorableResourceTileInfo CurRss;
+int ParseCastleInfo = 0;
 int ParseProfileInfo = 0;
 int ParseProfileInfo2 = 0;
 
@@ -1108,6 +1109,7 @@ void RunLordsMobileTests()
 		fscanf_s(f, "%d\n", &StartY);
 		fscanf_s(f, "%d\n", &EndX);
 		fscanf_s(f, "%d\n", &EndY); 
+		fscanf_s(f, "%d\n", &ParseCastleInfo);
 		fscanf_s(f, "%d\n", &ParseProfileInfo);
 		fscanf_s(f, "%d\n", &ParseProfileInfo2);
 		fclose(f);

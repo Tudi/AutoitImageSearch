@@ -74,6 +74,7 @@ struct StorableResourceTileInfo
 
 extern StorablePlayerInfo CurPlayer;
 extern StorableResourceTileInfo CurRss;
+extern int ParseCastleInfo;
 extern int ParseProfileInfo;
 extern int ParseProfileInfo2;
 extern int Ko[4];
