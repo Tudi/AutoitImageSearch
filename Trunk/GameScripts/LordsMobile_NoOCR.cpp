@@ -168,6 +168,10 @@ void ScanKingdomArea2(int Kingdom, int StartX, int StartY, int EndX, int EndY)
 	int StepY = 10;
 	if (StartY > EndY)
 		StepY = -StepY;
+	if (ParseCastleInfo == 0)
+	{
+		StepY *= 2;
+	}
 	StartCounter();
 	int Start = GetTimeTickI();
 	for (int y = StartY; (StepY < 0 && y >= EndY) || (StepY > 0 && y <= EndY); y += StepY)
@@ -179,7 +183,7 @@ void ScanKingdomArea2(int Kingdom, int StartX, int StartY, int EndX, int EndY)
 			//try to jump directly to a location where 
 			if (RestoreK != COULD_NOT_LOAD_RESTORE_DATA)
 			{
-				if ((x != RestoreX || y != RestoreY) && x == 0)
+				if ((x != RestoreX || y != RestoreY) && x == 0 && RestoreX < EndX && RestoreY != EndY)
 				{
 					y = RestoreY;
 					x = RestoreX;
@@ -189,7 +193,7 @@ void ScanKingdomArea2(int Kingdom, int StartX, int StartY, int EndX, int EndY)
 			}
 
 			int End = GetTimeTickI();
-			printf("We made %d slides. We should be at x = %d. Time spent so far %d\n", x, x, (End - Start) / 1000 / 60);
+			printf("We made %d slides. We should be at x=%d y=%d. Time spent so far %d\n", x, x, y, (End - Start) / 1000 / 60);
 
 			CaptureVisibleScreenGetPlayerLabels2(Kingdom, x, y);
 
@@ -237,5 +241,5 @@ void RunLordsMobileTestsNoOCR()
 	ScanKingdomArea2(Kingdom, StartX, StartY, EndX, EndY);
 
 	printf("fliptablegoinghome.THE END\n");
-	_getch();
+//	_getch();
 }
