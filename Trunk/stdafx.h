@@ -86,6 +86,8 @@
 #include "ImageSearch.h"
 #include "OCR_LuckyCase.h"
 #include "PixelProcess.h"
+#include "GradientRemove.h"
+#include "EdgeFilter.h"
 #include <map>
 #include <algorithm>
 #include <vector>

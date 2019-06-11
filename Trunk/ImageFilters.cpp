@@ -214,6 +214,8 @@ void WINAPI EdgeDetect( int HalfKernelSize )
 
 void WINAPI ApplyColorBitmask(int Mask)
 {
+	if (CurScreenshot == NULL)
+		return;
 	int PixelCount = CurScreenshot->GetWidth() * CurScreenshot->GetHeight();
 	for (int i = 0; i < PixelCount; i++)
 		CurScreenshot->Pixels[i] = CurScreenshot->Pixels[i] & Mask;

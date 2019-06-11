@@ -46,9 +46,6 @@
     <ClCompile Include="util.cpp">
       <Filter>ImageStore</Filter>
     </ClCompile>
-    <ClCompile Include="Tools.cpp">
-      <Filter>ImageStore</Filter>
-    </ClCompile>
     <ClCompile Include="ImageSearchDLL.cpp">
       <Filter>Dll</Filter>
     </ClCompile>
@@ -71,6 +68,18 @@
       <Filter>Testing</Filter>
     </ClCompile>
     <ClCompile Include="Testing\Lords.cpp">
+      <Filter>Testing</Filter>
+    </ClCompile>
+    <ClCompile Include="Tools.cpp">
+      <Filter>Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="GradientRemove.cpp">
+      <Filter>ImageTools</Filter>
+    </ClCompile>
+    <ClCompile Include="EdgeFilter.cpp">
+      <Filter>ImageTools</Filter>
+    </ClCompile>
+    <ClCompile Include="Testing\EdgeFilterTest.cpp">
       <Filter>Testing</Filter>
     </ClCompile>
   </ItemGroup>
@@ -120,17 +129,11 @@
     <ClInclude Include="util.h">
       <Filter>ImageStore</Filter>
     </ClInclude>
-    <ClInclude Include="Tools.h">
-      <Filter>ImageStore</Filter>
-    </ClInclude>
     <ClInclude Include="stdafx.h">
       <Filter>Dll</Filter>
     </ClInclude>
     <ClInclude Include="ImageSearch.h">
       <Filter>ImageTools</Filter>
-    </ClInclude>
-    <ClInclude Include="Testing\Lords.h">
-      <Filter>GameSpecific\LordsMobile</Filter>
     </ClInclude>
     <ClInclude Include="GameScripts\LordsMobile.h">
       <Filter>GameSpecific\LordsMobile</Filter>
@@ -139,6 +142,21 @@
       <Filter>GameSpecific\LordsMobile</Filter>
     </ClInclude>
     <ClInclude Include="debug.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Tools.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\Lords.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="GradientRemove.h">
+      <Filter>ImageTools</Filter>
+    </ClInclude>
+    <ClInclude Include="EdgeFilter.h">
+      <Filter>ImageTools</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\EdgeFilterTest.h">
       <Filter>Testing</Filter>
     </ClInclude>
   </ItemGroup>
@@ -160,6 +178,9 @@
     </Filter>
     <Filter Include="Dll">
       <UniqueIdentifier>{8d4c212d-00bc-4804-8884-4eae243f8a87}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Tools">
+      <UniqueIdentifier>{97e4e717-58fb-4aaf-8368-f0305742de02}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

@@ -174,8 +174,10 @@
     </ClCompile>
     <ClCompile Include="debug.cpp" />
     <ClCompile Include="EdgeDetect.cpp" />
+    <ClCompile Include="EdgeFilter.cpp" />
     <ClCompile Include="GameScripts\LordsMobile.cpp" />
     <ClCompile Include="GameScripts\LordsMobile_NoOCR.cpp" />
+    <ClCompile Include="GradientRemove.cpp" />
     <ClCompile Include="ImageFilters.cpp" />
     <ClCompile Include="ImageSearch.cpp" />
     <ClCompile Include="ImageSearchDLL.cpp" />
@@ -196,6 +198,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='ReleaseConsoleTest|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Testing\EdgeFilterTest.cpp" />
     <ClCompile Include="Testing\Lords.cpp" />
     <ClCompile Include="Tools.cpp" />
     <ClCompile Include="UniquePixelPairSearch.cpp" />
@@ -208,8 +211,10 @@
     </CustomBuild>
     <ClInclude Include="debug.h" />
     <ClInclude Include="EdgeDetect.h" />
+    <ClInclude Include="EdgeFilter.h" />
     <ClInclude Include="GameScripts\LordsMobile.h" />
     <ClInclude Include="GameScripts\stdafx.h" />
+    <ClInclude Include="GradientRemove.h" />
     <ClInclude Include="ImageFilters.h" />
     <ClInclude Include="ImageSearch.h" />
     <ClInclude Include="InputProcess.h" />
@@ -224,6 +229,7 @@
     <ClInclude Include="SimilarSearch.h" />
     <ClInclude Include="SplitChannelSearch.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="Testing\EdgeFilterTest.h" />
     <ClInclude Include="Testing\Lords.h" />
     <ClInclude Include="Tools.h" />
     <ClInclude Include="UniquePixelPairSearch.h" />
