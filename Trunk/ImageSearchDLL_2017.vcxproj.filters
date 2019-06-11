@@ -1,0 +1,175 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="EdgeDetect.cpp">
+      <Filter>ImageTools</Filter>
+    </ClCompile>
+    <ClCompile Include="ImageFilters.cpp">
+      <Filter>ImageTools</Filter>
+    </ClCompile>
+    <ClCompile Include="MotionEstimation.cpp">
+      <Filter>ImageTools</Filter>
+    </ClCompile>
+    <ClCompile Include="OCR.cpp">
+      <Filter>ImageTools</Filter>
+    </ClCompile>
+    <ClCompile Include="OCR_LuckyCase.cpp">
+      <Filter>ImageTools</Filter>
+    </ClCompile>
+    <ClCompile Include="InputProcess.cpp">
+      <Filter>ImageStore</Filter>
+    </ClCompile>
+    <ClCompile Include="PictureCache.cpp">
+      <Filter>ImageStore</Filter>
+    </ClCompile>
+    <ClCompile Include="PiramidSearch.cpp">
+      <Filter>ImageTools</Filter>
+    </ClCompile>
+    <ClCompile Include="Resampling.cpp">
+      <Filter>ImageTools</Filter>
+    </ClCompile>
+    <ClCompile Include="UniquePixelPairSearch.cpp">
+      <Filter>ImageTools</Filter>
+    </ClCompile>
+    <ClCompile Include="PixelProcess.cpp">
+      <Filter>ImageTools</Filter>
+    </ClCompile>
+    <ClCompile Include="SplitChannelSearch.cpp">
+      <Filter>ImageTools</Filter>
+    </ClCompile>
+    <ClCompile Include="SimilarSearch.cpp">
+      <Filter>ImageTools</Filter>
+    </ClCompile>
+    <ClCompile Include="SaveImages.cpp">
+      <Filter>ImageStore</Filter>
+    </ClCompile>
+    <ClCompile Include="util.cpp">
+      <Filter>ImageStore</Filter>
+    </ClCompile>
+    <ClCompile Include="Tools.cpp">
+      <Filter>ImageStore</Filter>
+    </ClCompile>
+    <ClCompile Include="ImageSearchDLL.cpp">
+      <Filter>Dll</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Dll</Filter>
+    </ClCompile>
+    <ClCompile Include="ImageSearch.cpp">
+      <Filter>ImageTools</Filter>
+    </ClCompile>
+    <ClCompile Include="GameScripts\LordsMobile.cpp">
+      <Filter>GameSpecific\LordsMobile</Filter>
+    </ClCompile>
+    <ClCompile Include="GameScripts\LordsMobile_NoOCR.cpp">
+      <Filter>GameSpecific\LordsMobile</Filter>
+    </ClCompile>
+    <ClCompile Include="Benchmarks\Benchmarks.cpp">
+      <Filter>Testing</Filter>
+    </ClCompile>
+    <ClCompile Include="debug.cpp">
+      <Filter>Testing</Filter>
+    </ClCompile>
+    <ClCompile Include="Testing\Lords.cpp">
+      <Filter>Testing</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="EdgeDetect.h">
+      <Filter>ImageTools</Filter>
+    </ClInclude>
+    <ClInclude Include="ImageFilters.h">
+      <Filter>ImageTools</Filter>
+    </ClInclude>
+    <ClInclude Include="MotionEstimation.h">
+      <Filter>ImageTools</Filter>
+    </ClInclude>
+    <ClInclude Include="OCR.h">
+      <Filter>ImageTools</Filter>
+    </ClInclude>
+    <ClInclude Include="OCR_LuckyCase.h">
+      <Filter>ImageTools</Filter>
+    </ClInclude>
+    <ClInclude Include="InputProcess.h">
+      <Filter>ImageStore</Filter>
+    </ClInclude>
+    <ClInclude Include="PictureCache.h">
+      <Filter>ImageStore</Filter>
+    </ClInclude>
+    <ClInclude Include="PiramidSearch.h">
+      <Filter>ImageTools</Filter>
+    </ClInclude>
+    <ClInclude Include="Resampling.h">
+      <Filter>ImageTools</Filter>
+    </ClInclude>
+    <ClInclude Include="UniquePixelPairSearch.h">
+      <Filter>ImageTools</Filter>
+    </ClInclude>
+    <ClInclude Include="PixelProcess.h">
+      <Filter>ImageTools</Filter>
+    </ClInclude>
+    <ClInclude Include="SplitChannelSearch.h">
+      <Filter>ImageTools</Filter>
+    </ClInclude>
+    <ClInclude Include="SimilarSearch.h">
+      <Filter>ImageTools</Filter>
+    </ClInclude>
+    <ClInclude Include="SaveImages.h">
+      <Filter>ImageStore</Filter>
+    </ClInclude>
+    <ClInclude Include="util.h">
+      <Filter>ImageStore</Filter>
+    </ClInclude>
+    <ClInclude Include="Tools.h">
+      <Filter>ImageStore</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>Dll</Filter>
+    </ClInclude>
+    <ClInclude Include="ImageSearch.h">
+      <Filter>ImageTools</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\Lords.h">
+      <Filter>GameSpecific\LordsMobile</Filter>
+    </ClInclude>
+    <ClInclude Include="GameScripts\LordsMobile.h">
+      <Filter>GameSpecific\LordsMobile</Filter>
+    </ClInclude>
+    <ClInclude Include="GameScripts\stdafx.h">
+      <Filter>GameSpecific\LordsMobile</Filter>
+    </ClInclude>
+    <ClInclude Include="debug.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="GameSpecific">
+      <UniqueIdentifier>{de869b3e-bfd6-43f7-89ac-b41c7a648002}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ImageTools">
+      <UniqueIdentifier>{3a71f524-dbb6-44b3-95fc-3ff096f7abdc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ImageStore">
+      <UniqueIdentifier>{db85fc95-2dc3-4c96-8469-be1c315c9c21}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameSpecific\LordsMobile">
+      <UniqueIdentifier>{512649c5-6eb9-4c4c-bda4-7a749f46bcc3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{97481876-d582-4a93-a441-a10b3ebc2a85}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Dll">
+      <UniqueIdentifier>{8d4c212d-00bc-4804-8884-4eae243f8a87}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ImageSearchDLL.def">
+      <Filter>Dll</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="Benchmarks\Benchmarks.h">
+      <Filter>Testing</Filter>
+    </CustomBuild>
+  </ItemGroup>
+</Project>

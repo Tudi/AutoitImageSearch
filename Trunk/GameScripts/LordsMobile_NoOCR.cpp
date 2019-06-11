@@ -1,5 +1,6 @@
-#include "../stdafx.h"
+#include "stdafx.h"
 
+#if defined( _CONSOLE ) && defined(COMPILE_LORDS_SCRIPTS)
 void GetProfileInfo_3()
 {
 	if (ParseProfileInfo2 == 0)
@@ -243,3 +244,4 @@ void RunLordsMobileTestsNoOCR()
 	printf("fliptablegoinghome.THE END\n");
 //	_getch();
 }
+#endif

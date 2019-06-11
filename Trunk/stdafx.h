@@ -93,10 +93,7 @@
 
 #ifdef _CONSOLE
 	#include "Benchmarks/Benchmarks.h"
-	#include "Testing/Lords.h"
-	#include "GameScripts/LordsMobile.h"
 #endif
-
 #define RGB_GET_R(Color) ( Color & 0xFF )
 #define RGB_GET_G(Color) ( (Color >> 8 ) & 0xFF)
 #define RGB_GET_B(Color) ( (Color >> 16 )& 0xFF)

@@ -1,5 +1,7 @@
-#include "../stdafx.h"
+#include "stdafx.h"
+#include "../GameScripts/stdafx.h"
 
+#if defined( _CONSOLE ) && defined(COMPILE_LORDS_SCRIPTS)
 void DetectPlayerShields()
 {
 /*	{
@@ -894,3 +896,4 @@ void RunLordsTesting()
 		printf("OCR statistics - Time spent : %d\n", End - Start);
 	}
 }
+#endif

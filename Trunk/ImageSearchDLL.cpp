@@ -43,7 +43,7 @@ void main()
 
 	//RunLordsTesting();
 	//RunLordsMobileTests();
-	RunLordsMobileTestsNoOCR();
+	//RunLordsMobileTestsNoOCR();
 
 #if defined( _CONSOLE ) && !defined( _DEBUG )
 //	RunSCreenCaptureBenchmark(); // 350 fps on my pc

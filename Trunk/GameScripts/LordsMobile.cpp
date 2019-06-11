@@ -1,7 +1,9 @@
-#include "../stdafx.h"
+#include "stdafx.h"
+
+#if defined( _CONSOLE ) && defined(COMPILE_LORDS_SCRIPTS)
 
 #ifdef TEST_OFFLINE_PARSING_OF_PICTURES
-char FullPath[2500];
+	char FullPath[2500];
 #endif
 
 #define JUST_CLICK_NO_PARSE_ADVANCED
@@ -1128,3 +1130,5 @@ void RunLordsMobileTests()
 	printf("fliptablegoinghome.THE END\n");
 	_getch();
 }
+
+#endif
