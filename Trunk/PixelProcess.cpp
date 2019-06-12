@@ -651,3 +651,27 @@ void WINAPI KeepGradient3(int Color1, float MaxChange1, int Color2, float MaxCha
 	FileDebug("Finished KeepGradient2");
 
 }
+
+void ColorReduceCache(char *aFileName, int ChannelColorCount)
+{
+	CachedPicture *cache = CachePicturePrintErrors(aFileName, __FUNCTION__);
+	if (cache == NULL)
+		return;
+	int ColorStep = 255 / ChannelColorCount;
+	LPCOLORREF Pixels = cache->Pixels;
+	int Width = cache->Width;
+	int Height = cache->Height;
+	for (int y = 0; y < Height; y++)
+	{
+		int *BaseSrc = (int*)&Pixels[y*Width];
+		for (int x = 0; x < Width; x++)
+		{
+			unsigned char *SP = (unsigned char*)&BaseSrc[x];
+			for (int i = 0; i < 3; i++)
+			{
+				int NewVal = (SP[i] + ColorStep) / ColorStep * ColorStep;
+				SP[i] = NewVal & 0xFF;
+			}
+		}
+	}
+}

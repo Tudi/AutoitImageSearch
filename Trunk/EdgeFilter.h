@@ -1,13 +1,12 @@
 #pragma once
 #include "stdafx.h"
-#include <map>
 /*
 Description :
- -- Try to detect an object based on some feature that is always visible on the object --
- -- the feature will be defined by the edge pixels. These edges are inside the object and not outside -- 
- -- edges are defined by only 2 pixels ! --
- -- this is a filter and not really a search --
+ -- try to construct objects out of lines with length of 2 pixels ( next step is longer lines ) --
+ -- feeding more than 1 picture should strengthen some features while weaken onther features -- 
+ -- when 2 objects are compared, a similarity index should be returned representing how many lines match and in what ratio --
 Steps to obtain the common feature :
+- blur the image to reduce scale related issues
 - reduce luminosity of the image to base luminosity. Does not support shading and illumination. max 3 * 65535 colors
 - reduce color depth to reduce the size of statistics. Maybe half color count ? : 3 * 32k pixel possibility ? This would also help subpixel acuracy on rotation
 - extract pixel features ( 8 neighbour features ) and create statistics. Each neighbour should have a list of pixel statistics
@@ -16,23 +15,44 @@ Steps to obtain the common feature :
 - to detect rotated image, the search matching should also search in all type of orientations : for(i=0;i<MaxCombinations;i++)
 */
 
-class EdgeFilterPixels
+#define MIN_LINE_LENGTH_PIXELS 2
+#define MAX_LINE_LENGTH_PIXELS 3 //not inclusive
+
+class LineStore
 {
 public:
-	EdgeFilterPixels()
+	LineStore(int Length)
 	{
-		NumberOfImagesLoaded = 0;
-		PixelsAdded = 0;
+		Line = (char *)_aligned_malloc(Length + SSE_PADDING, SSE_ALIGNMENT);
 	}
-	std::map<unsigned _int64, unsigned int> EdgePixelStatistics;
-	int MyIndex;				// if we have a list of objects, we can refenrece them by index
-	int NumberOfImagesLoaded;	// number of images we used to refine the definition of this object
-	unsigned _int64 PixelsAdded;
+	~LineStore()
+	{
+		_aligned_free(Line);
+		Line = NULL;
+	}
+	char *Line; // does not support Alpha channel
+	int TotalFoundCount; // in all pictures, how many times did we find this line
+	int TotalPictureFoundCount; // number of pictures where we found this line
 };
 
-//allocate memory to store this object
-void EdgeFilter_Init(int EdgeFilterPixelsIndex);
+class LineFilter
+{
+public:
+	LineFilter()
+	{
+		NumberOfImagesLoaded = 0;
+		LinesAdded = 0;
+		for(int i=0;i< MAX_LINE_LENGTH_PIXELS - MIN_LINE_LENGTH_PIXELS;i++)
+			Lines[i] = new RedBlackTree(i + MIN_LINE_LENGTH_PIXELS);
+	}
+	RedBlackTree *Lines[MAX_LINE_LENGTH_PIXELS - MIN_LINE_LENGTH_PIXELS]; //0 index is for line length 2
+
+	int MyIndex;				// if we have a list of objects, we can refenrece them by index
+	int NumberOfImagesLoaded;	// number of images we used to refine the definition of this object
+	unsigned _int64 LinesAdded;
+};
+
 //add pictures that will be used to define the filter mask. Additional images will remove not common image features
-void EdgeFilter_LearnRefine(char *aFileName);
-//
-void EdgeFilter_MarkKnown(char *aFileName);
+void LineFilter_AddImage(int ObjectIndex, char *aFileName);
+// iterate theough our list of objects and remove lines that are not marked to be part of our objects
+void LineFilter_MarkObjectProbability(int ObjectIndex, char *aFileName);

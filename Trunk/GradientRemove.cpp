@@ -1,14 +1,15 @@
 #include "stdAfx.h"
 
-
 void GradientRemove(LPCOLORREF Pixels, int Width, int Height)
 {
+	std::map<DWORD, DWORD> ColorMap;
 	for (int y = 0; y < Height; y++)
 	{
 		int *BaseSrc = (int*)&Pixels[y*Width];
 		for (int x = 0; x < Width; x++)
 		{
-			unsigned char *SP = (unsigned char*)&BaseSrc[x];
+			DWORD Pixel = BaseSrc[x];
+			unsigned char *SP = (unsigned char*)&Pixel;
 			unsigned char MinVal = 255;
 			if (SP[0] < MinVal)
 				MinVal = SP[0];
@@ -20,6 +21,37 @@ void GradientRemove(LPCOLORREF Pixels, int Width, int Height)
 			SP[0] = SP[0] - MinVal;
 			SP[1] = SP[1] - MinVal;
 			SP[2] = SP[2] - MinVal;
+
+			auto itr = ColorMap.find(Pixel);
+			if (itr != ColorMap.end())
+			{
+				DWORD MinNow = itr->second;
+				if (BaseSrc[x] < MinNow)
+					itr->second = BaseSrc[x];
+			}
+			else
+				ColorMap[Pixel] = BaseSrc[x];
+		}
+	}
+	for (int y = 0; y < Height; y++)
+	{
+		int *BaseSrc = (int*)&Pixels[y*Width];
+		for (int x = 0; x < Width; x++)
+		{
+			DWORD Pixel = BaseSrc[x];
+			unsigned char *SP = (unsigned char*)&Pixel;
+			unsigned char MinVal = 255;
+			if (SP[0] < MinVal)
+				MinVal = SP[0];
+			if (SP[1] < MinVal)
+				MinVal = SP[1];
+			if (SP[2] < MinVal)
+				MinVal = SP[2];
+			//reduce the values of each channel to base luminosity. One channel is always 0
+			SP[0] = SP[0] - MinVal;
+			SP[1] = SP[1] - MinVal;
+			SP[2] = SP[2] - MinVal;
+			BaseSrc[x] = ColorMap[Pixel];
 		}
 	}
 }
@@ -33,21 +65,39 @@ void WINAPI GradientRemove()
 
 void WINAPI GradientRemoveCache(char *aFileName)
 {
-	CachedPicture *cache = CachePicture(aFileName);
+	CachedPicture *cache = CachePicturePrintErrors("1.bmp", __FUNCTION__);
 	if (cache == NULL)
-	{
-		FileDebug("GradientRemoveCache : image could not be loaded");
 		return;
-	}
-	if (cache->Pixels == NULL)
-	{
-		FileDebug("GradientRemoveCache : pixels are missing");
-		return;
-	}
-	if (cache->LoadedPicture == NULL)
-	{
-		FileDebug("GradientRemoveCache : image is missing");
-		return;
-	}
 	GradientRemove(cache->Pixels, cache->Width, cache->Height);
+}
+
+void WINAPI GradientReduceCache(char *aFileName, int GradientCount)
+{
+	CachedPicture *cache = CachePicturePrintErrors(aFileName, __FUNCTION__);
+	if (cache == NULL)
+		return;
+	int GradientStep = 255 / GradientCount;
+	LPCOLORREF Pixels = cache->Pixels;
+	int Width = cache->Width;
+	int Height = cache->Height;
+	for (int y = 0; y < Height; y++)
+	{
+		int *BaseSrc = (int*)&Pixels[y*Width];
+		for (int x = 0; x < Width; x++)
+		{
+			unsigned char *SP = (unsigned char*)&BaseSrc[x];
+			int Avg = (SP[0] + SP[1] + SP[2]) / 3;
+			int SnapToGrid = (Avg + GradientStep) / GradientStep * GradientStep;
+			int Dif = SnapToGrid - Avg;
+			for (int i = 0; i < 3; i++)
+			{
+				int NewVal = SP[i] + Dif;
+//				if (NewVal < 0)
+//					NewVal = 0;
+				if (NewVal > 255)
+					NewVal = 255;
+				SP[i] = NewVal;
+			}
+		}
+	}
 }

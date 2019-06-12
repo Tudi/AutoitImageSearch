@@ -25,3 +25,5 @@ void HistorygramInArea(int StartX = -1, int StartY = -1, int EndX = -1, int EndY
 void KeepColorRange(int RMin, int RMax, int GMin, int GMax, int BMin, int BMax);
 void KeepColorRangeAndGradient(int Color, int MaxChange, int RMin, int RMax, int GMin, int GMax, int BMin, int BMax);
 void WINAPI KeepGradient3(int Color1, float MaxChange1, int Color2, float MaxChange2, int Color3, float MaxChange3);
+
+void ColorReduceCache(char *aFileName, int ChannelColorCount);

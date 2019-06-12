@@ -1,35 +1,31 @@
 #include "StdAfx.h"
 
 static int ImageFileAutoIncrement = 0;
-void SaveScreenshot_(ScreenshotStruct	*CurScreenshot)
-{
-	FileDebug( "Started saving the screenshot" );
 
-	if( CurScreenshot->Pixels == NULL )
-	{
-		FileDebug( "WARNING:Screenshot buffer is null when trying to save it to file!" );
-		return;
-	}
-	int Width = CurScreenshot->Right - CurScreenshot->Left;
-	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
+void SaveImageAutoName(LPCOLORREF Pixels, int Width, int Height, char *BaseName, int BytesPerPixel)
+{
 	//find an available file name
 	char MyFileName[DEFAULT_STR_BUFFER_SIZE];
 	BOOL FileExists;
 	do {
-		sprintf_s( MyFileName, DEFAULT_STR_BUFFER_SIZE, "%s_%04d_%04d_%04d.bmp", "Screenshot", ImageFileAutoIncrement, Width, Height );
-		FileExists = ( _access( MyFileName, 0 ) == 0 );
+		sprintf_s(MyFileName, DEFAULT_STR_BUFFER_SIZE, "%s_%04d_%04d_%04d.bmp", "Screenshot", ImageFileAutoIncrement, Width, Height);
+		FileExists = (_access(MyFileName, 0) == 0);
 		ImageFileAutoIncrement++;
-	}while( FileExists == TRUE );
+	} while (FileExists == TRUE);
 
-	FileDebug( "chosen filename is :" );
-	FileDebug( MyFileName );
+	FileDebug("chosen filename is :");
+	FileDebug(MyFileName);
+	SaveImage(Pixels, Width, Height, MyFileName, BytesPerPixel);
+}
 
+void SaveImage(LPCOLORREF Pixels, int Width, int Height, char *BaseName, int BytesPerPixel)
+{
 	//create a bitmap and populate pixels on it
 	CImage Img;
 	Img.Create( Width, Height, 32 );
-	if( CurScreenshot->BytesPerPixel == 1 )
+	if( BytesPerPixel == 1 )
 	{
-		unsigned char *Pixels = (unsigned char*)CurScreenshot->Pixels;
+		unsigned char *Pixels = (unsigned char*)Pixels;
 		for( int y = 0; y < Height; y +=1 )
 			for( int x = 0; x < Width; x += 1 )
 				Img.SetPixel( x, y, RGB( Pixels[ y * Width + x ], Pixels[ y * Width + x ], Pixels[ y * Width + x ] ) );
@@ -38,10 +34,24 @@ void SaveScreenshot_(ScreenshotStruct	*CurScreenshot)
 	{
 		for( int y = 0; y < Height; y +=1 )
 			for( int x = 0; x < Width; x += 1 )
-				Img.SetPixel( x, y, RGB( GetBValue( CurScreenshot->Pixels[ y * Width + x ] ), GetGValue( CurScreenshot->Pixels[ y * Width + x ] ), GetRValue( CurScreenshot->Pixels[ y * Width + x ] ) ) );
+				Img.SetPixel( x, y, RGB( GetBValue( Pixels[ y * Width + x ] ), GetGValue( Pixels[ y * Width + x ] ), GetRValue( Pixels[ y * Width + x ] ) ) );
 	}
 
-	Img.Save( MyFileName );
+	Img.Save(BaseName);
+}
+
+void SaveScreenshot_(ScreenshotStruct	*CurScreenshot)
+{
+	FileDebug("Started saving the screenshot");
+
+	if (CurScreenshot->Pixels == NULL)
+	{
+		FileDebug("WARNING:Screenshot buffer is null when trying to save it to file!");
+		return;
+	}
+	int Width = CurScreenshot->Right - CurScreenshot->Left;
+	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
+	SaveImageAutoName(CurScreenshot->Pixels, Width, Height, "Screenshot", CurScreenshot->BytesPerPixel);
 }
 
 void WINAPI SaveScreenshot()

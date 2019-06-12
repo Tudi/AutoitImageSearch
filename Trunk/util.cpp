@@ -1123,3 +1123,55 @@ void WINAPI RemoveCharFromNumberString(char *str, char c)
 	str[WriteIndex] = 0;
 }
 
+void RedBlackTree::AddNode(RedBlackTreeNode *NewNode)
+{
+	NewNode->Left = NULL;
+	NewNode->Right = NULL;
+	NodeList.push_front(NewNode);
+	if (root == NULL)
+	{
+		root = NewNode;
+		return;
+	}
+	RedBlackTreeNode *itr = root;
+	while (1)
+	{
+		int compare = memcmp(itr->Key, NewNode->Key, KeySize);
+		if (compare <= 0)
+		{
+			if (itr->Left == NULL)
+			{
+				itr->Left = NewNode;
+				return;
+			}
+			itr = itr->Left;
+		}
+		else
+		{
+			if (itr->Right == NULL)
+			{
+				itr->Right = NewNode;
+				return;
+			}
+			itr = itr->Right;
+		}
+	}
+}
+
+void *RedBlackTree::FindNode(char *key)
+{
+	if (root == NULL)
+		return NULL;
+	RedBlackTreeNode *itr = root;
+	while (itr != NULL)
+	{
+		int compare = memcmp(itr->Key, key, KeySize);
+		if (compare == 0)
+			return itr->Value;
+		else if (compare < 0)
+			itr = itr->Left;
+		else
+			itr = itr->Right;
+	}
+	return NULL;
+}

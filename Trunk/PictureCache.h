@@ -30,11 +30,13 @@ struct CachedPicture
 
 int GetCacheIndex( char *aFilespec );
 CachedPicture *CachePicture( char *aFilespec );
+CachedPicture *CachePicturePrintErrors(char *aFilespec, char *CallerFunctionName);
 void CheckPrepareToleranceMaps( CachedPicture *cache, int NewTolerance, int TransparentColor );
 void WINAPI MoveScreenshotToCache( char *Name );
 void RemoveCacheAlphaChannel( CachedPicture *cache );
 void WINAPI LoadCacheOverScreenshot(char *aFilename, int Atx, int Aty);
 void UnloadLastCache(); //right now only used when training OCR with huge amount of files
+void UnloadCache(char *aFilespec);
 
 extern LIBRARY_API CachedPicture PictureCache[MAX_PICTURE_CACHE_COUNT];
 extern LIBRARY_API int NrPicturesCached;

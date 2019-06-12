@@ -14,4 +14,6 @@ void RemoveScreenshotAlphaChannel(ScreenshotStruct *cache);
 void DecreaseColorPrecision(ScreenshotStruct *cache, unsigned int Div, unsigned int And);
 void DecreaseColorCount_(ScreenshotStruct *cache, unsigned int ColorsPerChannel);
 void GetUniqueColorsInRegion(int StartX, int StartY, int EndX, int EndY);
+LPCOLORREF BlurrImage(int HalfKernelSize, int MiddleFactor, LPCOLORREF Pixels, int Width, int Height);
+void ApplyColorBitmask(LPCOLORREF Pixels, int Width, int Height, int Mask);
 #endif

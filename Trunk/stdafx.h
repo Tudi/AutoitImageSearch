@@ -51,6 +51,9 @@
 #include <atlimage.h>
 #include <math.h>
 #include <set>
+#include <map>
+#include <list>
+#include <vector>
 
 #ifdef LIBRARY_EXPORTS
 #    define LIBRARY_API __declspec(dllexport)
@@ -88,14 +91,14 @@
 #include "PixelProcess.h"
 #include "GradientRemove.h"
 #include "EdgeFilter.h"
-#include <map>
 #include <algorithm>
-#include <vector>
 #include <time.h>
 
 #ifdef _CONSOLE
 	#include "Benchmarks/Benchmarks.h"
+	#include "Testing/EdgeFilterTest.h"
 #endif
+
 #define RGB_GET_R(Color) ( Color & 0xFF )
 #define RGB_GET_G(Color) ( (Color >> 8 ) & 0xFF)
 #define RGB_GET_B(Color) ( (Color >> 16 )& 0xFF)

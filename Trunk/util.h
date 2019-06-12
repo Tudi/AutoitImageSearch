@@ -32,4 +32,27 @@ LPCOLORREF getbits(HBITMAP ahImage, HDC hdc, LONG &aWidth, LONG &aHeight, bool &
 char* WINAPI ImageSearch(int aLeft, int aTop, int aRight, int aBottom, char *aImageFile);
 void WINAPI RemoveCharFromNumberString(char *str, char c);
 
+struct RedBlackTreeNode
+{
+	RedBlackTreeNode *Left, *Right;
+	char *Key;
+	void *Value;
+};
+
+class RedBlackTree
+{
+public:
+	RedBlackTree(int pKeySize)
+	{
+		KeySize = pKeySize;
+		root = NULL;
+	}
+	void AddNode(RedBlackTreeNode *NewNode);
+	void *FindNode(char *key);
+	std::list<RedBlackTreeNode *> *GetNodeList() { return &NodeList; }
+private:
+	std::list<RedBlackTreeNode*> NodeList; // for printing out the list
+	RedBlackTreeNode *root;
+	int KeySize;
+};
 #endif

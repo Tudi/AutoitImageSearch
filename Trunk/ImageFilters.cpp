@@ -1,5 +1,83 @@
 #include "StdAfx.h"
 
+LPCOLORREF BlurrImage(int HalfKernelSize, int MiddleFactor, LPCOLORREF Pixels, int Width, int Height)
+{
+	LPCOLORREF new_Pixels = (COLORREF*)_aligned_malloc(Width * Height * sizeof(COLORREF) + SSE_PADDING, SSE_ALIGNMENT);
+	if (new_Pixels == NULL)
+	{
+		FileDebug("Error:Could not allocate buffer for blur!");
+		return NULL;
+	}
+
+	if (MiddleFactor > 1)
+	{
+		//32 fps
+		int CharWidth = Width * 4;
+		for( int y = HalfKernelSize; y < Height- HalfKernelSize; y +=1 )
+			for( int x = HalfKernelSize; x < Width- HalfKernelSize; x += 1 )
+			{
+				unsigned char *RowStart = (unsigned char *)&Pixels[ y * Width + x ];
+				int SumOfValuesR = 0;
+				int SumOfValuesG = 0;
+				int SumOfValuesB = 0;
+				for (int ky = -HalfKernelSize; ky <= HalfKernelSize; ky++)
+					for (int kx = -HalfKernelSize * 4; kx <= HalfKernelSize * 4; kx += 4)
+					{
+						SumOfValuesR += RowStart[ ky * CharWidth + kx + 0 ];
+						SumOfValuesG += RowStart[ ky * CharWidth + kx + 1 ];
+						SumOfValuesB += RowStart[ ky * CharWidth + kx + 2 ];
+					}
+				SumOfValuesR += MiddleFactor * RowStart[0];
+				SumOfValuesG += MiddleFactor * RowStart[1];
+				SumOfValuesB += MiddleFactor * RowStart[2];
+				new_Pixels[ y * Width + x ] = RGB( SumOfValuesR / (9 + MiddleFactor), SumOfValuesG / (9 + MiddleFactor), SumOfValuesB / (9 + MiddleFactor));
+			} 
+	}
+	else if (HalfKernelSize == 1)
+	{
+		//37 fps
+		for (int y = 1; y < Height - 1; y += 1)
+			for (int x = 1; x < Width - 1; x += 1)
+			{
+				int SumOfValuesRB = 0;
+				int SumOfValuesG8 = 0;
+				LPCOLORREF BoxStart = &Pixels[y * Width + x];
+				for (int ky = -1; ky <= 1; ky++)
+					for (int kx = -1; kx <= 1; kx++)
+					{
+						SumOfValuesRB += (BoxStart[ky * Width + kx] & 0x00FF00FF);	//remove G and sum RB
+						SumOfValuesG8 += (BoxStart[ky * Width + kx] & 0x0000FF00);
+					}
+				int SumOfValuesR = (SumOfValuesRB >> 0) & 0x0000FFFF;
+				int SumOfValuesG = (SumOfValuesG8 >> 8) & 0x0000FFFF;
+				int SumOfValuesB = (SumOfValuesRB >> 16) & 0x0000FFFF;
+				new_Pixels[y * Width + x] = RGB(SumOfValuesR / 9, SumOfValuesG / 9, SumOfValuesB / 9);
+			}
+		/**/
+	}
+	else
+	{
+		int KernelPixelCount = (HalfKernelSize * 2 + 1) * (HalfKernelSize * 2 + 1);
+		for (int y = HalfKernelSize; y < Height - HalfKernelSize; y += 1)
+			for (int x = HalfKernelSize; x < Width - HalfKernelSize; x += 1)
+			{
+				int SumOfValuesRB = 0;
+				int SumOfValuesG = 0;
+				LPCOLORREF BoxStart = &Pixels[y * Width + x];
+				for (int ky = -HalfKernelSize; ky <= HalfKernelSize; ky++)
+					for (int kx = -HalfKernelSize; kx <= HalfKernelSize; kx++)
+					{
+						SumOfValuesRB += (BoxStart[ky * Width + kx] & 0x00FF00FF);	//remove G and sum RB
+						SumOfValuesG += GetGValue(BoxStart[ky * Width + kx]);
+					}
+				int SumOfValuesR = (SumOfValuesRB >> 0) & 0x0000FFFF;
+				int SumOfValuesB = (SumOfValuesRB >> 16) & 0x0000FFFF;
+				new_Pixels[y * Width + x] = RGB(SumOfValuesR / KernelPixelCount, SumOfValuesG / KernelPixelCount, SumOfValuesB / KernelPixelCount);
+			}
+	}
+	return new_Pixels;
+}
+
 void WINAPI BlurrImage( int HalfKernelSize )
 {
 	FileDebug( "Started bluring screenshot" );
@@ -10,73 +88,8 @@ void WINAPI BlurrImage( int HalfKernelSize )
 	}
 	int Width = CurScreenshot->Right - CurScreenshot->Left;
 	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
-	LPCOLORREF new_Pixels = (COLORREF*)_aligned_malloc( Width * Height * sizeof( COLORREF ) + SSE_PADDING, SSE_ALIGNMENT );
-	if( new_Pixels == NULL )
-	{
-		FileDebug( "Error:Could not allocate buffer for blur!" );
-		return;
-	}
 
-	if( HalfKernelSize == 1 )
-	{
-		//37 fps
-		for( int y = 1; y < Height-1; y +=1 )
-			for( int x = 1; x < Width-1; x += 1 )
-			{
-				int SumOfValuesRB = 0;
-				int SumOfValuesG8 = 0;
-				LPCOLORREF BoxStart = &CurScreenshot->Pixels[ y * Width + x ];
-				for(int ky=-1;ky<=1;ky++)
-					for(int kx=-1;kx<=1;kx++)
-					{
-						SumOfValuesRB += ( BoxStart[ ky * Width + kx ] & 0x00FF00FF );	//remove G and sum RB
-						SumOfValuesG8 += ( BoxStart[ ky * Width + kx ] & 0x0000FF00);
-					}
-				int SumOfValuesR = ( SumOfValuesRB >> 0 ) & 0x0000FFFF;
-				int SumOfValuesG = ( SumOfValuesG8 >> 8 ) & 0x0000FFFF;
-				int SumOfValuesB = ( SumOfValuesRB >> 16 ) & 0x0000FFFF;
-				new_Pixels[ y * Width + x ] = RGB( SumOfValuesR / 9, SumOfValuesG / 9, SumOfValuesB / 9 );
-			}
-			/**/
-		//32 fps
-/*		int CharWidth = Width * 4;
-		for( int y = 1; y < Height-1; y +=1 )
-			for( int x = 1; x < Width-1; x += 1 )
-			{
-				unsigned char *RowStart = (unsigned char *)&CurScreenshot->Pixels[ ( y - 1 ) * Width + x - 1 ];
-				int SumOfValuesR = 0;
-				int SumOfValuesG = 0;
-				int SumOfValuesB = 0;
-				for(int ky=0;ky<=2;ky++)
-					for(int kx=0;kx<=2*4;kx+=4)
-					{
-						SumOfValuesR += RowStart[ ky * CharWidth + kx + 0 ];
-						SumOfValuesG += RowStart[ ky * CharWidth + kx + 1 ];
-						SumOfValuesB += RowStart[ ky * CharWidth + kx + 2 ];
-					}
-				new_Pixels[ y * Width + x ] = RGB( SumOfValuesR / 9, SumOfValuesG / 9, SumOfValuesB / 9 );
-			} */
-	}
-	else
-	{
-		int KernelPixelCount = ( HalfKernelSize * 2 + 1 ) * ( HalfKernelSize * 2 + 1 );
-		for( int y = HalfKernelSize; y < Height-HalfKernelSize; y +=1 )
-			for( int x = HalfKernelSize; x < Width-HalfKernelSize; x += 1 )
-			{
-				int SumOfValuesRB = 0;
-				int SumOfValuesG = 0;
-				LPCOLORREF BoxStart = &CurScreenshot->Pixels[ y * Width + x ];
-				for(int ky=-HalfKernelSize;ky<=HalfKernelSize;ky++)
-					for(int kx=-HalfKernelSize;kx<=HalfKernelSize;kx++)
-					{
-						SumOfValuesRB += ( BoxStart[ ky * Width + kx ] & 0x00FF00FF );	//remove G and sum RB
-						SumOfValuesG += GetGValue( BoxStart[ ky * Width + kx ] );
-					}
-				int SumOfValuesR = ( SumOfValuesRB >> 0 ) & 0x0000FFFF;
-				int SumOfValuesB = ( SumOfValuesRB >> 16 ) & 0x0000FFFF;
-				new_Pixels[ y * Width + x ] = RGB( SumOfValuesR / KernelPixelCount, SumOfValuesG / KernelPixelCount, SumOfValuesB / KernelPixelCount );
-			}
-	}
+	LPCOLORREF new_Pixels = BlurrImage(HalfKernelSize, 1, CurScreenshot->Pixels, Width, Height);
 
 	_aligned_free( CurScreenshot->Pixels );
 	CurScreenshot->Pixels = new_Pixels;
@@ -212,13 +225,20 @@ void WINAPI EdgeDetect( int HalfKernelSize )
 	FileDebug( "Finished bluring screenshot" );
 }
 
+void ApplyColorBitmask(LPCOLORREF Pixels, int Width, int Height, int Mask)
+{
+	if (CurScreenshot == NULL)
+		return;
+	int PixelCount = Height * Width;
+	for (int i = 0; i < PixelCount; i++)
+		Pixels[i] = Pixels[i] & Mask;
+}
+
 void WINAPI ApplyColorBitmask(int Mask)
 {
 	if (CurScreenshot == NULL)
 		return;
-	int PixelCount = CurScreenshot->GetWidth() * CurScreenshot->GetHeight();
-	for (int i = 0; i < PixelCount; i++)
-		CurScreenshot->Pixels[i] = CurScreenshot->Pixels[i] & Mask;
+	ApplyColorBitmask(CurScreenshot->Pixels, CurScreenshot->GetWidth(), CurScreenshot->GetHeight(), Mask);
 }
 
 void DecreaseColorCount_(ScreenshotStruct *cache, unsigned int ColorsPerChannel)

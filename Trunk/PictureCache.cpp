@@ -77,6 +77,33 @@ CachedPicture *CachePicture( char *aFilespec )
 	return &PictureCache[NrPicturesCached-1];
 }
 
+CachedPicture *CachePicturePrintErrors(char *aFilespec, char *CallerFunctionName)
+{
+	char TempBuf[250];
+	CachedPicture *cache = CachePicture(aFilespec);
+	if (CallerFunctionName == NULL)
+		return cache;
+	if (cache == NULL)
+	{
+		sprintf_s(TempBuf, sizeof(TempBuf), "%s : image could not be loaded", CallerFunctionName);
+		FileDebug(TempBuf);
+		return cache;
+	}
+	if (cache->Pixels == NULL)
+	{
+		sprintf_s(TempBuf, sizeof(TempBuf), "%s : pixels are missing", CallerFunctionName);
+		FileDebug(TempBuf);
+		return cache;
+	}
+	if (cache->LoadedPicture == NULL)
+	{
+		sprintf_s(TempBuf, sizeof(TempBuf), "%s : image is missing", CallerFunctionName);
+		FileDebug(TempBuf);
+		return cache;
+	}
+	return cache;
+}
+
 void CheckPrepareToleranceMaps( CachedPicture *cache, int NewTolerance, int TransparentColor )
 {
 	if( cache == NULL )
@@ -216,4 +243,16 @@ void UnloadLastCache()
 	_aligned_free(PictureCache[NrPicturesCached - 1].Pixels);
 	PictureCache[NrPicturesCached - 1].Pixels = NULL;
 	NrPicturesCached--;
+}
+
+void UnloadCache(char *aFilespec)
+{
+	int ExistingCacheIndex = GetCacheIndex(aFilespec);
+	if (ExistingCacheIndex == -1)
+	{
+		FileDebug("No cache to unload");
+	}
+	_aligned_free(PictureCache[ExistingCacheIndex].Pixels);
+	PictureCache[ExistingCacheIndex].Pixels = NULL;
+	PictureCache[ExistingCacheIndex].NameHash = 0;
 }

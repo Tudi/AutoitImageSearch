@@ -8,6 +8,8 @@ void WINAPI SaveScreenshotDiffMask( int LowLimit );
 void WINAPI SaveEdgeMap();
 void WINAPI SaveScreenshotCutTransparent();
 void WINAPI SaveScreenshotArea( int StartX, int StartY, int EndX, int EndY, char *FileName = NULL );
+void SaveImageAutoName(LPCOLORREF Pixels, int Width, int Height, char *BaseName, int BytesPerPixel = 4);
+void SaveImage(LPCOLORREF Pixels, int Width, int Height, char *BaseName, int BytesPerPixel = 4);
 
 void DumpAsPPM( unsigned char *R,unsigned char *G,unsigned char *B, int Width, int Height );
 void DumpAsPPM( LPCOLORREF RGB, int Width, int Height );
