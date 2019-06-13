@@ -43,7 +43,7 @@ void LineFilter_LearnLine(LineFilter *LO_Active, char *Line, int LineLen)
 		ExistingLine->TotalFoundCount++;
 		return;
 	}
-	RedBlackTreeNode *newNode = Factory_New_Linestore(Line, LineLen);
+	RedBlackTreeNode *newNode = Factory_New_Linestore(Line, LineLen * PIXEL_BYTE_COUNT);
 	LO_Active->Lines[LineLen - MIN_LINE_LENGTH_PIXELS]->AddNode(newNode);
 }
 
@@ -63,11 +63,11 @@ void MergePictureStatistics(LineFilter *Ori, LineFilter *Temp)
 				ExistingLine->TotalPictureFoundCount += TempLine->TotalPictureFoundCount;
 				continue;
 			}
-			RedBlackTreeNode *CopyNode = Factory_New_Linestore(TempLine->Line, i);
-			ExistingLine = (LineStore *)CopyNode->Value;
-			ExistingLine->TotalFoundCount = TempLine->TotalFoundCount;
-			ExistingLine->TotalPictureFoundCount = TempLine->TotalPictureFoundCount;
-			Ori->Lines[i - MIN_LINE_LENGTH_PIXELS]->AddNode(CopyNode);
+			RedBlackTreeNode *NewNode = Factory_New_Linestore(TempLine->Line, i * PIXEL_BYTE_COUNT );
+			LineStore *NewLine = (LineStore *)NewNode->Value;
+			NewLine->TotalFoundCount = TempLine->TotalFoundCount;
+			NewLine->TotalPictureFoundCount = TempLine->TotalPictureFoundCount;
+			Ori->Lines[i - MIN_LINE_LENGTH_PIXELS]->AddNode(NewNode);
 		}
 	}
 	Ori->LinesAdded += Temp->LinesAdded;
@@ -76,7 +76,7 @@ void MergePictureStatistics(LineFilter *Ori, LineFilter *Temp)
 
 void CopyPixel(LPCOLORREF src, char *dst)
 {
-	dst[0] = *(LPCOLORREF)&src[0]; // also copy alpha channel that is on byte 4, we will overwrite this later
+	*(LPCOLORREF)&dst[0] = src[0]; // also copy alpha channel that is on byte 4, we will overwrite this later
 }
 
 LineFilter *LineFilterParseImage(char *aFileName)
@@ -84,6 +84,8 @@ LineFilter *LineFilterParseImage(char *aFileName)
 	InitLinePoints();
 
 	CachedPicture *cache = CachePicturePrintErrors(aFileName, __FUNCTION__);
+	if (cache == NULL)
+		return NULL;
 
 	int PixelCount = cache->Width * cache->Height;
 
@@ -93,45 +95,18 @@ LineFilter *LineFilterParseImage(char *aFileName)
 //	cache->Pixels = new_Pixels;
 
 	//reduce color count to half
-//	ApplyColorBitmask(cache->Pixels, cache->Width, cache->Height, 0x00FEFEFE);
+	ColorReduceCache(aFileName,6);
 
 	//remove gradient from the image
 //	GradientRemoveCache(aFileName);
 
-	GradientReduceCache(aFileName, 10);
+//	GradientReduceCache(aFileName, 3);
 
 	LineFilter *UsedLineFilter = new LineFilter();
 
 	int ValuesAdded = 0;
 
-	//break up the image into small lines
-/*	int LineLength = 2;
-	for (int y = 1; y < cache->Height - 1; y++)
-		for (int x = 1; x < cache->Width - 1; x++)
-		{
-			//construct the line
-			*(DWORD*)&LineBuff[0] = cache->Pixels[y * cache->Width + x]; // pixel 1,1
-
-			//for object to be rotation invariant, we will consider all statistics
-			CopyPixel(&cache->Pixels[(y - 1) * cache->Width + (x - 1)], &LineBuff[3]);// pixel -1,-1
-			LineFilter_LearnLine(UsedLineFilter, LineBuff, LineLength);
-			*(DWORD*)&LineBuff[3] = cache->Pixels[(y - 1) * cache->Width + (x - 0)]; // pixel -1,0
-			LineFilter_LearnLine(UsedLineFilter, LineBuff, LineLength);
-			*(DWORD*)&LineBuff[3] = cache->Pixels[(y - 1) * cache->Width + (x + 1)]; // pixel -1,1
-			LineFilter_LearnLine(UsedLineFilter, LineBuff, LineLength);
-			*(DWORD*)&LineBuff[3] = cache->Pixels[(y - 0) * cache->Width + (x - 1)]; // pixel 0,-1
-			LineFilter_LearnLine(UsedLineFilter, LineBuff, LineLength);
-			*(DWORD*)&LineBuff[3] = cache->Pixels[(y - 0) * cache->Width + (x + 1)]; // pixel 0,1
-			LineFilter_LearnLine(UsedLineFilter, LineBuff, LineLength);
-			*(DWORD*)&LineBuff[3] = cache->Pixels[(y + 1) * cache->Width + (x - 1)]; // pixel 1,-1
-			LineFilter_LearnLine(UsedLineFilter, LineBuff, LineLength);
-			*(DWORD*)&LineBuff[3] = cache->Pixels[(y + 1) * cache->Width + (x - 0)]; // pixel 1,0
-			LineFilter_LearnLine(UsedLineFilter, LineBuff, LineLength);
-			*(DWORD*)&LineBuff[3] = cache->Pixels[(y + 1) * cache->Width + (x + 1)]; // pixel 1,1
-			LineFilter_LearnLine(UsedLineFilter, LineBuff, LineLength);
-			ValuesAdded += 8;
-		}*/
-
+	//break up the image into multiple lines
 	char *LineBuff = (char *)_aligned_malloc(MAX_LINE_LENGTH_PIXELS * 4 + SSE_PADDING, SSE_ALIGNMENT);
 	for (int LineLength = MIN_LINE_LENGTH_PIXELS; LineLength < MAX_LINE_LENGTH_PIXELS; LineLength++)
 	{
@@ -148,7 +123,7 @@ LineFilter *LineFilterParseImage(char *aFileName)
 					{
 						int YMod = LinePoints[LineLength - MIN_LINE_LENGTH_PIXELS][CurLine][PixelNr * 2 + 0];
 						int XMod = LinePoints[LineLength - MIN_LINE_LENGTH_PIXELS][CurLine][PixelNr * 2 + 1];
-						CopyPixel(&cache->Pixels[(y + YMod)* cache->Width + x + XMod], &LineBuff[(PixelNr+1)*3]);
+						CopyPixel(&cache->Pixels[(y + YMod) * cache->Width + x + XMod], &LineBuff[(PixelNr+1)*PIXEL_BYTE_COUNT]);
 					}
 					//add the line to the statistics
 					LineFilter_LearnLine(UsedLineFilter, LineBuff, LineLength);
@@ -169,25 +144,41 @@ void LineFilter_AddImage(int ObjectIndex, char *aFileName)
 {
 	LineFilter_Init(ObjectIndex);
 	LineFilter *UsedLineFilter = LineFilterParseImage(aFileName);
+	if (UsedLineFilter == NULL)
+		return;
 	MergePictureStatistics(LO_Active, UsedLineFilter);
 	delete UsedLineFilter;
 }
 
-/*unsigned int LineFilter_GetSeenCount(LineFilter *LO_Active, LPCOLORREF p1, LPCOLORREF p2)
+//from temporary to active
+void MergePictureStatisticsElimianteNonCommon(LineFilter *Ori, LineFilter *Temp)
 {
-	//ever seen this pixel combo ?
-	unsigned _int64 Key1 = ((unsigned _int64)p1 << 32) | ((unsigned _int64)p2 << 0);
-	auto itr = LO_Active->EdgePixelStatistics.find(Key1);
-	if (itr != LO_Active->EdgePixelStatistics.end())
-		return LO_Active->EdgePixelStatistics[Key1];
-	//ever seen the flipped version of it ?
-	unsigned _int64 Key2 = ((unsigned _int64)p2 << 32) | ((unsigned _int64)p1 << 0);
-	itr = LO_Active->EdgePixelStatistics.find(Key2);
-	if (itr != LO_Active->EdgePixelStatistics.end())
-		return LO_Active->EdgePixelStatistics[Key2];
-	//have not seen this pixel combo until now
-	return 0;
-}*/
+	for (int i = 0; i < MAX_LINE_LENGTH_PIXELS - MIN_LINE_LENGTH_PIXELS; i++)
+	{
+		std::list<RedBlackTreeNode*> *NodeList = Ori->Lines[i]->GetNodeList();
+		for (auto itr = NodeList->begin(); itr != NodeList->end(); itr++)
+		{
+			LineStore *ExistingLine = (LineStore *)Temp->Lines[i]->FindNode((*itr)->Key);
+			//soft erase if this line does not exist in the new image
+			if (ExistingLine == NULL)
+			{
+				LineStore *TempLine = (LineStore*)(*itr)->Value;
+				TempLine->TotalFoundCount = 0;
+				TempLine->TotalPictureFoundCount = 0;
+			}
+		}
+	}
+}
+
+void LineFilter_AddImageEliminateNonCommon(int ObjectIndex, char *aFileName)
+{
+	LineFilter_Init(ObjectIndex);
+	LineFilter *UsedLineFilter = LineFilterParseImage(aFileName);
+	if (UsedLineFilter == NULL)
+		return;
+	MergePictureStatisticsElimianteNonCommon(LO_Active, UsedLineFilter);
+	delete UsedLineFilter;
+}
 
 void LineFilter_MarkObjectProbability(int ObjectIndex, char *aFileName)
 {
@@ -215,12 +206,14 @@ void LineFilter_MarkObjectProbability(int ObjectIndex, char *aFileName)
 					{
 						int YMod = LinePoints[LineLength - MIN_LINE_LENGTH_PIXELS][CurLine][PixelNr * 2 + 0];
 						int XMod = LinePoints[LineLength - MIN_LINE_LENGTH_PIXELS][CurLine][PixelNr * 2 + 1];
-						CopyPixel(&cache->Pixels[(y + YMod)* cache->Width + x + XMod], &LineBuff[(PixelNr + 1) * 3]);
+						CopyPixel(&cache->Pixels[(y + YMod) * cache->Width + x + XMod], &LineBuff[(PixelNr + 1) * PIXEL_BYTE_COUNT]);
 					}
 
 					//get statistics about this line
 					LineStore *ls = (LineStore*)LO_Active->Lines[LineLength - MIN_LINE_LENGTH_PIXELS]->FindNode(LineBuff);
 					if (ls == NULL)
+						continue;
+					if (ls->TotalFoundCount == 0)
 						continue;
 
 					//we found this line at this position. Calculate how much we trust this line that it belongs to the object

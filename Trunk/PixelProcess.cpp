@@ -658,6 +658,7 @@ void ColorReduceCache(char *aFileName, int ChannelColorCount)
 	if (cache == NULL)
 		return;
 	int ColorStep = 255 / ChannelColorCount;
+	int Rounding = ColorStep - 1;
 	LPCOLORREF Pixels = cache->Pixels;
 	int Width = cache->Width;
 	int Height = cache->Height;
@@ -669,8 +670,11 @@ void ColorReduceCache(char *aFileName, int ChannelColorCount)
 			unsigned char *SP = (unsigned char*)&BaseSrc[x];
 			for (int i = 0; i < 3; i++)
 			{
-				int NewVal = (SP[i] + ColorStep) / ColorStep * ColorStep;
-				SP[i] = NewVal & 0xFF;
+				int NewVal = ((int)SP[i] + Rounding) / ColorStep * ColorStep;
+				if(NewVal>255)
+					SP[i] = 255;
+				else
+					SP[i] = NewVal;
 			}
 		}
 	}

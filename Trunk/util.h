@@ -47,6 +47,17 @@ public:
 		KeySize = pKeySize;
 		root = NULL;
 	}
+	~RedBlackTree()
+	{
+		//should delete the value also !!! this only clears the list
+		for (auto itr = NodeList.begin(); itr != NodeList.end(); itr++)
+		{
+			delete (*itr)->Value;
+			delete (*itr);
+		}
+		NodeList.clear();
+		root = NULL;
+	}
 	void AddNode(RedBlackTreeNode *NewNode);
 	void *FindNode(char *key);
 	std::list<RedBlackTreeNode *> *GetNodeList() { return &NodeList; }

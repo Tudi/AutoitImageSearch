@@ -15,8 +15,10 @@ Steps to obtain the common feature :
 - to detect rotated image, the search matching should also search in all type of orientations : for(i=0;i<MaxCombinations;i++)
 */
 
-#define MIN_LINE_LENGTH_PIXELS 2
-#define MAX_LINE_LENGTH_PIXELS 3 //not inclusive
+#define MIN_LINE_LENGTH_PIXELS 5
+#define MAX_LINE_LENGTH_PIXELS 6 //not inclusive
+
+#define PIXEL_BYTE_COUNT 3
 
 class LineStore
 {
@@ -42,8 +44,16 @@ public:
 	{
 		NumberOfImagesLoaded = 0;
 		LinesAdded = 0;
-		for(int i=0;i< MAX_LINE_LENGTH_PIXELS - MIN_LINE_LENGTH_PIXELS;i++)
-			Lines[i] = new RedBlackTree(i + MIN_LINE_LENGTH_PIXELS);
+		for (int i = 0; i < MAX_LINE_LENGTH_PIXELS - MIN_LINE_LENGTH_PIXELS; i++)
+			Lines[i] = new RedBlackTree((i + MIN_LINE_LENGTH_PIXELS) * PIXEL_BYTE_COUNT);
+	}
+	~LineFilter()
+	{
+		for (int i = 0; i < MAX_LINE_LENGTH_PIXELS - MIN_LINE_LENGTH_PIXELS; i++)
+		{
+			delete Lines[i];
+			Lines[i] = NULL;
+		}
 	}
 	RedBlackTree *Lines[MAX_LINE_LENGTH_PIXELS - MIN_LINE_LENGTH_PIXELS]; //0 index is for line length 2
 
@@ -54,5 +64,6 @@ public:
 
 //add pictures that will be used to define the filter mask. Additional images will remove not common image features
 void LineFilter_AddImage(int ObjectIndex, char *aFileName);
+void LineFilter_AddImageEliminateNonCommon(int ObjectIndex, char *aFileName);
 // iterate theough our list of objects and remove lines that are not marked to be part of our objects
 void LineFilter_MarkObjectProbability(int ObjectIndex, char *aFileName);
