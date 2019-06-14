@@ -61,6 +61,7 @@ public:
 	void AddNode(RedBlackTreeNode *NewNode);
 	void *FindNode(char *key);
 	std::list<RedBlackTreeNode *> *GetNodeList() { return &NodeList; }
+    int GetKeySize() { return KeySize; }
 private:
 	std::list<RedBlackTreeNode*> NodeList; // for printing out the list
 	RedBlackTreeNode *root;

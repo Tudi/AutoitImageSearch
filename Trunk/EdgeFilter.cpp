@@ -9,18 +9,21 @@ static signed char LinePoints[8][72][18];
 char IsLinePointsInitialized = 0;
 void InitLinePoints();
 
-void LineFilter_Init(int LineFilterPixelsIndex)
+void LineFilter_Init(int LineFilterObjectIndex, LineFilter *UseExisting)
 {
 	//do we have an active store for this object ?
 	for(auto itr = LO_Stores.begin(); itr != LO_Stores.end(); itr++)
-		if ((*itr)->MyIndex == LineFilterPixelsIndex)
+		if ((*itr)->MyIndex == LineFilterObjectIndex)
 		{
 			LO_Active = (*itr);
 			return;
 		}
-	LO_Active = new LineFilter();
-	LO_Stores.push_front(LO_Active);
-	LO_Active->MyIndex = LineFilterPixelsIndex;
+    if (UseExisting != NULL)
+        LO_Active = UseExisting;
+    else
+        LO_Active = new LineFilter();
+    LO_Stores.push_front(LO_Active);
+	LO_Active->MyIndex = LineFilterObjectIndex;
 }
 
 RedBlackTreeNode* Factory_New_Linestore(char *Key, int KeySize)
@@ -37,39 +40,45 @@ RedBlackTreeNode* Factory_New_Linestore(char *Key, int KeySize)
 
 void LineFilter_LearnLine(LineFilter *LO_Active, char *Line, int LineLen)
 {
-	LineStore *ExistingLine = (LineStore *)LO_Active->Lines[LineLen - MIN_LINE_LENGTH_PIXELS]->FindNode(Line);
-	if (ExistingLine != NULL)
+//	LineStore *ExistingLine = (LineStore *)LO_Active->Lines[LineLen - MIN_LINE_LENGTH_PIXELS]->FindNode(Line);
+    LineStore *ExistingLine = (LineStore *)LO_Active->Lines[0]->FindNode(Line);
+    if (ExistingLine != NULL)
 	{
 		ExistingLine->TotalFoundCount++;
 		return;
 	}
 	RedBlackTreeNode *newNode = Factory_New_Linestore(Line, LineLen * PIXEL_BYTE_COUNT);
-	LO_Active->Lines[LineLen - MIN_LINE_LENGTH_PIXELS]->AddNode(newNode);
+//	LO_Active->Lines[LineLen - MIN_LINE_LENGTH_PIXELS]->AddNode(newNode);
+    LO_Active->Lines[0]->AddNode(newNode);
 }
 
 //from temporary to active
 void MergePictureStatistics(LineFilter *Ori, LineFilter *Temp)
 {
 //	printf("Old list had %d items, new item has %d\n", (int)Ori->Lines[0]->GetNodeList()->size(), (int)Temp->Lines[0]->GetNodeList()->size());
-	for (int i = MIN_LINE_LENGTH_PIXELS; i < MAX_LINE_LENGTH_PIXELS; i++)
+//	for (int i = MIN_LINE_LENGTH_PIXELS; i < MAX_LINE_LENGTH_PIXELS; i++)
 	{
-		std::list<RedBlackTreeNode*> *NodeList = Temp->Lines[i - MIN_LINE_LENGTH_PIXELS]->GetNodeList();
-		for (auto itr = NodeList->begin(); itr != NodeList->end(); itr++)
+//		std::list<RedBlackTreeNode*> *NodeList = Temp->Lines[i - MIN_LINE_LENGTH_PIXELS]->GetNodeList();
+        std::list<RedBlackTreeNode*> *NodeList = Temp->Lines[0]->GetNodeList();
+        for (auto itr = NodeList->begin(); itr != NodeList->end(); itr++)
 		{
 			LineStore *TempLine = (LineStore*)(*itr)->Value;
-			LineStore *ExistingLine = (LineStore *)Ori->Lines[i - MIN_LINE_LENGTH_PIXELS]->FindNode((*itr)->Key);
-			if (ExistingLine != NULL)
+//			LineStore *ExistingLine = (LineStore *)Ori->Lines[i - MIN_LINE_LENGTH_PIXELS]->FindNode((*itr)->Key);
+            LineStore *ExistingLine = (LineStore *)Ori->Lines[0]->FindNode((*itr)->Key);
+            if (ExistingLine != NULL)
 			{
 				ExistingLine->TotalFoundCount += TempLine->TotalFoundCount;
 				ExistingLine->TotalPictureFoundCount += TempLine->TotalPictureFoundCount;
 				continue;
 			}
-			RedBlackTreeNode *NewNode = Factory_New_Linestore(TempLine->Line, i * PIXEL_BYTE_COUNT );
-			LineStore *NewLine = (LineStore *)NewNode->Value;
+//			RedBlackTreeNode *NewNode = Factory_New_Linestore(TempLine->Line, i * PIXEL_BYTE_COUNT );
+            RedBlackTreeNode *NewNode = Factory_New_Linestore(TempLine->Line, Ori->Lines[0]->GetKeySize());
+            LineStore *NewLine = (LineStore *)NewNode->Value;
 			NewLine->TotalFoundCount = TempLine->TotalFoundCount;
 			NewLine->TotalPictureFoundCount = TempLine->TotalPictureFoundCount;
-			Ori->Lines[i - MIN_LINE_LENGTH_PIXELS]->AddNode(NewNode);
-		}
+			//Ori->Lines[i - MIN_LINE_LENGTH_PIXELS]->AddNode(NewNode);
+            Ori->Lines[0]->AddNode(NewNode);
+        }
 	}
 	Ori->LinesAdded += Temp->LinesAdded;
 	Ori->NumberOfImagesLoaded += Temp->NumberOfImagesLoaded;
@@ -97,7 +106,7 @@ void CopyLinePixelsExceptFirst(LPCOLORREF src, int Stride, char *dst, int LineLe
 	}
 }
 
-LineFilter *LineFilterParseImage(char *aFileName)
+LineFilter *LineFilterParseImage(char *aFileName, int LineLength)
 {
 	InitLinePoints();
 
@@ -121,13 +130,13 @@ LineFilter *LineFilterParseImage(char *aFileName)
 
 //	GradientReduceCache(aFileName, 3);
 
-	LineFilter *UsedLineFilter = new LineFilter();
+    LineFilter *UsedLineFilter = new LineFilter(LineLength);
 
 	int ValuesAdded = 0;
 
 	//break up the image into multiple lines
 	char *LineBuff = (char *)_aligned_malloc(MAX_LINE_LENGTH_PIXELS * 4 + SSE_PADDING, SSE_ALIGNMENT);
-	for (int LineLength = MIN_LINE_LENGTH_PIXELS; LineLength < MAX_LINE_LENGTH_PIXELS; LineLength++)
+//	for (int LineLength = MIN_LINE_LENGTH_PIXELS; LineLength < MAX_LINE_LENGTH_PIXELS; LineLength++)
 	{
 		int NumberOfPossibleLines = 2 * (LineLength + 1) + 2 * (LineLength - 1);
 		for (int y = LineLength; y < cache->Height - LineLength; y++)
@@ -154,27 +163,32 @@ LineFilter *LineFilterParseImage(char *aFileName)
 	return UsedLineFilter;
 }
 
-void LineFilter_AddImage(int ObjectIndex, char *aFileName)
+void LineFilter_AddImage(int ObjectIndex, int LineLength, char *aFileName)
 {
-	LineFilter_Init(ObjectIndex);
-	LineFilter *UsedLineFilter = LineFilterParseImage(aFileName);
+    LineFilter *UsedLineFilter = LineFilterParseImage(aFileName, LineLength);
 	if (UsedLineFilter == NULL)
 		return;
-	MergePictureStatistics(LO_Active, UsedLineFilter);
-	delete UsedLineFilter;
+    LineFilter_Init(ObjectIndex, UsedLineFilter);
+    if (LO_Active != UsedLineFilter)
+    {
+        MergePictureStatistics(LO_Active, UsedLineFilter);
+        delete UsedLineFilter;
+    }
 }
 
 //from temporary to active
 void MergePictureStatisticsElimianteNonCommon(LineFilter *Ori, LineFilter *Temp)
 {
 	int ElimintedValuesCount = 0;
-	for (int i = 0; i < MAX_LINE_LENGTH_PIXELS - MIN_LINE_LENGTH_PIXELS; i++)
+//	for (int i = 0; i < MAX_LINE_LENGTH_PIXELS - MIN_LINE_LENGTH_PIXELS; i++)
 	{
-		std::list<RedBlackTreeNode*> *NodeList = Ori->Lines[i]->GetNodeList();
-		for (auto itr = NodeList->begin(); itr != NodeList->end(); itr++)
+//		std::list<RedBlackTreeNode*> *NodeList = Ori->Lines[i]->GetNodeList();
+        std::list<RedBlackTreeNode*> *NodeList = Ori->Lines[0]->GetNodeList();
+        for (auto itr = NodeList->begin(); itr != NodeList->end(); itr++)
 		{
-			LineStore *ExistingLine = (LineStore *)Temp->Lines[i]->FindNode((*itr)->Key);
-			//soft erase if this line does not exist in the new image
+//			LineStore *ExistingLine = (LineStore *)Temp->Lines[i]->FindNode((*itr)->Key);
+            LineStore *ExistingLine = (LineStore *)Temp->Lines[0]->FindNode((*itr)->Key);
+            //soft erase if this line does not exist in the new image
 			if (ExistingLine == NULL)
 			{
 				LineStore *TempLine = (LineStore*)(*itr)->Value;
@@ -190,19 +204,22 @@ void MergePictureStatisticsElimianteNonCommon(LineFilter *Ori, LineFilter *Temp)
 //	printf("Eliminated %d nodes from the list\n", ElimintedValuesCount);
 }
 
-void LineFilter_AddImageEliminateNonCommon(int ObjectIndex, char *aFileName)
+void LineFilter_AddImageEliminateNonCommon(int ObjectIndex, int LineLength, char *aFileName)
 {
-	LineFilter_Init(ObjectIndex);
-	LineFilter *UsedLineFilter = LineFilterParseImage(aFileName);
+    LineFilter *UsedLineFilter = LineFilterParseImage(aFileName, LineLength);
 	if (UsedLineFilter == NULL)
 		return;
-	MergePictureStatisticsElimianteNonCommon(LO_Active, UsedLineFilter);
+    LineFilter_Init(ObjectIndex, UsedLineFilter);
+    MergePictureStatisticsElimianteNonCommon(LO_Active, UsedLineFilter);
 	delete UsedLineFilter;
 }
 
 void LineFilter_MarkObjectProbability(int ObjectIndex, char *aFileName)
 {
-	LineFilter_Init(ObjectIndex);
+	LineFilter_Init(ObjectIndex, NULL);
+    if (LO_Active->Lines[0] == NULL)
+        return;
+
 	CachedPicture *cache = CachePicturePrintErrors(aFileName, __FUNCTION__);
 	if (cache == NULL)
 		return;
@@ -211,7 +228,8 @@ void LineFilter_MarkObjectProbability(int ObjectIndex, char *aFileName)
 	memset(NewPicture, 0, cache->Width * cache->Height * sizeof(COLORREF) + SSE_PADDING);
 
 	char *LineBuff = (char *)_aligned_malloc(MAX_LINE_LENGTH_PIXELS * 4 + SSE_PADDING, SSE_ALIGNMENT);
-	for (int LineLength = MIN_LINE_LENGTH_PIXELS; LineLength < MAX_LINE_LENGTH_PIXELS; LineLength++)
+    int LineLength = LO_Active->Lines[0]->GetKeySize() / PIXEL_BYTE_COUNT;
+//	for (int LineLength = MIN_LINE_LENGTH_PIXELS; LineLength < MAX_LINE_LENGTH_PIXELS; LineLength++)
 	{
 		int NumberOfPossibleLines = 2 * (LineLength + 1) + 2 * (LineLength - 1);
 		for (int y = LineLength; y < cache->Height - LineLength; y++)
@@ -225,8 +243,9 @@ void LineFilter_MarkObjectProbability(int ObjectIndex, char *aFileName)
 					CopyLinePixelsExceptFirst(&cache->Pixels[y * cache->Width + x], cache->Width, &LineBuff[3], LineLength, CurLine);
 
 					//get statistics about this line
-					LineStore *ls = (LineStore*)LO_Active->Lines[LineLength - MIN_LINE_LENGTH_PIXELS]->FindNode(LineBuff);
-					if (ls == NULL)
+//					LineStore *ls = (LineStore*)LO_Active->Lines[LineLength - MIN_LINE_LENGTH_PIXELS]->FindNode(LineBuff);
+                    LineStore *ls = (LineStore*)LO_Active->Lines[0]->FindNode(LineBuff);
+                    if (ls == NULL)
 						continue;
 					if (ls->TotalFoundCount == 0)
 						continue;

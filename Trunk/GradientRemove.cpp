@@ -5,7 +5,7 @@ void GradientRemove(LPCOLORREF Pixels, int Width, int Height)
 	std::map<DWORD, DWORD> ColorMap;
 	for (int y = 0; y < Height; y++)
 	{
-		int *BaseSrc = (int*)&Pixels[y*Width];
+        DWORD *BaseSrc = (DWORD*)&Pixels[y*Width];
 		for (int x = 0; x < Width; x++)
 		{
 			DWORD Pixel = BaseSrc[x];
@@ -73,13 +73,15 @@ void WINAPI GradientRemoveCache(char *aFileName)
 
 void WINAPI GradientReduceCache(char *aFileName, int GradientCount)
 {
-	CachedPicture *cache = CachePicturePrintErrors(aFileName, __FUNCTION__);
-	if (cache == NULL)
-		return;
+    CachedPicture *cache = CachePicturePrintErrors(aFileName, __FUNCTION__);
+    if (cache == NULL)
+        return;
+    GradientReduce(cache->Pixels, cache->Width, cache->Height, GradientCount);
+}
+
+void GradientReduce(LPCOLORREF Pixels, int Width, int Height, int GradientCount)
+{
 	int GradientStep = 255 / GradientCount;
-	LPCOLORREF Pixels = cache->Pixels;
-	int Width = cache->Width;
-	int Height = cache->Height;
 	for (int y = 0; y < Height; y++)
 	{
 		int *BaseSrc = (int*)&Pixels[y*Width];
