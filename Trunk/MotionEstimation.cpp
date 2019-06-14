@@ -56,12 +56,12 @@ int WINAPI GenerateDiffMap()
 		FileDebug( "Can not motion estimate as there are not enough screenshots" );
 		return 0;
 	}
-	if( CurScreenshot->Right != PrevScreenshot->Right || CurScreenshot->Left != PrevScreenshot->Left
+/*	if( CurScreenshot->Right != PrevScreenshot->Right || CurScreenshot->Left != PrevScreenshot->Left
 		|| CurScreenshot->Top != PrevScreenshot->Top || CurScreenshot->Bottom != PrevScreenshot->Bottom )
 	{
 		FileDebug( "Can not motion estimate as the 2 screenshots were not taken from same screen place" );
 		return 0;
-	}
+    }/**/
 
 	unsigned int Width = CurScreenshot->Right - CurScreenshot->Left;
 	unsigned int Height = CurScreenshot->Bottom - CurScreenshot->Top;
@@ -79,6 +79,7 @@ int WINAPI GenerateDiffMap()
 	if( MotionDiff.Pixels == NULL )
 		MotionDiff.Pixels = (LPCOLORREF)_aligned_malloc( Width * Height * sizeof(COLORREF) + SSE_PADDING, SSE_ALIGNMENT);
 
+    MotionDiff.IsDiffMap = true;
 //DumpAsPPMBGR( PrevScreenshot->Pixels, Width, Height );
 //DumpAsPPMBGR( CurScreenshot->Pixels, Width, Height );
 

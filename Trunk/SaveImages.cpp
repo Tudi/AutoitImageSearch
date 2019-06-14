@@ -25,10 +25,10 @@ void SaveImage(LPCOLORREF Pixels, int Width, int Height, char *BaseName, int Byt
 	Img.Create( Width, Height, 32 );
 	if( BytesPerPixel == 1 )
 	{
-		unsigned char *Pixels = (unsigned char*)Pixels;
+		unsigned char *cPixels = (unsigned char*)Pixels;
 		for( int y = 0; y < Height; y +=1 )
 			for( int x = 0; x < Width; x += 1 )
-				Img.SetPixel( x, y, RGB( Pixels[ y * Width + x ], Pixels[ y * Width + x ], Pixels[ y * Width + x ] ) );
+                Img.SetPixel(x, y, RGB(cPixels[y * Width + x], cPixels[y * Width + x], cPixels[y * Width + x]));
 	}
 	else
 	{

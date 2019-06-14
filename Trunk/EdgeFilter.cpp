@@ -79,9 +79,9 @@ void CopyPixel(LPCOLORREF src, char *dst)
 {
 //	*(LPCOLORREF)&dst[0] = src[0]; // also copy alpha channel that is on byte 4, we will overwrite this later
 	char *csrc = (char*)src;
-	dst[0] = src[0];
-	dst[1] = src[1];
-	dst[2] = src[2];
+    dst[0] = csrc[0];
+    dst[1] = csrc[1];
+    dst[2] = csrc[2];
 }
 
 void CopyLinePixelsExceptFirst(LPCOLORREF src, int Stride, char *dst, int LineLength, int LineType)
@@ -236,7 +236,7 @@ void LineFilter_MarkObjectProbability(int ObjectIndex, char *aFileName)
 					float LineFoundPicturePCT = (float)ls->TotalPictureFoundCount / (float)LO_Active->NumberOfImagesLoaded; // did we see it in all training pictures ?
 
 					//mark this as a recognized line
-					unsigned char WhiteScale = LineFoundPicturePCT * 255;
+                    unsigned char WhiteScale = (unsigned char)(LineFoundPicturePCT * 255.0f);
 					if (WhiteScale < 10)
 						WhiteScale = 10; //something to be visible to the human eye
 					int RGBWhite = RGB(WhiteScale, WhiteScale, WhiteScale);

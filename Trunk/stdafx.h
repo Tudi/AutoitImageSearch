@@ -72,14 +72,14 @@
 #define REMOVE_ALPHA_CHANNEL_MASK	(0x00FFFFFF)
 
 #include "PictureCache.h"
-#include "util.h"
+#include "Tools/util.h"
 #include "resampling.h"
 #include "InputProcess.h"
 #include "debug.h"
 #include "SaveImages.h"
 #include "ImageFilters.h"
 #include "MotionEstimation.h"
-#include "Tools.h"
+#include "Tools/Tools.h"
 #include "PiramidSearch.h"
 #include "SimilarSearch.h"
 #include "OCR.h"
@@ -95,6 +95,7 @@
 #include <time.h>
 
 #ifdef _CONSOLE
+    #include "Tools\CommandProcessor.h"
 	#include "Benchmarks/Benchmarks.h"
 	#include "Testing/EdgeFilterTest.h"
 #endif
