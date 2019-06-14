@@ -21,20 +21,23 @@ void TestTextureLearnOnPictures()
 //	SaveImage(cache->Pixels, cache->Width, cache->Height, "1_RedGrad3_noBlur.bmp");
 
 	LineFilter_AddImage(0, "1.bmp");
-	LineFilter_AddImage(0, "2.bmp");
-	LineFilter_AddImage(0, "3.bmp");
-	LineFilter_AddImage(0, "4.bmp");
-	LineFilter_AddImage(0, "5.bmp");
-	LineFilter_AddImage(0, "6.bmp");
+	cache = CachePicturePrintErrors("1.bmp", __FUNCTION__);
+	SaveImage(cache->Pixels, cache->Width, cache->Height, "1_color_reduced32.bmp");
+	LineFilter_AddImageEliminateNonCommon(0, "2.bmp");
+	LineFilter_AddImageEliminateNonCommon(0, "3.bmp");
+	LineFilter_AddImageEliminateNonCommon(0, "4.bmp");
+	LineFilter_AddImageEliminateNonCommon(0, "5.bmp");
+	LineFilter_AddImageEliminateNonCommon(0, "6.bmp");
+
 	LineFilter_MarkObjectProbability(0, "1.bmp");
 	cache = CachePicturePrintErrors("1.bmp", __FUNCTION__);
-	SaveImage(cache->Pixels, cache->Width, cache->Height, "1_probable_5_6.bmp");
+	SaveImage(cache->Pixels, cache->Width, cache->Height, "1_common_3_32.bmp");
 	LineFilter_MarkObjectProbability(0, "2.bmp");
 	cache = CachePicturePrintErrors("2.bmp", __FUNCTION__);
-	SaveImage(cache->Pixels, cache->Width, cache->Height, "2_probable_5_6.bmp");
-	LineFilter_MarkObjectProbability(0, "3.bmp");
-	cache = CachePicturePrintErrors("3.bmp", __FUNCTION__);
-	SaveImage(cache->Pixels, cache->Width, cache->Height, "3_probable_5_6.bmp");
+	SaveImage(cache->Pixels, cache->Width, cache->Height, "2_common_3_32.bmp");
+//	LineFilter_MarkObjectProbability(0, "3.bmp");
+//	cache = CachePicturePrintErrors("3.bmp", __FUNCTION__);
+//	SaveImage(cache->Pixels, cache->Width, cache->Height, "3_probable_4_8.bmp");
 
 /*	TakeScreenshot(0, 0, 1000, 1000);
 	SaveScreenshot

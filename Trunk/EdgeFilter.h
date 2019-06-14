@@ -15,8 +15,8 @@ Steps to obtain the common feature :
 - to detect rotated image, the search matching should also search in all type of orientations : for(i=0;i<MaxCombinations;i++)
 */
 
-#define MIN_LINE_LENGTH_PIXELS 5
-#define MAX_LINE_LENGTH_PIXELS 6 //not inclusive
+#define MIN_LINE_LENGTH_PIXELS 3
+#define MAX_LINE_LENGTH_PIXELS 4 //not inclusive
 
 #define PIXEL_BYTE_COUNT 3
 

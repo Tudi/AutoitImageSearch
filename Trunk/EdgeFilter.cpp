@@ -50,13 +50,14 @@ void LineFilter_LearnLine(LineFilter *LO_Active, char *Line, int LineLen)
 //from temporary to active
 void MergePictureStatistics(LineFilter *Ori, LineFilter *Temp)
 {
+//	printf("Old list had %d items, new item has %d\n", (int)Ori->Lines[0]->GetNodeList()->size(), (int)Temp->Lines[0]->GetNodeList()->size());
 	for (int i = MIN_LINE_LENGTH_PIXELS; i < MAX_LINE_LENGTH_PIXELS; i++)
 	{
 		std::list<RedBlackTreeNode*> *NodeList = Temp->Lines[i - MIN_LINE_LENGTH_PIXELS]->GetNodeList();
 		for (auto itr = NodeList->begin(); itr != NodeList->end(); itr++)
 		{
 			LineStore *TempLine = (LineStore*)(*itr)->Value;
-			LineStore *ExistingLine = (LineStore *)Ori->Lines[i - MIN_LINE_LENGTH_PIXELS]->FindNode(TempLine->Line);
+			LineStore *ExistingLine = (LineStore *)Ori->Lines[i - MIN_LINE_LENGTH_PIXELS]->FindNode((*itr)->Key);
 			if (ExistingLine != NULL)
 			{
 				ExistingLine->TotalFoundCount += TempLine->TotalFoundCount;
@@ -76,7 +77,24 @@ void MergePictureStatistics(LineFilter *Ori, LineFilter *Temp)
 
 void CopyPixel(LPCOLORREF src, char *dst)
 {
-	*(LPCOLORREF)&dst[0] = src[0]; // also copy alpha channel that is on byte 4, we will overwrite this later
+//	*(LPCOLORREF)&dst[0] = src[0]; // also copy alpha channel that is on byte 4, we will overwrite this later
+	char *csrc = (char*)src;
+	dst[0] = src[0];
+	dst[1] = src[1];
+	dst[2] = src[2];
+}
+
+void CopyLinePixelsExceptFirst(LPCOLORREF src, int Stride, char *dst, int LineLength, int LineType)
+{
+//	CopyPixel(&cache->Pixels[y * cache->Width + x], &LineBuff[0]);// pixel 0,0
+	//construct all the possible lines
+	//construct this line
+	for (int PixelNr = 0; PixelNr < LineLength - 1; PixelNr++)
+	{
+		int YMod = LinePoints[LineLength - MIN_LINE_LENGTH_PIXELS][LineType][PixelNr * 2 + 0];
+		int XMod = LinePoints[LineLength - MIN_LINE_LENGTH_PIXELS][LineType][PixelNr * 2 + 1];
+		CopyPixel(&src[YMod * Stride + XMod], &dst[PixelNr*PIXEL_BYTE_COUNT]);
+	}
 }
 
 LineFilter *LineFilterParseImage(char *aFileName)
@@ -95,7 +113,8 @@ LineFilter *LineFilterParseImage(char *aFileName)
 //	cache->Pixels = new_Pixels;
 
 	//reduce color count to half
-	ColorReduceCache(aFileName,6);
+//	ColorReduceCache(aFileName, 8);
+	ColorReduceCache(aFileName, 32);
 
 	//remove gradient from the image
 //	GradientRemoveCache(aFileName);
@@ -119,12 +138,7 @@ LineFilter *LineFilterParseImage(char *aFileName)
 				for (int CurLine = 0; CurLine < NumberOfPossibleLines; CurLine++)
 				{
 					//construct this line
-					for (int PixelNr = 0; PixelNr < LineLength-1; PixelNr++)
-					{
-						int YMod = LinePoints[LineLength - MIN_LINE_LENGTH_PIXELS][CurLine][PixelNr * 2 + 0];
-						int XMod = LinePoints[LineLength - MIN_LINE_LENGTH_PIXELS][CurLine][PixelNr * 2 + 1];
-						CopyPixel(&cache->Pixels[(y + YMod) * cache->Width + x + XMod], &LineBuff[(PixelNr+1)*PIXEL_BYTE_COUNT]);
-					}
+					CopyLinePixelsExceptFirst(&cache->Pixels[y * cache->Width + x], cache->Width, &LineBuff[3], LineLength, CurLine);
 					//add the line to the statistics
 					LineFilter_LearnLine(UsedLineFilter, LineBuff, LineLength);
 					ValuesAdded++;
@@ -153,6 +167,7 @@ void LineFilter_AddImage(int ObjectIndex, char *aFileName)
 //from temporary to active
 void MergePictureStatisticsElimianteNonCommon(LineFilter *Ori, LineFilter *Temp)
 {
+	int ElimintedValuesCount = 0;
 	for (int i = 0; i < MAX_LINE_LENGTH_PIXELS - MIN_LINE_LENGTH_PIXELS; i++)
 	{
 		std::list<RedBlackTreeNode*> *NodeList = Ori->Lines[i]->GetNodeList();
@@ -163,11 +178,16 @@ void MergePictureStatisticsElimianteNonCommon(LineFilter *Ori, LineFilter *Temp)
 			if (ExistingLine == NULL)
 			{
 				LineStore *TempLine = (LineStore*)(*itr)->Value;
-				TempLine->TotalFoundCount = 0;
-				TempLine->TotalPictureFoundCount = 0;
+				if (TempLine->TotalFoundCount > 0)
+				{
+					TempLine->TotalFoundCount = 0;
+					TempLine->TotalPictureFoundCount = 0;
+					ElimintedValuesCount++;
+				}
 			}
 		}
 	}
+//	printf("Eliminated %d nodes from the list\n", ElimintedValuesCount);
 }
 
 void LineFilter_AddImageEliminateNonCommon(int ObjectIndex, char *aFileName)
@@ -202,12 +222,7 @@ void LineFilter_MarkObjectProbability(int ObjectIndex, char *aFileName)
 				for (int CurLine = 0; CurLine < NumberOfPossibleLines; CurLine++)
 				{
 					//construct this line
-					for (int PixelNr = 0; PixelNr < LineLength - 1; PixelNr++)
-					{
-						int YMod = LinePoints[LineLength - MIN_LINE_LENGTH_PIXELS][CurLine][PixelNr * 2 + 0];
-						int XMod = LinePoints[LineLength - MIN_LINE_LENGTH_PIXELS][CurLine][PixelNr * 2 + 1];
-						CopyPixel(&cache->Pixels[(y + YMod) * cache->Width + x + XMod], &LineBuff[(PixelNr + 1) * PIXEL_BYTE_COUNT]);
-					}
+					CopyLinePixelsExceptFirst(&cache->Pixels[y * cache->Width + x], cache->Width, &LineBuff[3], LineLength, CurLine);
 
 					//get statistics about this line
 					LineStore *ls = (LineStore*)LO_Active->Lines[LineLength - MIN_LINE_LENGTH_PIXELS]->FindNode(LineBuff);
@@ -215,7 +230,7 @@ void LineFilter_MarkObjectProbability(int ObjectIndex, char *aFileName)
 						continue;
 					if (ls->TotalFoundCount == 0)
 						continue;
-
+//					if (ls->TotalPictureFoundCount > LO_Active->NumberOfImagesLoaded) printf("this should be impossible\n");
 					//we found this line at this position. Calculate how much we trust this line that it belongs to the object
 //					float LineFoundPCT = (float)ls->TotalFoundCount / (float)LO_Active->LinesAdded; //from all the lines we seen in our life, how frequent was this one ? Maybe it's a unique line
 					float LineFoundPicturePCT = (float)ls->TotalPictureFoundCount / (float)LO_Active->NumberOfImagesLoaded; // did we see it in all training pictures ?
