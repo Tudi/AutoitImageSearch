@@ -103,7 +103,8 @@ void WINAPI SaveScreenshotDiffMask( int LowLimit )
 
 	char Black = 0;
 
-	FILE *fp = fopen( MyFileName, "wb");
+	FILE *fp;
+	errno_t openres = fopen_s( &fp, MyFileName, "wb");
 	fprintf(fp, "P6\n%d %d\n255\n", Width, Height );
 
 	for( int y=0;y<Height;y++)
@@ -139,7 +140,8 @@ void DumpAsPPM( unsigned char *R,unsigned char *G,unsigned char *B, int Width, i
 	}while( FileExists == TRUE );
 
 	char Black = 0;
-	FILE *fp = fopen( MyFileName, "wb");
+	FILE *fp;
+	errno_t openres = fopen_s(&fp, MyFileName, "wb");
 	fprintf(fp, "P6\n%d %d\n255\n", Width, Height );
 	for( int i=0;i<Width*Height;i++)
 	{
@@ -177,7 +179,8 @@ void DumpAsPPM( LPCOLORREF RGB, int Width, int Height, int Stride )
 	}while( FileExists == TRUE );
 
 //	char Black = 0;
-	FILE *fp = fopen( MyFileName, "wb");
+	FILE *fp;
+	errno_t openres = fopen_s(&fp, MyFileName, "wb");
 	fprintf(fp, "P6\n%d %d\n255\n", Width, Height );
 	for( int y=0;y<Height;y++)
 		for( int x=0;x<Width;x++)
@@ -205,7 +208,8 @@ void DumpAsPPMBGR( LPCOLORREF BGR, int Width, int Height )
 	}while( FileExists == TRUE );
 
 //	char Black = 0;
-	FILE *fp = fopen( MyFileName, "wb");
+	FILE *fp;
+	errno_t openres = fopen_s(&fp, MyFileName, "wb");
 	fprintf(fp, "P6\n%d %d\n255\n", Width, Height );
 	for( int y=0;y<Height;y++)
 		for( int x=0;x<Height;x++)
@@ -345,7 +349,7 @@ void WINAPI SaveScreenshotArea(int StartX, int StartY, int EndX, int EndY, char 
 		} while (FileExists == TRUE);
 	}
 	else
-		strcpy(MyFileName, FileName);
+		strcpy_s(MyFileName, sizeof(MyFileName), FileName);
 
 	FileDebug("chosen filename is :");
 	FileDebug(MyFileName);

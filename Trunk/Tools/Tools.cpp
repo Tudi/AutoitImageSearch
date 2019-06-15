@@ -188,7 +188,7 @@ DWORD GetProcessByExeName(char *ExeName)
 	{
 		do
 		{
-			if (stricmp(entry.szExeFile, ExeName) == 0)
+			if (_stricmp(entry.szExeFile, ExeName) == 0)
 			{
 				ret = entry.th32ProcessID;
 				break;

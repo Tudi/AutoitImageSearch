@@ -13,7 +13,8 @@ int StartTickCount = 0;
 		int TickNow = GetTimeTickI();
 		int Diff = TickNow - PrevTickCount;
 		PrevTickCount = TickNow;
-		FILE *f = fopen( "debug.txt", "at" );
+		FILE *f;
+		errno_t openres = fopen_s(&f, "debug.txt", "at");
 		fprintf( f, "%d-%d)%s\n", TickNow - StartTickCount, Diff, what );
 		fclose( f );
 	}

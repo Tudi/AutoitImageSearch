@@ -23,29 +23,29 @@
     <ProjectGuid>{665FCE36-CFC7-4E16-A978-72E983DE24E5}</ProjectGuid>
     <RootNamespace>ImageSearchDLL</RootNamespace>
     <Keyword>Win32Proj</Keyword>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseConsoleTest|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugConsoleTest|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -188,6 +188,7 @@
     <ClCompile Include="PictureCache.cpp" />
     <ClCompile Include="PiramidSearch.cpp" />
     <ClCompile Include="PixelProcess.cpp" />
+    <ClCompile Include="ProjectionDistanceMap.cpp" />
     <ClCompile Include="Resampling.cpp" />
     <ClCompile Include="SaveImages.cpp" />
     <ClCompile Include="SimilarSearch.cpp" />
@@ -225,6 +226,7 @@
     <ClInclude Include="PictureCache.h" />
     <ClInclude Include="PiramidSearch.h" />
     <ClInclude Include="PixelProcess.h" />
+    <ClInclude Include="ProjectionDistanceMap.h" />
     <ClInclude Include="Resampling.h" />
     <ClInclude Include="SaveImages.h" />
     <ClInclude Include="SimilarSearch.h" />
