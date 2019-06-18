@@ -89,7 +89,7 @@ void ParseArgStrings(int argc, char **args)
         printf("\t- ResizeScreenshot(width,height) - Direct line duplicate/skip resize. No billiniar filtering\n");
         printf("\t- BlurScreenshot(KernelSize,GaussianHeight) - Kernel size is the radius of the pixels to be merged. Center pixel is multiplied by Gaussian factor\n");
         printf("\t- BlurCache(FileName,KernelSize,GaussianHeight) - Load picture to cache.Kernel size is the radius of the pixels to be merged. Center pixel is multiplied by Gaussian factor\n");
-        printf("\t- GradientRemove() - Move all shades of a color to the smallest version of that color. Different results based on lightning strenght\n");
+        printf("\t- LuminosityRemove() - Move all shades of a color to the smallest version of that color. Different results based on lightning strenght\n");
         printf("\t- GradientReduce(shades) - snap colors to specific levels. Does not care about illumination strength\n");
         printf("\t- ColorReduceCache(CachedFileName,ChannelMaxColors) - Reduce each color channel to have max specified colors\n");
         printf("\t- SaveCache(CachedFileName,FileName) - Save one of the cached images as an uncompressed 24 bpp BMP\n");
@@ -211,10 +211,10 @@ void ParseArgStrings(int argc, char **args)
             }
             continue;
         }
-        if (strcmp(args[i], "GradientRemove") == 0)
+        if (strcmp(args[i], "LuminosityRemove") == 0)
         {
             if (Verbose == 1)printf("Will try to process function : %s\n", args[i]);
-            GradientRemove();
+            LuminosityRemove();
             continue;
         }
         if (strcmp(args[i], "GradientReduce") == 0)

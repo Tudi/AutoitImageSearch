@@ -83,9 +83,6 @@ void GradientReduce(LPCOLORREF Pixels, int Width, int Height, int GradientCount)
 {
 	int GradientStep = 255 / GradientCount;
 	int Rounding = GradientStep / 2;
-	LPCOLORREF Pixels = cache->Pixels;
-	int Width = cache->Width;
-	int Height = cache->Height;
 	for (int y = 0; y < Height; y++)
 	{
 		int *BaseSrc = (int*)&Pixels[y*Width];
