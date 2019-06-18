@@ -303,7 +303,8 @@ char * WINAPI ReadTextFromScreenshot( int StartX, int StartY, int EndX, int EndY
 
 void WINAPI OCR_LoadFontsFromFile(char *aFilespec)
 {
-	FILE *f = fopen(aFilespec, "rt");
+	FILE *f;
+	errno_t openres = fopen_s(&f, aFilespec, "rt");
 	if (f)
 	{
 		char c[2];

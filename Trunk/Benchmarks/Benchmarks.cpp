@@ -35,7 +35,7 @@ void RunSQRTBenchmark()
 	for( __int64 i = 0; i < LoopCount; i++ )
 		AntiOptimizer2 += sqrt1( i * i );
 	End = GetTimeTickI();
-	printf( "Ignoreme : %lld \n", AntiOptimizer );
+	printf( "Ignoreme : %d \n", AntiOptimizer );
 	printf("benchmarking sqrt1 : %d \n", End - Start );
 
 	Start = GetTimeTickI();
@@ -43,7 +43,7 @@ void RunSQRTBenchmark()
 	for( __int64 i = 0; i < LoopCount; i++ )
 		AntiOptimizer2 += (__int64)sqrt( (double)i * (double)i );
 	End = GetTimeTickI();
-	printf( "Ignoreme : %lld \n", AntiOptimizer );
+	printf( "Ignoreme : %d \n", AntiOptimizer );
 	printf("benchmarking sqrt(double) : %d \n", End - Start );
 }
 

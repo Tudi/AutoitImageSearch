@@ -5,7 +5,7 @@ void LuminosityRemove(LPCOLORREF Pixels, int Width, int Height)
 	std::map<DWORD, DWORD> ColorMap;
 	for (int y = 0; y < Height; y++)
 	{
-		int *BaseSrc = (int*)&Pixels[y*Width];
+        DWORD *BaseSrc = (DWORD*)&Pixels[y*Width];
 		for (int x = 0; x < Width; x++)
 		{
 			DWORD Pixel = BaseSrc[x];
@@ -73,9 +73,14 @@ void WINAPI LuminosityRemoveCache(char *aFileName)
 
 void WINAPI GradientReduceCache(char *aFileName, int GradientCount)
 {
-	CachedPicture *cache = CachePicturePrintErrors(aFileName, __FUNCTION__);
-	if (cache == NULL)
-		return;
+    CachedPicture *cache = CachePicturePrintErrors(aFileName, __FUNCTION__);
+    if (cache == NULL)
+        return;
+    GradientReduce(cache->Pixels, cache->Width, cache->Height, GradientCount);
+}
+
+void GradientReduce(LPCOLORREF Pixels, int Width, int Height, int GradientCount)
+{
 	int GradientStep = 255 / GradientCount;
 	int Rounding = GradientStep / 2;
 	LPCOLORREF Pixels = cache->Pixels;

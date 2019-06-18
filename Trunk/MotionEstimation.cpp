@@ -84,24 +84,7 @@ int WINAPI GenerateDiffMap()
 //DumpAsPPMBGR( CurScreenshot->Pixels, Width, Height );
 
 	unsigned char *Out = (unsigned char *)MotionDiff.Pixels;
-	RetSAD = 0;
-	for( unsigned int Y = 0; Y < Height - 4; Y += 4 )
-	{
-		unsigned char *Data1 = (unsigned char *)( &PrevScreenshot->Pixels[ Y * Width ] );
-		unsigned char *Data1End = Data1 + Width * 4;
-		unsigned char *Data2 = (unsigned char *)( &CurScreenshot->Pixels[ Y * Width ] );
-		unsigned char *Data3 = &Out[ Y / 4 * Width / 4 ];
-		for( ; Data1 < Data1End; Data1 += 16, Data2 += 16 )
-		{
-			int IntrinsicSad = SAD_16x4byte( Data1, Data2, Width * 4, Width * 4 );
-			RetSAD += IntrinsicSad;
-
-			*Data3 = IntrinsicSad / ( 4 * 4 * 3 );
-//			*Data3 = ( Data1[0] + Data1[1] + Data1[2] ) / 3;
-//			*Data3 = ( Data2[0] + Data2[1] + Data2[2] ) / 3;
-			Data3 += 1;
-		}
-	}
+	RetSAD = GenerateDiffMap(PrevScreenshot->Pixels, CurScreenshot->Pixels, Width, Height, Out);
 
 //	char DebugBuff[500];
 //	sprintf_s( DebugBuff, 500, "current sad now %d", RetSAD );
@@ -109,5 +92,28 @@ int WINAPI GenerateDiffMap()
 
 	FileDebug( "Finished motion estimation" );
 
+	return RetSAD;
+}
+
+unsigned int GenerateDiffMap(LPCOLORREF Pix1, LPCOLORREF Pix2, int Width, int Height, unsigned char *DiffMapOutput)
+{
+	int RetSAD = 0;
+	for (unsigned int Y = 0; Y < Height - 4; Y += 4)
+	{
+		unsigned char *Data1 = (unsigned char *)(&Pix1[Y * Width]);
+		unsigned char *Data1End = Data1 + Width * 4;
+		unsigned char *Data2 = (unsigned char *)(&Pix2[Y * Width]);
+		unsigned char *Data3 = &DiffMapOutput[Y / 4 * Width / 4];
+		for (; Data1 < Data1End; Data1 += 16, Data2 += 16)
+		{
+			int IntrinsicSad = SAD_16x4byte(Data1, Data2, Width * 4, Width * 4);
+			RetSAD += IntrinsicSad;
+
+			*Data3 = IntrinsicSad / (4 * 4 * 3); // 4x4 pixels, each has 3 channels
+//			*Data3 = ( Data1[0] + Data1[1] + Data1[2] ) / 3;
+//			*Data3 = ( Data2[0] + Data2[1] + Data2[2] ) / 3;
+			Data3 += 1;
+		}
+	}
 	return RetSAD;
 }

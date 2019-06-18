@@ -85,6 +85,9 @@
     <ClCompile Include="Tools\CommandProcessor.cpp">
       <Filter>Tools</Filter>
     </ClCompile>
+    <ClCompile Include="ProjectionDistanceMap.cpp">
+      <Filter>ImageTools</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EdgeDetect.h">
@@ -167,6 +170,9 @@
     </ClInclude>
     <ClInclude Include="Tools\CommandProcessor.h">
       <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="ProjectionDistanceMap.h">
+      <Filter>ImageTools</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -187,7 +187,7 @@ OCRStore *FindExactMatchingFont(int *Img, int Width, int CharStartX, int CharSta
 #ifndef _DEBUG
 			sprintf_s(Filename2, sizeof(Filename2), "%s/%s", FontSetName, Filename);
 #else
-			strcpy(Filename2, Filename);
+			strcpy_s(Filename2, sizeof(Filename2), Filename);
 #endif
 			BOOL success = CopyFile(FontCache->FileName, Filename2, true);
 			if (success == false)
@@ -241,7 +241,7 @@ void OCR_FindMostSimilarFontAndSave(int *Img, int Width, int CharStartX, int Cha
 		sprintf_s(NewFilename2, sizeof(NewFilename2), "%s_%s", FontSetName, NewFilename);
 		printf("Saved font with name %s\n",NewFilename2);
 #else
-		strcpy(NewFilename2, NewFilename);
+		strcpy_s(NewFilename2, sizeof(NewFilename2), NewFilename);
 #endif
 		SaveScreenshotArea(CharStartX, CharStartY, CharEndX, CharEndY, NewFilename2);
 	}

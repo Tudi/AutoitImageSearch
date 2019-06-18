@@ -2,7 +2,7 @@
 
 void TestTextureLearnOnPictures()
 {
-	CachedPicture *cache;
+//	CachedPicture *cache;
 	//cache = CachePicturePrintErrors("1.bmp", __FUNCTION__);
 
 //	LPCOLORREF new_Pixels = BlurrImage(1, 7, cache->Pixels, cache->Width, cache->Height);
@@ -19,7 +19,7 @@ void TestTextureLearnOnPictures()
 	//remove gradient from the image
 //	GradientReduceCache("1.bmp",2);
 //	SaveImage(cache->Pixels, cache->Width, cache->Height, "1_RedGrad3_noBlur.bmp");
-
+    /*
 	LineFilter_AddImage(0, "1.bmp");
 	cache = CachePicturePrintErrors("1.bmp", __FUNCTION__);
 	SaveImage(cache->Pixels, cache->Width, cache->Height, "1_color_reduced32.bmp");
@@ -35,6 +35,7 @@ void TestTextureLearnOnPictures()
 	LineFilter_MarkObjectProbability(0, "2.bmp");
 	cache = CachePicturePrintErrors("2.bmp", __FUNCTION__);
 	SaveImage(cache->Pixels, cache->Width, cache->Height, "2_common_3_32.bmp");
+    */
 //	LineFilter_MarkObjectProbability(0, "3.bmp");
 //	cache = CachePicturePrintErrors("3.bmp", __FUNCTION__);
 //	SaveImage(cache->Pixels, cache->Width, cache->Height, "3_probable_4_8.bmp");

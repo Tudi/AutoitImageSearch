@@ -67,6 +67,7 @@
 #define SSE_ALIGNMENT			16
 #define SSE_BYTE_COUNT			16
 #define SSE_PADDING				32	//12 bytes would be enough
+#define MY_ALLOC(x)			_aligned_malloc(x+SSE_PADDING,SSE_ALIGNMENT)
 
 #define TRANSPARENT_COLOR			(0x00FFFFFF)
 #define REMOVE_ALPHA_CHANNEL_MASK	(0x00FFFFFF)
@@ -93,6 +94,7 @@
 #include "EdgeFilter.h"
 #include <algorithm>
 #include <time.h>
+#include "ProjectionDistanceMap.h"
 
 #ifdef _CONSOLE
     #include "Tools\CommandProcessor.h"
