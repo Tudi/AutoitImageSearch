@@ -1,6 +1,6 @@
 #include "stdAfx.h"
 
-void GradientRemove(LPCOLORREF Pixels, int Width, int Height)
+void LuminosityRemove(LPCOLORREF Pixels, int Width, int Height)
 {
 	std::map<DWORD, DWORD> ColorMap;
 	for (int y = 0; y < Height; y++)
@@ -56,19 +56,19 @@ void GradientRemove(LPCOLORREF Pixels, int Width, int Height)
 	}
 }
 
-void WINAPI GradientRemove()
+void WINAPI LuminosityRemove()
 {
 	if (CurScreenshot == NULL)
 		return;
-	GradientRemove(CurScreenshot->Pixels, CurScreenshot->GetWidth(), CurScreenshot->GetHeight());
+	LuminosityRemove(CurScreenshot->Pixels, CurScreenshot->GetWidth(), CurScreenshot->GetHeight());
 }
 
-void WINAPI GradientRemoveCache(char *aFileName)
+void WINAPI LuminosityRemoveCache(char *aFileName)
 {
 	CachedPicture *cache = CachePicturePrintErrors("1.bmp", __FUNCTION__);
 	if (cache == NULL)
 		return;
-	GradientRemove(cache->Pixels, cache->Width, cache->Height);
+	LuminosityRemove(cache->Pixels, cache->Width, cache->Height);
 }
 
 void WINAPI GradientReduceCache(char *aFileName, int GradientCount)
@@ -77,6 +77,7 @@ void WINAPI GradientReduceCache(char *aFileName, int GradientCount)
 	if (cache == NULL)
 		return;
 	int GradientStep = 255 / GradientCount;
+	int Rounding = GradientStep / 2;
 	LPCOLORREF Pixels = cache->Pixels;
 	int Width = cache->Width;
 	int Height = cache->Height;
@@ -87,7 +88,7 @@ void WINAPI GradientReduceCache(char *aFileName, int GradientCount)
 		{
 			unsigned char *SP = (unsigned char*)&BaseSrc[x];
 			int Avg = (SP[0] + SP[1] + SP[2]) / 3;
-			int SnapToGrid = (Avg + GradientStep) / GradientStep * GradientStep;
+			int SnapToGrid = (Avg + Rounding) / GradientStep * GradientStep;
 			int Dif = SnapToGrid - Avg;
 			for (int i = 0; i < 3; i++)
 			{
