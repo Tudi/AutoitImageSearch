@@ -98,7 +98,7 @@ int WINAPI GenerateDiffMap()
 unsigned int GenerateDiffMap(LPCOLORREF Pix1, LPCOLORREF Pix2, int Width, int Height, unsigned char *DiffMapOutput)
 {
 	int RetSAD = 0;
-	for (unsigned int Y = 0; Y < Height - 4; Y += 4)
+	for (int Y = 0; Y < Height - 4; Y += 4)
 	{
 		unsigned char *Data1 = (unsigned char *)(&Pix1[Y * Width]);
 		unsigned char *Data1End = Data1 + Width * 4;
@@ -116,4 +116,28 @@ unsigned int GenerateDiffMap(LPCOLORREF Pix1, LPCOLORREF Pix2, int Width, int He
 		}
 	}
 	return RetSAD;
+}
+
+void GenerateDiffMapAvgSAD(LPCOLORREF Pix1, LPCOLORREF Pix2, int Width, int Height, unsigned char *DiffMapOutput, unsigned int *RetSAD, unsigned int *SADCount)
+{
+	*RetSAD = 0;
+	*SADCount = 0;
+	for (int Y = 0; Y < Height - 4; Y += 4)
+	{
+		unsigned char *Data1 = (unsigned char *)(&Pix1[Y * Width]);
+		unsigned char *Data1End = Data1 + Width * 4;
+		unsigned char *Data2 = (unsigned char *)(&Pix2[Y * Width]);
+		unsigned char *Data3 = &DiffMapOutput[Y / 4 * Width / 4];
+		for (; Data1 < Data1End; Data1 += 16, Data2 += 16)
+		{
+			int IntrinsicSad = SAD_16x4byte(Data1, Data2, Width * 4, Width * 4);
+			if (IntrinsicSad > 0)
+			{
+				SADCount[0]++;
+				RetSAD[0] += IntrinsicSad;
+				*Data3 = IntrinsicSad / (4 * 4 * 3); // 4x4 pixels, each has 3 channels
+			}
+			Data3 += 1;
+		}
+	}
 }

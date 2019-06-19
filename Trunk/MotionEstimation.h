@@ -9,5 +9,6 @@ int WINAPI GenerateDiffMap();
 extern LIBRARY_API ScreenshotStruct MotionDiff;
 
 unsigned int GenerateDiffMap(LPCOLORREF Pix1, LPCOLORREF Pix2, int Width, int Height, unsigned char *DiffMapOutput);
+void GenerateDiffMapAvgSAD(LPCOLORREF Pix1, LPCOLORREF Pix2, int Width, int Height, unsigned char *DiffMapOutput, unsigned int *RetSAD, unsigned int *SADCount);
 
 #endif

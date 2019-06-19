@@ -14,25 +14,32 @@ class ProjectionDistanceMap
 public:
 	ProjectionDistanceMap()
 	{
-		NonProjectedImage = NULL;
+		PrevImage = NULL;
 		Width = 0;
 		Height = 0;
 		MergedDistanceMaps = NULL;
+		MapsMerged = 0;
+		TempDiffBuffer = NULL;
 	}
-	void DestroyAllocatedMemmory();
+	~ProjectionDistanceMap()
+	{
+		DestroyAllocatedMemmory();
+	}
 	void Init(int pWidth, int pHeight, LPCOLORREF Pixels);
 	void AddProjectedImage(LPCOLORREF Pixels);
-	void ProcessAllDiffMaps();
-	void SameMergedMapToFile(char *FileName);
+	void SaveMergedMapToFile(char *FileName);
 private:
+	void DestroyAllocatedMemmory();
+	void MergeDistances(); // called when sum of distances would overflow
 	int Width, Height;
-	LPCOLORREF NonProjectedImage;	// we need a screenshot without any projected lines to be able to detect where the projection start and end
-	LPCOLORREF MergedDistanceMaps;
-	std::list<unsigned char*> DiffMaps;
-	std::list<unsigned char*> DistanceMaps;
-	int MaxLength, MinLength; // to scale colors from 0 to 255
+	LPCOLORREF PrevImage;		// we need a screenshot without any projected lines to be able to detect where the projection start and end
+	DWORD *MergedDistanceMaps;
+	int MapsMerged;
+	unsigned char *TempDiffBuffer;
 };
 
 void ResetDistanceMapScreenshot();	// step 1 : when we have a clean image without any projected overlay
 void ParseImageDistanceMapScreenshot();	// step 2-X : keep adding as many images as you like
-void ApplyDistanceMapOnScreenshot(char *FileName); // step X+1 : calculate the distance for each pixel based on all the added images
+void SaveDistMapAsImage(char *FileName); // step X+1 : calculate the distance for each pixel based on all the added images
+
+//void ApplyDistanceMapOnScreenshot(char *FileName); // step X+1 : calculate the distance for each pixel based on all the added images

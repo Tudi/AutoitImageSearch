@@ -4,24 +4,22 @@ ProjectionDistanceMap PDM;
 
 void ProjectionDistanceMap::DestroyAllocatedMemmory()
 {
-	if (NonProjectedImage != NULL)
+	if (PrevImage != NULL)
 	{
-		_aligned_free(NonProjectedImage);
-		NonProjectedImage = NULL;
+		_aligned_free(PrevImage);
+		PrevImage = NULL;
 	}
-
-	for (auto itr = DistanceMaps.begin(); itr != DistanceMaps.end(); itr++)
-		_aligned_free((*itr));
-	DistanceMaps.clear();
-
-	for (auto itr = DiffMaps.begin(); itr != DiffMaps.end(); itr++)
-		_aligned_free((*itr));
-	DiffMaps.clear();
 
 	if (MergedDistanceMaps != NULL)
 	{
 		_aligned_free(MergedDistanceMaps);
 		MergedDistanceMaps = NULL;
+	}
+
+	if (TempDiffBuffer != NULL)
+	{
+		_aligned_free(TempDiffBuffer);
+		TempDiffBuffer = NULL;
 	}
 }
 
@@ -31,97 +29,133 @@ void ProjectionDistanceMap::Init(int pWidth, int pHeight, LPCOLORREF Pixels)
 		DestroyAllocatedMemmory();
 	pWidth = PDM.Width;
 	pHeight = PDM.Height;
-	NonProjectedImage = (LPCOLORREF)MY_ALLOC((pWidth * pHeight * sizeof(COLORREF)));
-	memcpy(NonProjectedImage, Pixels, pWidth * pHeight * sizeof(COLORREF));
+	PrevImage = (LPCOLORREF)MY_ALLOC((pWidth * pHeight * sizeof(COLORREF)));
+	memcpy(PrevImage, Pixels, pWidth * pHeight * sizeof(COLORREF));
 }
 
 void ProjectionDistanceMap::AddProjectedImage(LPCOLORREF Pixels)
 {
-	int DiffmapSize = Width / 4 * Height / 4 * sizeof(unsigned char);
-	unsigned char *NewDiffMap = (unsigned char *)MY_ALLOC(DiffmapSize);
-	GenerateDiffMap(NonProjectedImage, Pixels, Width, Height, NewDiffMap);
+	//if first image, allocate buffer for it and nothing else to do
+	if (PrevImage == NULL)
+	{
+		PrevImage = (LPCOLORREF)MY_ALLOC(Width * Height * sizeof(COLORREF) );
+		memcpy(PrevImage, Pixels, Width * Height * sizeof(COLORREF));
+		return;
+	}
 
-	//check if nothing changed on the image. there is no point to store the diffmap if it the same as the previous one
-	if (DiffMaps.begin() != DiffMaps.end())
+	int DiffMapHeight = Height / 4;
+	int DiffMapWidth = Width / 4;
+	if (TempDiffBuffer == NULL)
 	{
-		unsigned char *PrevDiffMap = *(DiffMaps.begin());
-		if (memcmp(NewDiffMap, PrevDiffMap, DiffmapSize) == 0)
+		int DiffmapSize = (DiffMapWidth + 3) * (DiffMapHeight + 3) * sizeof(unsigned char);
+		TempDiffBuffer = (unsigned char *)MY_ALLOC(DiffmapSize);
+	}
+
+	unsigned int SAD;
+	unsigned int SADCount;
+	GenerateDiffMapAvgSAD(PrevImage, Pixels, Width, Height, TempDiffBuffer, &SAD, &SADCount);
+
+	//no changes detected, nothing to do
+	if (SADCount == 0)
+	{
+		return;
+	}
+
+	//check the length of each SAD column length
+	unsigned int AvgSADPerPixel = SAD / SADCount;
+	unsigned int SADLimit = AvgSADPerPixel;
+	if (MergedDistanceMaps == NULL)
+	{
+		MergedDistanceMaps = (LPCOLORREF)MY_ALLOC(DiffMapWidth * DiffMapHeight * sizeof(DWORD));
+		memset(MergedDistanceMaps, 0, DiffMapWidth * DiffMapHeight * sizeof(DWORD));
+		MapsMerged = 0;
+	}
+
+	//avoid overflowing values
+	if ((MapsMerged + 1) * Width / 4 >= 0x0FFFFFFF)
+		MergeDistances();
+
+	//go through the distance map line by line and check where the SAD starts and where it ends
+	for (int y = 0; y < DiffMapHeight; y++)
+		for (int x = 0; x < DiffMapWidth; x++)
 		{
-			_aligned_free(NewDiffMap);
-			return;
+			if (TempDiffBuffer[y * DiffMapWidth + x] >= SADLimit)
+			{
+				int StartOfZone = x;
+				int EndOfZone = x + 1;
+				while (TempDiffBuffer[y * DiffMapWidth + EndOfZone] >= SADLimit)
+					EndOfZone++;
+				int LineSize = EndOfZone - StartOfZone;
+				if (LineSize > DIFF_LINE_WIDTH_TOO_SMALL)
+				{
+					for (int i = StartOfZone; i < EndOfZone; i++)
+						MergedDistanceMaps[i] += LineSize;
+				}
+			}
 		}
-	}
-	else
-	{
-		DiffMaps.push_front(NewDiffMap);
-	}
+	//we added a new distance map
+	MapsMerged++;
+
+	//make current image as current image :P
+	memcpy(PrevImage, Pixels, Width * Height * sizeof(COLORREF));
 }
 
-void ProjectionDistanceMap::ProcessAllDiffMaps()
+//Called when adding more lengths would overflow a DWORD
+void ProjectionDistanceMap::MergeDistances()
 {
 	int DiffMapHeight = Height / 4;
 	int DiffMapWidth = Width / 4;
-	for (auto itr = DiffMaps.begin(); itr != DiffMaps.end(); itr++)
-	{
-		unsigned char *CurDiffMap = (*itr);
-		int DiffmapSize = DiffMapWidth * DiffMapHeight * sizeof(unsigned char);
-		unsigned char *CurDistanceMap = (unsigned char *)MY_ALLOC(DiffmapSize);
-		memset(CurDistanceMap, 0, DiffmapSize);
-		//go through the distance map line by line and check where the SAD starts and where it ends
-		for (int y = 0; y < DiffMapHeight; y++)
-			for (int x = 0; x < DiffMapWidth; x++)
-			{
-				if (CurDiffMap[y * DiffMapWidth + x] != 0)
-				{
-					int StartOfZone = x;
-					int EndOfZone = x;
-					while (CurDiffMap[y * DiffMapWidth + EndOfZone] != 0)
-						EndOfZone++;
-					int LineSize = EndOfZone - StartOfZone;
-					if (LineSize > DIFF_LINE_WIDTH_TOO_SMALL)
-					{
-						for (int i = StartOfZone; i < EndOfZone; i++)
-							CurDistanceMap[i] = LineSize;
-					}
-				}
-			}
-		DistanceMaps.push_back(CurDistanceMap);
-	}
+	for (int y = 0; y < DiffMapHeight; y++)
+		for (int x = 0; x < DiffMapWidth; x++)
+		{
+			//iterate through all length maps and get the average length at this pixel position
+			int AvgLength = MergedDistanceMaps[y * DiffMapWidth + x] / MapsMerged;
+			MergedDistanceMaps[y * DiffMapWidth + x] = AvgLength;
+		}
+	MapsMerged = 1;
+}
+
+void ProjectionDistanceMap::SaveMergedMapToFile(char *FileName)
+{
+	if (MergedDistanceMaps == NULL)
+		return;
+	if (MapsMerged == 0)
+		return;
+
+	int DiffMapHeight = Height / 4;
+	int DiffMapWidth = Width / 4;
+
 	//try to calculate for each pixel it's own depth
-	MergedDistanceMaps = (LPCOLORREF)MY_ALLOC(DiffMapWidth * DiffMapHeight * sizeof(COLORREF));
-	int PicturesInList = DistanceMaps.size();
+	LPCOLORREF DistanceMapColors = (LPCOLORREF)MY_ALLOC(DiffMapWidth * DiffMapHeight * sizeof(COLORREF));
+	int MaxLength, MinLength; // to scale colors from 0 to 255
 	MaxLength = 0;
 	MinLength = 0x0FFFFFFF;
 	for (int y = 0; y < DiffMapHeight; y++)
 		for (int x = 0; x < DiffMapWidth; x++)
 		{
 			//iterate through all length maps and get the average length at this pixel position
-			int SumOfLengths = 0;
-			for (auto itr = DistanceMaps.begin(); itr != DistanceMaps.end(); itr++)
-				SumOfLengths += (*itr)[y * DiffMapWidth + x];
-			int AvgLength = SumOfLengths / PicturesInList;
-			MergedDistanceMaps[y * DiffMapWidth + x] = AvgLength;
+			int AvgLength = MergedDistanceMaps[y * DiffMapWidth + x] / MapsMerged;
 			if (AvgLength > MaxLength)
 				MaxLength = AvgLength;
 			if (AvgLength < MinLength)
 				MinLength = AvgLength;
 		}
+
 	//scale the depth to color values
 	int tMaxLength = MaxLength + MinLength;
 	for (int y = 0; y < DiffMapHeight; y++)
 		for (int x = 0; x < DiffMapWidth; x++)
 		{
-			DWORD CurLength = MergedDistanceMaps[y * DiffMapWidth + x];
-			unsigned char Color = 255 * CurLength / tMaxLength;
-			MergedDistanceMaps[y * DiffMapWidth + x] = RGB(Color, Color, Color);
+			DWORD CurLength = MergedDistanceMaps[y * DiffMapWidth + x] / MapsMerged;
+			unsigned char Color = (unsigned char)( 255 * CurLength / tMaxLength );
+			DistanceMapColors[y * DiffMapWidth + x] = RGB(Color, Color, Color);
 		}
-}
 
-void ProjectionDistanceMap::SameMergedMapToFile(char *FileName)
-{
-	if (MergedDistanceMaps == NULL)
-		return;
-	SaveImage(MergedDistanceMaps, Width / 4, Height / 4, FileName);
+	//save the diff map as a grayscale image
+	SaveImage(DistanceMapColors, Width / 4, Height / 4, FileName);
+
+	//dealloc temp memory
+	_aligned_free(DistanceMapColors);
 }
 
 void ResetDistanceMapScreenshot()
@@ -134,7 +168,13 @@ void ParseImageDistanceMapScreenshot()
 	PDM.AddProjectedImage(CurScreenshot->Pixels);
 }
 
+void SaveDistMapAsImage(char *FileName)
+{
+	PDM.SaveMergedMapToFile(FileName);
+}
+
+/*
 void ApplyDistanceMapOnScreenshot(char *FileName)
 {
 	PDM.ProcessAllDiffMaps();
-}
+}*/
