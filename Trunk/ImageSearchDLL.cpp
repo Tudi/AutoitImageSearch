@@ -48,7 +48,7 @@ void main(int argc, char **arg)
 	//RunLordsMobileTests();
 	//RunLordsMobileTestsNoOCR();
 
-	//TestTextureLearnOnPictures();
+	TestTextureLearnOnPictures();
 
 #if defined( _CONSOLE ) && !defined( _DEBUG )
 //	RunSCreenCaptureBenchmark(); // 350 fps on my pc

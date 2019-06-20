@@ -135,8 +135,8 @@ void GenerateDiffMapAvgSAD(LPCOLORREF Pix1, LPCOLORREF Pix2, int Width, int Heig
 			{
 				SADCount[0]++;
 				RetSAD[0] += IntrinsicSad;
-				*Data3 = IntrinsicSad / (4 * 4 * 3); // 4x4 pixels, each has 3 channels
 			}
+			*Data3 = IntrinsicSad / (4 * 4 * 3); // 4x4 pixels, each has 3 channels
 			Data3 += 1;
 		}
 	}

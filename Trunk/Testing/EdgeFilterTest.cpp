@@ -2,6 +2,36 @@
 
 void TestTextureLearnOnPictures()
 {
+	return;
+/*	TakeScreenshot(110, 60, 450, 350);
+	SaveScreenshot();
+	return;*/
+
+	TakeScreenshot(110, 60, 450, 350);
+	ResetDistanceMapScreenshot();
+	for (int i = 0; i < 200; i++)
+	{
+		//avoid 100% CPU throtle in case we process a small area
+		unsigned int Start = GetTimeTickI();
+		
+		//monitor the camera input
+		TakeScreenshot(110,60,450,350);
+
+		//check if the image has some overlay movement
+		ParseImageDistanceMapScreenshot();
+
+		//visual inspectation of the movement
+		char FileName[500];
+		sprintf_s(FileName, sizeof(FileName), "diff%d.bmp", i);
+		SaveDistMapAsImage(FileName);
+
+		//how much time did this procedure take ?
+		unsigned int End = GetTimeTickI();
+
+		//maybe bmp save takes longer than we should have a sleep at all
+		if (End - Start < 300)
+			Sleep(End - Start);
+	}
 //	CachedPicture *cache;
 	//cache = CachePicturePrintErrors("1.bmp", __FUNCTION__);
 
