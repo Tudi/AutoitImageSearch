@@ -606,3 +606,40 @@ void RunImgSearchGradientBenchmark()
 		//		_getch();
 	}/**/
 }
+
+void RunDrawLineBenchmark()
+{
+	int Start, End, AntiOptimizer;
+	int LoopCount = 100000;
+	int StartX = 0;
+	int StartY = 0;
+	int EndX = 800;
+	int EndY = 800;
+
+	//fill up cache
+	TakeScreenshot(StartX, StartY, EndX, EndY);
+
+	Start = GetTimeTickI();
+	AntiOptimizer = 0;
+	for (int i = 0; i < LoopCount; i++)
+	{
+		DrawLine(StartX, StartY, EndX, EndY, BGR(1, 1, 1));
+		AntiOptimizer += i;
+	}
+	End = GetTimeTickI();
+	printf("Ignoreme : %d \n", AntiOptimizer);
+	printf(" Benchmarking DrawLine : %d lines processed in %d ms\n", LoopCount, (End - Start));
+	printf(" Benchmarking DrawLine : %d FPS \n", LoopCount * 1000 / (End - Start));
+
+	Start = GetTimeTickI();
+	AntiOptimizer = 0;
+	for (int i = 0; i < LoopCount; i++)
+	{
+		DrawLine2(StartX, StartY, EndX, EndY, BGR(1, 1, 1));
+		AntiOptimizer += i;
+	}
+	End = GetTimeTickI();
+	printf("Ignoreme : %d \n", AntiOptimizer);
+	printf(" Benchmarking DrawLine2 : %d lines processed in %d ms\n", LoopCount, (End - Start));
+	printf(" Benchmarking DrawLine2 : %d FPS \n", LoopCount * 1000 / (End - Start));
+}

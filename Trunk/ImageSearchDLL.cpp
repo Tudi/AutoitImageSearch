@@ -51,6 +51,7 @@ void main(int argc, char **arg)
 	TestTextureLearnOnPictures();
 
 #if defined( _CONSOLE ) && !defined( _DEBUG )
+//	RunDrawLineBenchmark();
 //	RunSCreenCaptureBenchmark(); // 350 fps on my pc
 //	RunCheckChangeBenchmark(); // 587 fps on my pc
 //	RunResizeBenchmark(); // 346 fps on my pc

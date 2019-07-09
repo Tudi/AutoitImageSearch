@@ -16,4 +16,5 @@ void RunOCRBenchmark();
 void RunTransparentSearchBenchmark2();
 void RunImgSearchBenchmark2();
 void RunImgSearchGradientBenchmark();
+void RunDrawLineBenchmark();
 #endif

@@ -88,6 +88,9 @@
     <ClCompile Include="ProjectionDistanceMap.cpp">
       <Filter>ImageTools</Filter>
     </ClCompile>
+    <ClCompile Include="DrawLine.cpp">
+      <Filter>ImageTools</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EdgeDetect.h">
@@ -172,6 +175,9 @@
       <Filter>Tools</Filter>
     </ClInclude>
     <ClInclude Include="ProjectionDistanceMap.h">
+      <Filter>ImageTools</Filter>
+    </ClInclude>
+    <ClInclude Include="DrawLine.h">
       <Filter>ImageTools</Filter>
     </ClInclude>
   </ItemGroup>

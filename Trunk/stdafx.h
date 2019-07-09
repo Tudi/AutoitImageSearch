@@ -95,6 +95,7 @@
 #include <algorithm>
 #include <time.h>
 #include "ProjectionDistanceMap.h"
+#include "DrawLine.h"
 
 #ifdef _CONSOLE
     #include "Tools\CommandProcessor.h"

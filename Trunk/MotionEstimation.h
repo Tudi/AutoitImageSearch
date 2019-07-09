@@ -11,4 +11,8 @@ extern LIBRARY_API ScreenshotStruct MotionDiff;
 unsigned int GenerateDiffMap(LPCOLORREF Pix1, LPCOLORREF Pix2, int Width, int Height, unsigned char *DiffMapOutput);
 void GenerateDiffMapAvgSAD(LPCOLORREF Pix1, LPCOLORREF Pix2, int Width, int Height, unsigned char *DiffMapOutput, unsigned int *RetSAD, unsigned int *SADCount);
 
+struct MotionVector
+{
+	int x, y; //moving a block location from source image, will give best match in the destination image
+};
 #endif

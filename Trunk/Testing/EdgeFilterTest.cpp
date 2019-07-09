@@ -7,6 +7,11 @@ void TestTextureLearnOnPictures()
 	SaveScreenshot();
 	return;*/
 
+/*	TakeScreenshot(110, 60, 450, 350);
+	DrawLine2(0, 0, 100, 100, BGR(255, 0, 0));
+	SaveScreenshot();
+	return;/**/
+
 	TakeScreenshot(110, 60, 450, 350);
 	ResetDistanceMapScreenshot();
 	for (int i = 0; i < 200; i++)
