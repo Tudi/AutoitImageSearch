@@ -21,11 +21,14 @@ void FixAlphaChannelZero()
 	{
 		return;
 	}
-	if ((PictureCache[NrPicturesCached].Pixels[0] >> 24) != 0)
+	if ((PictureCache[NrPicturesCached].Pixels[0] >> 24) != 0 
+		|| (PictureCache[NrPicturesCached].Pixels[0] >> 24) != (PictureCache[NrPicturesCached].Pixels[1] >> 24)
+		|| (PictureCache[NrPicturesCached].Pixels[0] >> 24) != (PictureCache[NrPicturesCached].Pixels[2] >> 24))
 	{
 		return;
 	}
 	FileDebug("Started FixAlphaChannelZero");
+	FileDebug(PictureCache[NrPicturesCached].FileName);
 
 	LPCOLORREF		Pixels = PictureCache[NrPicturesCached].Pixels;
 	for (size_t y = 0; y < (size_t)PictureCache[NrPicturesCached].Height; y++)

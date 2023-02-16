@@ -21,6 +21,7 @@ public:
 	SimilarSearch	*SSCache;
 	PiramidImage	*PSCache;
 	SplitChannel	*SCCache;
+	size_t			TimeStampTaken;
 
 	ScreenshotStruct()
 	{

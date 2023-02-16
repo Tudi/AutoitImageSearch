@@ -53,6 +53,7 @@ void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 	CurScreenshot->NeedsAlphaRemoved = true;
 	CurScreenshot->NeedsSplitChannelCache = true;
 	CurScreenshot->BytesPerPixel = 4;
+	CurScreenshot->TimeStampTaken = GetTickCount();
 
 	HDC sdc = NULL;
 	HBITMAP hbitmap_screen = NULL;
@@ -135,6 +136,13 @@ void WINAPI TakeScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 	sprintf_s(TBuff, sizeof(TBuff), "Started taking the screenshot [%d,%d][%d,%d]", aLeft, aTop, aRight, aBottom);
 	FileDebug(TBuff);
 
+	if (CurScreenshot != NULL)
+	{
+		if (CurScreenshot->TimeStampTaken + 10000 / 5 > GetTickCount()) // limit to 5 FPS ? Every 200 ms ? This process takes time :(
+		{
+			FileDebug("\tFinished taking the screenshot. Skipped because recent screenshot is too fresh");
+		}
+	}
 	CycleScreenshots();
 	ReleaseScreenshot();
 	TakeNewScreenshot( aLeft, aTop, aRight, aBottom );

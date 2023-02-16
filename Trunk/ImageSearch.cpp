@@ -527,7 +527,7 @@ char* WINAPI ImageSearch_SAD(char *aFilespec)
 		return "";
 	}
 
-	if (cache->Height == 0)
+	if (cache->Height <= 0 || cache->Width <= 0)
 	{
 		FileDebug("Skipping Image search as searched image height is 0");
 		return "";
@@ -551,7 +551,7 @@ char* WINAPI ImageSearch_SAD(char *aFilespec)
 
 				acc_sad = _mm_setzero_si128();
 
-				for (size_t y2 = 0; y2<cache->Height; y2++)
+				for (size_t y2 = 0; y2<(size_t)cache->Height; y2++)
 				{
 					LPCOLORREF AddrBig = &CurScreenshot->Pixels[(y + y2) * Width + x];
 					LPCOLORREF AddSmall = &cache->Pixels[(0 + y2) * cache->Width + 0];
@@ -590,8 +590,8 @@ char* WINAPI ImageSearch_SAD(char *aFilespec)
 	char dbgmsg[DEFAULT_STR_BUFFER_SIZE];
 	unsigned char *AddrBig = (unsigned char*)&CurScreenshot->Pixels[rety * Width + retx];
 	unsigned char* AddSmall = (unsigned char*)&cache->Pixels[0];
-	sprintf_s(dbgmsg, sizeof(dbgmsg), "\tImage search finished. Improved match %d. Returning %s . pixel 0 0 : %d %d %d %d - %d %d %d %d",
-		MatchesFound, ReturnBuff, AddrBig[0], AddrBig[1], AddrBig[2], AddrBig[3], AddSmall[0], AddSmall[1], AddSmall[2], AddSmall[3]);
+	sprintf_s(dbgmsg, sizeof(dbgmsg), "\tImage search finished. Name %s. Improved match %d. Returning %s . pixel 0 0 : %d %d %d %d - %d %d %d %d",
+		cache->FileName, MatchesFound, ReturnBuff, AddrBig[0], AddrBig[1], AddrBig[2], AddrBig[3], AddSmall[0], AddSmall[1], AddSmall[2], AddSmall[3]);
 	FileDebug(dbgmsg);
 
 	return ReturnBuff;
