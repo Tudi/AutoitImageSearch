@@ -191,7 +191,7 @@ void ParseArgStrings(int argc, char **args)
             int Size, Strength;
             Get2IntParams(&args[i][FuncNameLen + 1], Size, Strength);
             if (Verbose == 1)printf("Will try to process function : %s with params %d %d\n", args[i], Size, Strength);
-            BlurrImage(Size, Strength, CurScreenshot->Pixels, CurScreenshot->GetWidth(), CurScreenshot->GetHeight());
+            BlurrImage_(Size, Strength, CurScreenshot->Pixels, CurScreenshot->GetWidth(), CurScreenshot->GetHeight());
             continue;
         }
         if (strcmp(args[i], "BlurCache") == 0)
@@ -205,7 +205,7 @@ void ParseArgStrings(int argc, char **args)
             CachedPicture *cache = CachePicturePrintErrors(NameStart, __FUNCTION__);
             if (cache != NULL)
             {
-                LPCOLORREF NewImage = BlurrImage(Size, Strength, cache->Pixels, cache->Width, cache->Height);
+                LPCOLORREF NewImage = BlurrImage_(Size, Strength, cache->Pixels, cache->Width, cache->Height);
                 _aligned_free(cache->Pixels);
                 cache->Pixels = NewImage;
             }

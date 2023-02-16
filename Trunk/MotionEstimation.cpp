@@ -2,6 +2,8 @@
 
 LIBRARY_API ScreenshotStruct MotionDiff;
 
+unsigned int GenerateDiffMap_(LPCOLORREF Pix1, LPCOLORREF Pix2, int Width, int Height, unsigned char* DiffMapOutput);
+
 __forceinline unsigned int SAD_16x4byte( unsigned char *address1, unsigned char *address2, int stride1, int stride2 )
 {
 	unsigned short sad_array[8];
@@ -84,7 +86,7 @@ int WINAPI GenerateDiffMap()
 //DumpAsPPMBGR( CurScreenshot->Pixels, Width, Height );
 
 	unsigned char *Out = (unsigned char *)MotionDiff.Pixels;
-	RetSAD = GenerateDiffMap(PrevScreenshot->Pixels, CurScreenshot->Pixels, Width, Height, Out);
+	RetSAD = GenerateDiffMap_(PrevScreenshot->Pixels, CurScreenshot->Pixels, Width, Height, Out);
 
 //	char DebugBuff[500];
 //	sprintf_s( DebugBuff, 500, "current sad now %d", RetSAD );
@@ -95,7 +97,7 @@ int WINAPI GenerateDiffMap()
 	return RetSAD;
 }
 
-unsigned int GenerateDiffMap(LPCOLORREF Pix1, LPCOLORREF Pix2, int Width, int Height, unsigned char *DiffMapOutput)
+unsigned int GenerateDiffMap_(LPCOLORREF Pix1, LPCOLORREF Pix2, int Width, int Height, unsigned char *DiffMapOutput)
 {
 	int RetSAD = 0;
 	for (int Y = 0; Y < Height - 4; Y += 4)

@@ -179,7 +179,7 @@ LPCOLORREF getbits(HBITMAP ahImage, HDC hdc, LONG &aWidth, LONG &aHeight, bool &
 	aHeight = bmi.bmiHeader.biHeight;
 
 	int image_pixel_count = aWidth * aHeight;
-	image_pixel = (LPCOLORREF)_aligned_malloc( image_pixel_count * sizeof(COLORREF) + SSE_PADDING, SSE_ALIGNMENT );
+	image_pixel = (LPCOLORREF)_aligned_malloc( aWidth * (aHeight + SSE_PADDING) * sizeof(COLORREF), SSE_ALIGNMENT );
 	if( !image_pixel )
 		goto end;
 

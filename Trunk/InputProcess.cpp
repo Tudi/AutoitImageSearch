@@ -6,9 +6,11 @@ LIBRARY_API int					ScreenshotStoreIndex;
 
 void WINAPI CycleScreenshots()
 {
+	FileDebug("Started CycleScreenshots");
 	PrevScreenshot = CurScreenshot;
 	ScreenshotStoreIndex = ( ScreenshotStoreIndex + 1 ) % NR_SCREENSHOTS_CACHED;
 	CurScreenshot = &ScreenshotCache[ ScreenshotStoreIndex ];
+	FileDebug("\tFinished CycleScreenshots");
 }
 
 void WINAPI ReleaseScreenshot()

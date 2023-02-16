@@ -1,6 +1,6 @@
 #include "StdAfx.h"
 
-LPCOLORREF BlurrImage(int HalfKernelSize, int MiddleFactor, LPCOLORREF Pixels, int Width, int Height)
+LPCOLORREF BlurrImage_(int HalfKernelSize, int MiddleFactor, LPCOLORREF Pixels, int Width, int Height)
 {
 	LPCOLORREF new_Pixels = (COLORREF*)_aligned_malloc(Width * Height * sizeof(COLORREF) + SSE_PADDING, SSE_ALIGNMENT);
 	if (new_Pixels == NULL)
@@ -89,7 +89,7 @@ void WINAPI BlurrImage( int HalfKernelSize )
 	int Width = CurScreenshot->Right - CurScreenshot->Left;
 	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
 
-	LPCOLORREF new_Pixels = BlurrImage(HalfKernelSize, 1, CurScreenshot->Pixels, Width, Height);
+	LPCOLORREF new_Pixels = BlurrImage_(HalfKernelSize, 1, CurScreenshot->Pixels, Width, Height);
 
 	_aligned_free( CurScreenshot->Pixels );
 	CurScreenshot->Pixels = new_Pixels;
@@ -139,7 +139,7 @@ void WINAPI ErrodeDiffMap( int HalfKernelSize )
 
 	_aligned_free( MotionDiff.Pixels );
 	MotionDiff.Pixels = new_Pixels;
-	FileDebug( "Finished eroding diffmap" );
+	FileDebug( "\tFinished eroding diffmap" );
 }
 
 void WINAPI EdgeDetect( int HalfKernelSize )
@@ -222,10 +222,10 @@ void WINAPI EdgeDetect( int HalfKernelSize )
 	_aligned_free( CurScreenshot->Pixels );
 	CurScreenshot->Pixels = (LPCOLORREF)new_Pixels;
 	CurScreenshot->BytesPerPixel = 1;
-	FileDebug( "Finished bluring screenshot" );
+	FileDebug( "\tFinished bluring screenshot" );
 }
 
-void ApplyColorBitmask(LPCOLORREF Pixels, int Width, int Height, int Mask)
+void ApplyColorBitmask_(LPCOLORREF Pixels, int Width, int Height, int Mask)
 {
 	if (CurScreenshot == NULL)
 		return;
@@ -236,9 +236,11 @@ void ApplyColorBitmask(LPCOLORREF Pixels, int Width, int Height, int Mask)
 
 void WINAPI ApplyColorBitmask(int Mask)
 {
+	FileDebug("Started ApplyColorBitmask screenshot");
 	if (CurScreenshot == NULL)
 		return;
-	ApplyColorBitmask(CurScreenshot->Pixels, CurScreenshot->GetWidth(), CurScreenshot->GetHeight(), Mask);
+	ApplyColorBitmask_(CurScreenshot->Pixels, CurScreenshot->GetWidth(), CurScreenshot->GetHeight(), Mask);
+	FileDebug("\tFinished ApplyColorBitmask screenshot");
 }
 
 void DecreaseColorCount_(ScreenshotStruct *cache, unsigned int ColorsPerChannel)

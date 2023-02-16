@@ -15,6 +15,32 @@ int GetCacheIndex( char *aFilespec )
 	return -1;
 }
 
+void FixAlphaChannelZero()
+{
+	if (PictureCache[NrPicturesCached].Pixels == NULL)
+	{
+		return;
+	}
+	if ((PictureCache[NrPicturesCached].Pixels[0] >> 24) != 0)
+	{
+		return;
+	}
+	FileDebug("Started FixAlphaChannelZero");
+
+	LPCOLORREF		Pixels = PictureCache[NrPicturesCached].Pixels;
+	for (size_t y = 0; y < (size_t)PictureCache[NrPicturesCached].Height; y++)
+	{
+		for (size_t x = 0; x < (size_t)PictureCache[NrPicturesCached].Width; x++)
+		{
+			Pixels[x] |= 0xFF000000;
+		}
+		Pixels += PictureCache[NrPicturesCached].Width;
+	}
+
+	FileDebug("\tFinished FixAlphaChannelZero");
+
+}
+
 CachedPicture *CachePicture( char *aFilespec )
 {
 	FileDebug( "Started caching image" );
@@ -68,6 +94,8 @@ CachedPicture *CachePicture( char *aFilespec )
 	PictureCache[NrPicturesCached].NeedsSCCache = true;
 
 	PictureCache[NrPicturesCached].OCRCache = NULL;
+
+	FixAlphaChannelZero();
 
 	NrPicturesCached++;
 	ReleaseDC(NULL, hdc);

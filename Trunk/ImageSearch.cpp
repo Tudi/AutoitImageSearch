@@ -443,7 +443,8 @@ char* WINAPI ImageSearchOnScreenshotBest_SAD(char *aFilespec)
 				{
 					LPCOLORREF AddrBig = &CurScreenshot->Pixels[(y + y2) * Width + x];
 					LPCOLORREF AddSmall = &cache->Pixels[(0 + y2) * cache->Width + 0];
-					for (int x2 = 0; x2<(cache->Width & ~0x03); x2 += 4)
+					size_t x2Limit = (cache->Width - 4) & ~0x03;
+					for (size_t x2 = 0; x2< x2Limit; x2 += 4)
 						//					for( int x2=0;x2<4;x2+=4)
 					{
 						//assert( ( AddrBig[0] & 0xFF000000 ) == 0 && ( AddrBig[1] & 0xFF000000 ) == 0 && ( AddrBig[2] & 0xFF000000 ) == 0 && ( AddrBig[3] & 0xFF000000 ) == 0 );
@@ -514,10 +515,30 @@ char* WINAPI ImageSearch_SAD(char *aFilespec)
 	int Width = CurScreenshot->Right - CurScreenshot->Left;
 	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
 
+	if( Height <= cache->Height)
+	{
+		FileDebug("Skipping Image search screenshot height same as searched image height");
+		return "";
+	}
+
+	if (Width <= cache->Width)
+	{
+		FileDebug("Skipping Image search screenshot width same as searched image width");
+		return "";
+	}
+
+	if (cache->Height == 0)
+	{
+		FileDebug("Skipping Image search as searched image height is 0");
+		return "";
+	}
+
+
 	int retx = -1;
 	int rety = -1;
 	unsigned int BestSAD = 0x7FFFFFFF;
 	{
+		const size_t x2Limit = (cache->Width - 4) & ~0x03;
 		//DumpAsPPM( MinMap[0], MinMap[1], MinMap[2], cache->Width, cache->Height );
 		//DumpAsPPM( &CurScreenshot->Pixels[ 40 * Width + 40 ], 40, 40, Width );
 		//DumpAsPPM( MaxMap[0], MaxMap[1], MaxMap[2], cache->Width, cache->Height );
@@ -530,14 +551,14 @@ char* WINAPI ImageSearch_SAD(char *aFilespec)
 
 				acc_sad = _mm_setzero_si128();
 
-				for (int y2 = 0; y2<cache->Height; y2++)
+				for (size_t y2 = 0; y2<cache->Height; y2++)
 				{
 					LPCOLORREF AddrBig = &CurScreenshot->Pixels[(y + y2) * Width + x];
 					LPCOLORREF AddSmall = &cache->Pixels[(0 + y2) * cache->Width + 0];
-					for (int x2 = 0; x2<(cache->Width & ~0x03); x2 += 4)
+					for (size_t x2 = 0; x2< x2Limit; x2 += 4) // prcess 4 pixels => 4*4=16 bytes
 					{
 						l0 = _mm_loadu_si128((__m128i*)(&AddrBig[x2]));
-						l1 = _mm_load_si128((__m128i*)(&AddSmall[x2]));
+						l1 = _mm_loadu_si128((__m128i*)(&AddSmall[x2]));
 						line_sad = _mm_sad_epu8(l0, l1);
 						acc_sad = _mm_add_epi32(acc_sad, line_sad);
 					}
@@ -549,14 +570,13 @@ char* WINAPI ImageSearch_SAD(char *aFilespec)
 
 				if (BestSAD > sad)
 				{
+					MatchesFound++;
 					BestSAD = sad;
 					retx = x + CurScreenshot->Left;
 					rety = y + CurScreenshot->Top;
 					//exact match ? I doubt it will ever happen...
-#ifndef _CONSOLE
 					if (BestSAD == 0)
 						goto docleanupandreturn;
-#endif
 				}
 			}
 		}
@@ -566,7 +586,14 @@ char* WINAPI ImageSearch_SAD(char *aFilespec)
 	}
 
 	sprintf_s(ReturnBuff, DEFAULT_STR_BUFFER_SIZE * 10, "1|%d|%d|%d", retx, rety, BestSAD);
-	FileDebug("\tImage search finished");
+
+	char dbgmsg[DEFAULT_STR_BUFFER_SIZE];
+	unsigned char *AddrBig = (unsigned char*)&CurScreenshot->Pixels[rety * Width + retx];
+	unsigned char* AddSmall = (unsigned char*)&cache->Pixels[0];
+	sprintf_s(dbgmsg, sizeof(dbgmsg), "\tImage search finished. Improved match %d. Returning %s . pixel 0 0 : %d %d %d %d - %d %d %d %d",
+		MatchesFound, ReturnBuff, AddrBig[0], AddrBig[1], AddrBig[2], AddrBig[3], AddSmall[0], AddSmall[1], AddSmall[2], AddSmall[3]);
+	FileDebug(dbgmsg);
+
 	return ReturnBuff;
 }
 

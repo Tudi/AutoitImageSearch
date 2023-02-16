@@ -48,8 +48,8 @@ void DrawLine2(int x1, int y1, int x2, int y2, COLORREF color)
 		MaxSteps = abs(YDist);
 	float XIncr = (float)XDist / MaxSteps;
 	float YIncr = (float)YDist / MaxSteps;
-	float tx = x1;
-	float ty = y1;
+	float tx = (float)x1;
+	float ty = (float)y1;
 	for (int i = 0; i < MaxSteps; i++)
 	{
 		CurScreenshot->Pixels[(int)(ty * Width) + (int)tx] = color;

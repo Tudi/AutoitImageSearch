@@ -40,7 +40,9 @@ void main(int argc, char **arg)
 {
 	StartCounter();
 
-    ParseArgStrings(argc, arg);
+#ifdef _CONSOLE
+	ParseArgStrings(argc, arg);
+#endif
 
 	//RunSQRTBenchmark(); //fact : sqrt( double) rocks
 
@@ -48,7 +50,7 @@ void main(int argc, char **arg)
 	//RunLordsMobileTests();
 	//RunLordsMobileTestsNoOCR();
 
-	TestTextureLearnOnPictures();
+//	TestTextureLearnOnPictures();
 
 #if defined( _CONSOLE ) && !defined( _DEBUG )
 //	RunDrawLineBenchmark();
