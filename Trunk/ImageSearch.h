@@ -16,7 +16,9 @@ char* WINAPI ImageSearch_Multipass_PixelCount(int Color, int PercentStart, int P
 char* WINAPI ImageSearch_Multiple_Gradient(int Color, int GradientMatchPercent, int CountInAreaPercent, int AreaWidth, int AreaHeight);
 
 
-
+unsigned int ImgSAD(LPCOLORREF bigImg, size_t bigWidth, size_t bigHeight, size_t bigStride,
+	LPCOLORREF smallImg, size_t smallWidth, size_t smallHeight, size_t smallStride,
+	size_t atX, size_t atY);
 
 // ignore these. Using them for a specific case
 void ImageSearch_Multipass_PixelCount2(int Color, int PercentMax, int PercentMin, int PercentStep, int AreaWidth, int AreaHeight, int OneSearchInRadius);

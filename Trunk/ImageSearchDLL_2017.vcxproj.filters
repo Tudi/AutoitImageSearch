@@ -91,6 +91,9 @@
     <ClCompile Include="DrawLine.cpp">
       <Filter>ImageTools</Filter>
     </ClCompile>
+    <ClCompile Include="ImageSearchPreSAD.cpp">
+      <Filter>ImageTools</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EdgeDetect.h">
@@ -178,6 +181,9 @@
       <Filter>ImageTools</Filter>
     </ClInclude>
     <ClInclude Include="DrawLine.h">
+      <Filter>ImageTools</Filter>
+    </ClInclude>
+    <ClInclude Include="ImageSearchPreSAD.h">
       <Filter>ImageTools</Filter>
     </ClInclude>
   </ItemGroup>

@@ -3,6 +3,8 @@
 
 #define MAX_PICTURE_CACHE_COUNT 3500
 
+#include "ImageSearchPreSAD.h"
+
 class SimilarSearch;
 class PiramidImage;
 struct OCRStore;
@@ -22,6 +24,7 @@ struct CachedPicture
 	SimilarSearch	*SSCache;
 	PiramidImage	*PSCache;
 	SplitChannel	*SCCache;
+	SADSumStoreCached	SADSums;
 	bool			NeedsSSCache;
 	bool			NeedsPSCache;
 	bool			NeedsSCCache;

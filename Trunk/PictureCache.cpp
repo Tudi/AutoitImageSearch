@@ -21,9 +21,9 @@ void FixAlphaChannelZero()
 	{
 		return;
 	}
-	if ((PictureCache[NrPicturesCached].Pixels[0] >> 24) != 0 
-		|| (PictureCache[NrPicturesCached].Pixels[0] >> 24) != (PictureCache[NrPicturesCached].Pixels[1] >> 24)
-		|| (PictureCache[NrPicturesCached].Pixels[0] >> 24) != (PictureCache[NrPicturesCached].Pixels[2] >> 24))
+	if (RGB_GET_A(PictureCache[NrPicturesCached].Pixels[0]) != 0
+		&& RGB_GET_A(PictureCache[NrPicturesCached].Pixels[0]) == RGB_GET_A(PictureCache[NrPicturesCached].Pixels[1])
+		&& RGB_GET_A(PictureCache[NrPicturesCached].Pixels[0]) == RGB_GET_A(PictureCache[NrPicturesCached].Pixels[2]))
 	{
 		return;
 	}
@@ -59,6 +59,9 @@ CachedPicture *CachePicture( char *aFilespec )
 		FileDebug( "Skipped caching image as no more cache slots available" );
 		return NULL; 
 	}
+
+	// safety
+	memset(&PictureCache[NrPicturesCached], 0, sizeof(PictureCache[NrPicturesCached]));
 
 	HDC hdc = GetDC(NULL);
 	if (!hdc)

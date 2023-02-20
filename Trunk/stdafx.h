@@ -44,7 +44,7 @@
 #include <fstream>
 #include <string.h>
 #include <assert.h>
-#include <tmmintrin.h>
+#include <immintrin.h>
 #include <conio.h>
 #include <memory.h>
 #include <tchar.h>
@@ -64,10 +64,11 @@
 
 #define DEFAULT_STR_BUFFER_SIZE 1024
 
-#define SSE_ALIGNMENT			16
-#define SSE_BYTE_COUNT			16
-#define SSE_PADDING				32	//12 bytes would be enough
+#define SSE_ALIGNMENT			64
+#define SSE_BYTE_COUNT			64
+#define SSE_PADDING				64	//12 bytes would be enough
 #define MY_ALLOC(x)			_aligned_malloc(x+SSE_PADDING,SSE_ALIGNMENT)
+#define MY_FREE(x)			if(x){_aligned_free(x); x = NULL;}
 
 #define TRANSPARENT_COLOR			(0x00FFFFFF)
 #define REMOVE_ALPHA_CHANNEL_MASK	(0x00FFFFFF)
@@ -96,6 +97,7 @@
 #include <time.h>
 #include "ProjectionDistanceMap.h"
 #include "DrawLine.h"
+#include "ImageSearchPreSAD.h"
 
 #ifdef _CONSOLE
     #include "Tools\CommandProcessor.h"
@@ -106,6 +108,7 @@
 #define RGB_GET_R(Color) ( Color & 0xFF )
 #define RGB_GET_G(Color) ( (Color >> 8 ) & 0xFF)
 #define RGB_GET_B(Color) ( (Color >> 16 )& 0xFF)
+#define RGB_GET_A(Color) ( (Color >> 24 )& 0xFF)
 #define STATIC_BGR_RGB(Color) (( RGB_GET_R( Color ) << 16 ) | ( RGB_GET_G( Color ) << 8 ) | ( RGB_GET_B( Color ) ) )
 
 

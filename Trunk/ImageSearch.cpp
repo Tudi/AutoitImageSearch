@@ -488,12 +488,54 @@ char* WINAPI ImageSearchOnScreenshotBest_SAD(char *aFilespec)
 	return ReturnBuff;
 }
 
+unsigned int ImgSAD(LPCOLORREF bigImg, size_t bigWidth, size_t bigHeight, size_t bigStride,
+	LPCOLORREF smallImg, size_t smallWidth, size_t smallHeight, size_t smallStride,
+	size_t atX, size_t atY)
+{
+	// can't compute SAD if over the limit
+	if (atY + smallHeight > bigHeight)
+	{
+		return 0x7FFFFFFF;
+	}
+	if (atX + smallWidth > bigWidth)
+	{
+		return 0x7FFFFFFF;
+	}
+
+	smallWidth = smallWidth - 8; // or else SSE instruction would read out of bounds !!
+	unsigned int sad_array[8];
+	__m256i l0, l1, line_sad, acc_sad;
+
+	acc_sad = _mm256_setzero_si256();
+
+	for (size_t y2 = 0; y2 < smallHeight; y2++)
+	{
+		LPCOLORREF AddrBig = &bigImg[(atY + y2) * bigStride + atX];
+		LPCOLORREF AddSmall = &smallImg[(0 + y2) * smallStride + 0];
+		for (size_t x2 = 0; x2 < smallWidth; x2 += 8) // prcess 8 pixels => 4*8=32 bytes
+		{
+			l0 = _mm256_loadu_si256((__m256i*)(&AddrBig[x2]));
+			l1 = _mm256_loadu_si256((__m256i*)(&AddSmall[x2]));
+			line_sad = _mm256_sad_epu8(l0, l1);
+			acc_sad = _mm256_add_epi32(acc_sad, line_sad);
+		}
+	}
+
+	_mm256_storeu_si256((__m256i*)(&sad_array[0]), acc_sad);
+
+	unsigned int sad = sad_array[0] + sad_array[2] + sad_array[4] + sad_array[6];
+
+	return sad;
+}
+
+// input images are A8R8G8B8 encoded -> 4 bytes / pixel = 32 bpp
 char* WINAPI ImageSearch_SAD(char *aFilespec)
 {
 	char ReturnBuff2[DEFAULT_STR_BUFFER_SIZE * 10];
 	int MatchesFound = 0;
 	ReturnBuff[0] = 0;
 	ReturnBuff2[0] = 0;
+	size_t startStamp = GetTickCount();
 	FileDebug("Started Image search");
 	CachedPicture *cache = CachePicture(aFilespec);
 	if (cache == NULL)
@@ -515,19 +557,19 @@ char* WINAPI ImageSearch_SAD(char *aFilespec)
 	int Width = CurScreenshot->Right - CurScreenshot->Left;
 	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
 
-	if( Height <= cache->Height)
+	if( Height <= cache->Height + 1)
 	{
 		FileDebug("Skipping Image search screenshot height same as searched image height");
 		return "";
 	}
 
-	if (Width <= cache->Width)
+	if (Width <= cache->Width + 1)
 	{
 		FileDebug("Skipping Image search screenshot width same as searched image width");
 		return "";
 	}
 
-	if (cache->Height <= 0 || cache->Width <= 0)
+	if (cache->Height <= 0 || cache->Width < 8)
 	{
 		FileDebug("Skipping Image search as searched image height is 0");
 		return "";
@@ -538,42 +580,44 @@ char* WINAPI ImageSearch_SAD(char *aFilespec)
 	int rety = -1;
 	unsigned int BestSAD = 0x7FFFFFFF;
 	{
-		const size_t x2Limit = (cache->Width - 4) & ~0x03;
+		const size_t widthLimitCache = cache->Width - 8;
+		const size_t heightLimit = (size_t)(Height - cache->Height - 1);
+		const size_t widthLimit = (size_t)(Width - cache->Width);
 		//DumpAsPPM( MinMap[0], MinMap[1], MinMap[2], cache->Width, cache->Height );
 		//DumpAsPPM( &CurScreenshot->Pixels[ 40 * Width + 40 ], 40, 40, Width );
 		//DumpAsPPM( MaxMap[0], MaxMap[1], MaxMap[2], cache->Width, cache->Height );
-		for (int y = 0; y < Height - cache->Height; y += 1)
+		for (size_t y = 0; y < heightLimit; y += 1)
 		{
-			for (int x = 0; x < Width - cache->Width; x += 1)
+			for (size_t x = 0; x < widthLimit; x += 1)
 			{
-				unsigned int sad_array[4];
-				__m128i l0, l1, line_sad, acc_sad;
+				unsigned int sad_array[8];
+				__m256i l0, l1, line_sad, acc_sad;
 
-				acc_sad = _mm_setzero_si128();
+				acc_sad = _mm256_setzero_si256();
 
 				for (size_t y2 = 0; y2<(size_t)cache->Height; y2++)
 				{
 					LPCOLORREF AddrBig = &CurScreenshot->Pixels[(y + y2) * Width + x];
 					LPCOLORREF AddSmall = &cache->Pixels[(0 + y2) * cache->Width + 0];
-					for (size_t x2 = 0; x2< x2Limit; x2 += 4) // prcess 4 pixels => 4*4=16 bytes
+					for (size_t x2 = 0; x2 < widthLimitCache; x2 += 8) // prcess 8 pixels => 4*8=32 bytes
 					{
-						l0 = _mm_loadu_si128((__m128i*)(&AddrBig[x2]));
-						l1 = _mm_loadu_si128((__m128i*)(&AddSmall[x2]));
-						line_sad = _mm_sad_epu8(l0, l1);
-						acc_sad = _mm_add_epi32(acc_sad, line_sad);
+						l0 = _mm256_loadu_si256((__m256i*)(&AddrBig[x2]));
+						l1 = _mm256_loadu_si256((__m256i*)(&AddSmall[x2]));
+						line_sad = _mm256_sad_epu8(l0, l1);
+						acc_sad = _mm256_add_epi32(acc_sad, line_sad);
 					}
 				}
 
-				_mm_storeu_si128((__m128i*)(&sad_array[0]), acc_sad);
+				_mm256_storeu_si256((__m256i*)(&sad_array[0]), acc_sad);
 
-				unsigned int sad = sad_array[0] + sad_array[2];
+				unsigned int sad = sad_array[0] + sad_array[2] + sad_array[4] + sad_array[6];
 
 				if (BestSAD > sad)
 				{
 					MatchesFound++;
 					BestSAD = sad;
-					retx = x + CurScreenshot->Left;
-					rety = y + CurScreenshot->Top;
+					retx = (int)(x + CurScreenshot->Left);
+					rety = (int)(y + CurScreenshot->Top);
 					//exact match ? I doubt it will ever happen...
 					if (BestSAD == 0)
 						goto docleanupandreturn;
@@ -586,12 +630,14 @@ char* WINAPI ImageSearch_SAD(char *aFilespec)
 	}
 
 	sprintf_s(ReturnBuff, DEFAULT_STR_BUFFER_SIZE * 10, "1|%d|%d|%d", retx, rety, BestSAD);
+	size_t endStamp = GetTickCount();
 
 	char dbgmsg[DEFAULT_STR_BUFFER_SIZE];
+	if (rety == -1) { rety = 0; retx = 0; }
 	unsigned char *AddrBig = (unsigned char*)&CurScreenshot->Pixels[rety * Width + retx];
 	unsigned char* AddSmall = (unsigned char*)&cache->Pixels[0];
-	sprintf_s(dbgmsg, sizeof(dbgmsg), "\tImage search finished. Name %s. Improved match %d. Returning %s . pixel 0 0 : %d %d %d %d - %d %d %d %d",
-		cache->FileName, MatchesFound, ReturnBuff, AddrBig[0], AddrBig[1], AddrBig[2], AddrBig[3], AddSmall[0], AddSmall[1], AddSmall[2], AddSmall[3]);
+	sprintf_s(dbgmsg, sizeof(dbgmsg), "\tImage search finished in %d ms. Name %s. Improved match %d. Returning %s . pixel 0 0 : %d %d %d %d - %d %d %d %d",
+		(int)(endStamp - startStamp), cache->FileName, MatchesFound, ReturnBuff, AddrBig[0], AddrBig[1], AddrBig[2], AddrBig[3], AddSmall[0], AddSmall[1], AddSmall[2], AddSmall[3]);
 	FileDebug(dbgmsg);
 
 	return ReturnBuff;

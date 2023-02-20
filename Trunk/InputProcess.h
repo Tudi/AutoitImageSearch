@@ -1,6 +1,8 @@
 #ifndef _INPUT_PROCESS_H_
 #define _INPUT_PROCESS_H_
 
+#include "ImageSearchPreSAD.h"
+
 void WINAPI TakeScreenshot(int aLeft, int aTop, int aRight, int aBottom);
 void WINAPI ReleaseScreenshot( );
 char* WINAPI GetImageSize( char *aImageFile );
@@ -21,6 +23,7 @@ public:
 	SimilarSearch	*SSCache;
 	PiramidImage	*PSCache;
 	SplitChannel	*SCCache;
+	SADSumStoreScreenshot		SADSums;
 	size_t			TimeStampTaken;
 
 	ScreenshotStruct()
@@ -29,6 +32,7 @@ public:
 		SSCache = NULL;
 		PSCache = NULL;
 		SCCache = NULL;
+		InitSADSUMScreenshot(&SADSums);
 		Left = Top = Right = Bottom = 0;
 		IsDiffMap = false;
 		NeedsSSCache = NeedsPSCache = NeedsSplitChannelCache = true;

@@ -35,6 +35,7 @@ void WINAPI ReleaseScreenshot()
 		delete CurScreenshot->SCCache;
 		CurScreenshot->SCCache = NULL;
 	}
+	FreeSADSUMScreenshot(&CurScreenshot->SADSums);
 }
 
 void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
@@ -130,24 +131,37 @@ end:
 		DeleteObject(hbitmap_screen);
 }
 
+// if you do a lot of operations you do not want to spend a lot of time taking screenshots
+// example : multiple image searches on the same screenshot : make sure to reuse the same screenshot to take advantage of lookup maps
+static float TakeScreenshotFPSLimit = 5;
+void WINAPI SetScreehotFPSLimit(float newFPSLimit)
+{
+	TakeScreenshotFPSLimit = newFPSLimit;
+}
+
 void WINAPI TakeScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 {
 	char TBuff[2000];
+	size_t startStamp = GetTickCount();
 	sprintf_s(TBuff, sizeof(TBuff), "Started taking the screenshot [%d,%d][%d,%d]", aLeft, aTop, aRight, aBottom);
 	FileDebug(TBuff);
 
-	if (CurScreenshot != NULL)
+	if (CurScreenshot != NULL && TakeScreenshotFPSLimit > 0)
 	{
-		if (CurScreenshot->TimeStampTaken + 10000 / 5 > GetTickCount()) // limit to 5 FPS ? Every 200 ms ? This process takes time :(
+		if (CurScreenshot->TimeStampTaken + 1000 / TakeScreenshotFPSLimit > GetTickCount()) // limit to 5 FPS ? Every 200 ms ? This process takes time :(
 		{
 			FileDebug("\tFinished taking the screenshot. Skipped because recent screenshot is too fresh");
 		}
 	}
+
 	CycleScreenshots();
 	ReleaseScreenshot();
 	TakeNewScreenshot( aLeft, aTop, aRight, aBottom );
 
-	FileDebug( "\tFinished taking the screenshot" );
+	size_t endStamp = GetTickCount();
+	sprintf_s(TBuff, sizeof(TBuff), "\tFinished taking the screenshot. Took %d ms", (int)(endStamp- startStamp));
+
+	FileDebug(TBuff);
 //	if( CurScreenshot->Pixels == NULL )
 //		FileDebug( "WARNING:Screenshot buffer is null when taking the screenshot!" );
 

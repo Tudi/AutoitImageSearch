@@ -4,6 +4,7 @@ EXPORTS
 
 	; Most used functions
 	TakeScreenshot
+	SetScreehotFPSLimit
 	SaveScreenshot
 	ImageSearch_SAD	
 	ImageSearch_Multiple_ExactMatch

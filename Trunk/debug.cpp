@@ -16,14 +16,14 @@ int StartTickCount = 0;
 		FILE *f;
 		errno_t openres = fopen_s(&f, "debug.txt", "at");
 		fprintf( f, "%d-%d)%s\n", TickNow - StartTickCount, Diff, what );
+#ifdef _CONSOLE
+		printf("%d-%d)%s\n", TickNow - StartTickCount, Diff, what);
+#endif
 		fclose( f );
 	}
 #else
 	//life is a mistery. If i remove this function that "release" version crashes when used in autoit
 	void FileDebug( char *what )
 	{
-		FILE *f = fopen( "debug.txt", "wt" );
-		if( f )
-			fclose( f );
 	}
 #endif

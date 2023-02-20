@@ -68,10 +68,37 @@ void main(int argc, char **arg)
 //	RunImgSearchGradientBenchmark();
 
 //	_getch();
-	return;
+//	return;
 #endif
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(_CONSOLE)
+	{
+		char* res;
+		TakeScreenshot(0, 0, 1920, 1080);
+		
+		int Start = GetTimeTickI();
+		res = ImageSearch_SAD("bobber_try2.bmp");
+		int End = GetTimeTickI();
+		printf("result of  SAD search benchmarking : %d ms duration, %f FPS\n", End - Start, 1000.0 / (float)(End - Start + 1));
+		
+#define SUMSAD_REPEAT_TEST_COUNT 10
+		Start = GetTimeTickI();
+		for (size_t i = 0; i < SUMSAD_REPEAT_TEST_COUNT; i++)
+		{
+			FreeSADSUMScreenshot(&CurScreenshot->SADSums);
+			ComputeSADSumScreenshot(CurScreenshot->Pixels, 1920, 1080, &CurScreenshot->SADSums);
+		}
+		End = GetTimeTickI();
+		printf("result of SUM SAD prepare : %d ms duration, %f FPS\n", (End - Start)/ SUMSAD_REPEAT_TEST_COUNT, 1000.0 / (float)(End - Start + 1) * SUMSAD_REPEAT_TEST_COUNT);
+
+		Start = GetTimeTickI();
+		for (size_t i = 0; i < SUMSAD_REPEAT_TEST_COUNT; i++)
+		{
+			char *ret = ImageSearch_SAD_Limit("bobber_try2.bmp", 750 * 100 * 100);
+		}
+		End = GetTimeTickI();
+		printf("result of SUM SAD search : %d ms duration, %f FPS\n", (End - Start) / SUMSAD_REPEAT_TEST_COUNT, 1000.0 / (float)(End - Start + 1) * SUMSAD_REPEAT_TEST_COUNT);
+	}/**/
 /*	{
 		OCR_RegisterFont( "OCR_1_green.bmp", '1' );
 		OCR_RegisterFont( "OCR_2_green.bmp", '2' );
@@ -117,23 +144,27 @@ void main(int argc, char **arg)
 		printf("result of search benchmarking : %d %d FPS\n", End - Start, 1000 * 1000 / ( End - Start + 1 ) );
 		_getch();
 		}/**/
-/*	{
+/* {
 		_getch();
-		TakeScreenshot( 100, 100, 1500, 800 );
 		char *res;
-		res = ImageSearchOnScreenshotBest_SAD("bobber_try2.bmp");
+		TakeScreenshot(0, 0, 1920, 1080);
 		int Start = GetTimeTickI();
+		res = ImageSearch_SAD("bobber_try2.bmp");
+		int End = GetTimeTickI();
+		printf("result of  SAD search benchmarking : %d ms duration, %f FPS\n", End - Start, 1000.0 / (float)(End - Start + 1));
+
+		Start = GetTimeTickI();
 		for( int i = 0; i < 1; i++ )
 		{
-		TakeScreenshot( 100,100, 1500, 800 );
-		res = IsAnythingChanced( 0, 0, 7, 23 );
-		if( res[0] != '0' )
-		{
-		res[0] = '1';
+			TakeScreenshot(0, 0, 1920, 1080);
+			res = IsAnythingChanced(0, 0, 7, 23);
+			if (res[0] != '0')
+			{
+				res[0] = '1';
+			}
 		}
-		}
-		int End = GetTimeTickI();
-		printf("result of search benchmarking : %d %d FPS\n", End - Start, 1000 * 1000 / ( End - Start + 1 ) );
+		End = GetTimeTickI();
+		printf("result of changedetect benchmarking : %d ms duration, %f FPS\n", End - Start, 1000.0 / (float)( End - Start + 1 ) );
 		_getch();
 		}/**/
 /*	{
