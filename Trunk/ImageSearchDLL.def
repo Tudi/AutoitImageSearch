@@ -7,6 +7,7 @@ EXPORTS
 	SetScreehotFPSLimit
 	SaveScreenshot
 	ImageSearch_SAD	
+	ImageSearch_SAD_Limit
 	ImageSearch_Multiple_ExactMatch
 	ImageSearch_Multiple_Transparent
 	ImageSearch_Multiple_PixelCount

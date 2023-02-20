@@ -2,15 +2,15 @@
 
 typedef struct SADSumStoreScreenshot
 {
-	LPCOLORREF sumSAD16x16;
-	LPCOLORREF sumSAD32x32;
-	LPCOLORREF sumSAD64x64;
+	LPCOLORREF sumSAD16x16[3];
+	LPCOLORREF sumSAD32x32[3];
+	LPCOLORREF sumSAD64x64[3];
 }SADSumStoreScreenshot;
 
 // one of the 16x16 or 32x32 or 64x64
 typedef struct SADSumStoreCached
 {
-	COLORREF sumSAD;
+	COLORREF sumSAD[3];
 	int widt_height;
 }SADSumStoreCached;
 

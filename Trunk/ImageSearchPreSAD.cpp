@@ -342,113 +342,132 @@ void InitSADSUMScreenshot(SADSumStoreScreenshot* sss)
 
 void FreeSADSUMScreenshot(SADSumStoreScreenshot* sss)
 {
-	MY_FREE(sss->sumSAD16x16);
-	MY_FREE(sss->sumSAD32x32);
-	MY_FREE(sss->sumSAD64x64);
+	for (size_t color = 0; color < 3; color++)
+	{
+		MY_FREE(sss->sumSAD16x16[color]);
+		MY_FREE(sss->sumSAD32x32[color]);
+		MY_FREE(sss->sumSAD64x64[color]);
+	}
 }
 
 void ComputeSADSumScreenshot(LPCOLORREF pixels, int in_width, int in_height, SADSumStoreScreenshot* out_sumsads)
 {
 	size_t stride = in_width;
 
-	out_sumsads->sumSAD16x16 = (LPCOLORREF)MY_ALLOC(in_width * in_height * sizeof(LPCOLORREF));
-	out_sumsads->sumSAD32x32 = (LPCOLORREF)MY_ALLOC(in_width * in_height * sizeof(LPCOLORREF));
-	out_sumsads->sumSAD64x64 = (LPCOLORREF)MY_ALLOC(in_width * in_height * sizeof(LPCOLORREF));
-
-	// last 64 columns / rows would contain bad data
-	in_width -= 64;
-	in_height -= 64;
-
-	// first we process just collumns
-	for (size_t y = 0; y < in_height; y += 1)
+	for (size_t color = 0; color < 3; color++)
 	{
-		unsigned char* pixels2 = (unsigned char*)&pixels[y * stride];
-		LPCOLORREF writeTo = &(out_sumsads->sumSAD16x16[y * stride + 0]);
-		writeTo[0] = 0;
-		for (size_t tx = 0; tx < 16 * 4; tx += 4) // sum 16 pixels
-		{
-			writeTo[0] += pixels2[tx + 0] + pixels2[tx + 1] + pixels2[tx + 2];
-		}
-		for (size_t x = 1; x < in_width; x += 1)
-		{
-			// from previous sum of colors, substract the first column and add the next column
-			writeTo[1] = writeTo[0]
-				- (pixels2[0] + pixels2[1] + pixels2[2]) // substract first
-				+ (pixels2[16 * 4 + 0] + pixels2[16 * 4 + 1] + pixels2[16 * 4 + 2]); // add next
-			pixels2 += 4;
-			writeTo += 1;
-		}
-	}
+		out_sumsads->sumSAD16x16[color] = (LPCOLORREF)MY_ALLOC(in_width * in_height * sizeof(LPCOLORREF));
+		out_sumsads->sumSAD32x32[color] = (LPCOLORREF)MY_ALLOC(in_width * in_height * sizeof(LPCOLORREF));
+		out_sumsads->sumSAD64x64[color] = (LPCOLORREF)MY_ALLOC(in_width * in_height * sizeof(LPCOLORREF));
 
-	// from 16x1 to 16x4
-	for (size_t y = 0; y < in_height; y += 1)
-	{
-		LPCOLORREF writeTo = &(out_sumsads->sumSAD16x16[y * stride + 0]);
-		LPCOLORREF readFrom2 = &(out_sumsads->sumSAD16x16[(y + 1) * stride + 0]);
-		LPCOLORREF readFrom3 = &(out_sumsads->sumSAD16x16[(y + 2) * stride + 0]);
-		LPCOLORREF readFrom4 = &(out_sumsads->sumSAD16x16[(y + 3) * stride + 0]);
-		for (size_t x = 0; x < in_width; x += 1)
-		{
-			*writeTo = *writeTo + *readFrom2 + *readFrom3 + *readFrom4;
-			writeTo++;
-			readFrom2++;
-			readFrom3++;
-			readFrom4++;
-		}
-	}
 
-	// from 16x4 to 16x16
-	for (size_t y = 0; y < in_height; y += 1)
-	{
-		LPCOLORREF writeTo = &(out_sumsads->sumSAD16x16[y * stride + 0]);
-		LPCOLORREF readFrom2 = &(out_sumsads->sumSAD16x16[(y + 4) * stride + 0]);
-		LPCOLORREF readFrom3 = &(out_sumsads->sumSAD16x16[(y + 8) * stride + 0]);
-		LPCOLORREF readFrom4 = &(out_sumsads->sumSAD16x16[(y + 12) * stride + 0]);
-		for (size_t x = 0; x < in_width; x += 1)
-		{
-			*writeTo = *writeTo + *readFrom2 + *readFrom3 + *readFrom4;
-			writeTo++;
-			readFrom2++;
-			readFrom3++;
-			readFrom4++;
-		}
-	}
+		// last 64 columns / rows would contain bad data
+		int in_width2 = in_width - 16;
+		int in_height2 = in_height;
 
-	// from 16x16 to 32x32
-	for (size_t y = 0; y < in_height; y += 1)
-	{
-		LPCOLORREF writeTo = &(out_sumsads->sumSAD32x32[y * stride + 0]);
-		LPCOLORREF readFrom1 = &(out_sumsads->sumSAD16x16[(y + 0) * stride + 0]);
-		LPCOLORREF readFrom2 = &(out_sumsads->sumSAD16x16[(y + 0) * stride + 16]);
-		LPCOLORREF readFrom3 = &(out_sumsads->sumSAD16x16[(y + 16) * stride + 0]);
-		LPCOLORREF readFrom4 = &(out_sumsads->sumSAD16x16[(y + 16) * stride + 16]);
-		for (size_t x = 0; x < in_width; x += 1)
+		// first we process just collumns
+		for (size_t y = 0; y < in_height2; y += 1)
 		{
-			*writeTo = *readFrom1 + *readFrom2 + *readFrom3 + *readFrom4;
-			writeTo++;
-			readFrom1++;
-			readFrom2++;
-			readFrom3++;
-			readFrom4++;
+			unsigned char* pixels2 = (unsigned char*)&pixels[y * stride];
+			pixels2 += color;
+			LPCOLORREF writeTo = &(out_sumsads->sumSAD16x16[color][y * stride + 0]);
+			writeTo[0] = 0;
+			for (size_t tx = 0; tx < 16 * 4; tx += 4) // sum 16 pixels
+			{
+				writeTo[0] += pixels2[tx + 0];
+			}
+			for (size_t x = 1; x < in_width2; x += 1)
+			{
+				// from previous sum of colors, substract the first column and add the next column
+				writeTo[1] = writeTo[0]
+					- (pixels2[0] ) // substract first
+					+ (pixels2[16 * 4 + 0]); // add next
+				pixels2 += 4;
+				writeTo += 1;
+			}
 		}
-	}
 
-	// from 32x32 to 64x64
-	for (size_t y = 0; y < in_height; y += 1)
-	{
-		LPCOLORREF writeTo = &(out_sumsads->sumSAD64x64[y * stride + 0]);
-		LPCOLORREF readFrom1 = &(out_sumsads->sumSAD32x32[(y + 0) * stride + 0]);
-		LPCOLORREF readFrom2 = &(out_sumsads->sumSAD32x32[(y + 0) * stride + 32]);
-		LPCOLORREF readFrom3 = &(out_sumsads->sumSAD32x32[(y + 32) * stride + 0]);
-		LPCOLORREF readFrom4 = &(out_sumsads->sumSAD32x32[(y + 32) * stride + 32]);
-		for (size_t x = 0; x < in_width; x += 1)
+
+		// last 64 columns / rows would contain bad data
+		in_width2 = in_width - 16;
+		in_height2 = in_height - 4;
+
+		// from 16x1 to 16x4
+		for (size_t y = 0; y < in_height2; y += 1)
 		{
-			*writeTo = *readFrom1 + *readFrom2 + *readFrom3 + *readFrom4;
-			writeTo++;
-			readFrom1++;
-			readFrom2++;
-			readFrom3++;
-			readFrom4++;
+			LPCOLORREF writeTo = &(out_sumsads->sumSAD16x16[color][(y + 0 ) * stride + 0]);
+			LPCOLORREF readFrom2 = &(out_sumsads->sumSAD16x16[color][(y + 1) * stride + 0]);
+			LPCOLORREF readFrom3 = &(out_sumsads->sumSAD16x16[color][(y + 2) * stride + 0]);
+			LPCOLORREF readFrom4 = &(out_sumsads->sumSAD16x16[color][(y + 3) * stride + 0]);
+			for (size_t x = 0; x < in_width2; x += 1)
+			{
+				*writeTo = *writeTo + *readFrom2 + *readFrom3 + *readFrom4;
+				writeTo++;
+				readFrom2++;
+				readFrom3++;
+				readFrom4++;
+			}
+		}
+
+		// from 16x4 to 16x16
+		in_width2 = in_width - 16;
+		in_height2 = in_height - 12;
+		for (size_t y = 0; y < in_height2; y += 1)
+		{
+			LPCOLORREF writeTo = &(out_sumsads->sumSAD16x16[color][(y + 0) * stride + 0]);
+			LPCOLORREF readFrom2 = &(out_sumsads->sumSAD16x16[color][(y + 4) * stride + 0]);
+			LPCOLORREF readFrom3 = &(out_sumsads->sumSAD16x16[color][(y + 8) * stride + 0]);
+			LPCOLORREF readFrom4 = &(out_sumsads->sumSAD16x16[color][(y + 12) * stride + 0]);
+			for (size_t x = 0; x < in_width2; x += 1)
+			{
+				*writeTo = *writeTo + *readFrom2 + *readFrom3 + *readFrom4;
+				writeTo++;
+				readFrom2++;
+				readFrom3++;
+				readFrom4++;
+			}
+		}
+
+		// from 16x16 to 32x32
+		in_width2 = in_width - 16;
+		in_height2 = in_height - 16;
+		for (size_t y = 0; y < in_height2; y += 1)
+		{
+			LPCOLORREF writeTo = &(out_sumsads->sumSAD32x32[color][(y + 0) * stride + 0]);
+			LPCOLORREF readFrom1 = &(out_sumsads->sumSAD16x16[color][(y + 0) * stride + 0]);
+			LPCOLORREF readFrom2 = &(out_sumsads->sumSAD16x16[color][(y + 0) * stride + 16]);
+			LPCOLORREF readFrom3 = &(out_sumsads->sumSAD16x16[color][(y + 16) * stride + 0]);
+			LPCOLORREF readFrom4 = &(out_sumsads->sumSAD16x16[color][(y + 16) * stride + 16]);
+			for (size_t x = 0; x < in_width2; x += 1)
+			{
+				*writeTo = *readFrom1 + *readFrom2 + *readFrom3 + *readFrom4;
+				writeTo++;
+				readFrom1++;
+				readFrom2++;
+				readFrom3++;
+				readFrom4++;
+			}
+		}
+
+		// from 32x32 to 64x64
+		in_width2 = in_width - 32;
+		in_height2 = in_height - 32;
+		for (size_t y = 0; y < in_height2; y += 1)
+		{
+			LPCOLORREF writeTo = &(out_sumsads->sumSAD64x64[color][y * stride + 0]);
+			LPCOLORREF readFrom1 = &(out_sumsads->sumSAD32x32[color][(y + 0) * stride + 0]);
+			LPCOLORREF readFrom2 = &(out_sumsads->sumSAD32x32[color][(y + 0) * stride + 32]);
+			LPCOLORREF readFrom3 = &(out_sumsads->sumSAD32x32[color][(y + 32) * stride + 0]);
+			LPCOLORREF readFrom4 = &(out_sumsads->sumSAD32x32[color][(y + 32) * stride + 32]);
+			for (size_t x = 0; x < in_width2; x += 1)
+			{
+				*writeTo = *readFrom1 + *readFrom2 + *readFrom3 + *readFrom4;
+				writeTo++;
+				readFrom1++;
+				readFrom2++;
+				readFrom3++;
+				readFrom4++;
+			}
 		}
 	}
 }
@@ -483,13 +502,15 @@ void ComputeSADSumCached(LPCOLORREF pixels, int in_width, int in_height, SADSumS
 		in_height = 16;
 		out_sumsads->widt_height = 16;
 	}
-	out_sumsads->sumSAD = 0;
+	out_sumsads->sumSAD[0] = out_sumsads->sumSAD[1] = out_sumsads->sumSAD[2] = 0;
 	for (size_t y = 0; y < in_height; y++)
 	{
 		unsigned char *readFrom = (unsigned char*)&(pixels[(y + 0) * stride + 0]);
 		for (size_t x = 0; x < in_width; x++)
 		{
-			out_sumsads->sumSAD += readFrom[0] + readFrom[1] + readFrom[2];
+			out_sumsads->sumSAD[0] += readFrom[0];
+			out_sumsads->sumSAD[1] += readFrom[1];
+			out_sumsads->sumSAD[2] += readFrom[2];
 			readFrom += 4;
 		}
 	}
@@ -497,12 +518,6 @@ void ComputeSADSumCached(LPCOLORREF pixels, int in_width, int in_height, SADSumS
 
 char* WINAPI ImageSearch_SAD_Limit(char* aImageFile, int SAD_Limit)
 {
-	// if you do not wish to use sad limit, you should not use this function :P
-	if (SAD_Limit < 0)
-	{
-		return ImageSearch_SAD(aImageFile);
-	}
-
 	size_t startStamp = GetTickCount();
 
 	CachedPicture* cache = CachePicture(aImageFile);
@@ -521,33 +536,29 @@ char* WINAPI ImageSearch_SAD_Limit(char* aImageFile, int SAD_Limit)
 	size_t big_width = CurScreenshot->GetWidth();
 	size_t big_height = CurScreenshot->GetHeight();
 	size_t stride = big_width;
-	if (CurScreenshot->SADSums.sumSAD16x16 == NULL)
+	if (CurScreenshot->SADSums.sumSAD16x16[0] == NULL)
 	{
 		ComputeSADSumScreenshot(CurScreenshot->Pixels, big_width, big_height, &CurScreenshot->SADSums);
 	}
 
 	int retx = -1;
 	int rety = -1;
-	int bestSAD = 0x7FFFFFFF;
-	int bestSumSAD = 0x7FFFFFFF;
-	LPCOLORREF bigSADSums = NULL;
+	__int64 bestSAD = 0x7FFFFFFFFFFFFFFF;
+	__int64 bestSumSAD = 0x7FFFFFFFFFFFFFFF;
+	LPCOLORREF *bigSADSums = NULL;
 
+	big_height -= 64;
+	big_width -= 64;
 	if (cache->SADSums.widt_height == 16)
 	{
-		big_height -= 16;
-		big_width -= 16;
 		bigSADSums = CurScreenshot->SADSums.sumSAD16x16;
 	}
 	else if (cache->SADSums.widt_height == 32)
 	{
-		big_height -= 32;
-		big_width -= 32;
 		bigSADSums = CurScreenshot->SADSums.sumSAD32x32;
 	}
 	else if (cache->SADSums.widt_height == 64)
 	{
-		big_height -= 64;
-		big_width -= 64;
 		bigSADSums = CurScreenshot->SADSums.sumSAD64x64;
 	}
 
@@ -555,50 +566,135 @@ char* WINAPI ImageSearch_SAD_Limit(char* aImageFile, int SAD_Limit)
 	size_t improved_result = 0;
 	size_t sadCalcs = 0;
 #endif
-//	const int uncoveredAreaSAD = (cache->Width - cache->SADSums.widt_height) * (cache->Height - cache->SADSums.widt_height) * (255 + 255 + 255);
-	const int small_SAD = cache->SADSums.sumSAD;
-	int SAD_MIN = (int)small_SAD - (int)SAD_Limit;
-	int SAD_MAX = small_SAD + SAD_Limit;
-	for (size_t y = 0; y < big_height; y++)
+	const __int64 small_SAD[3] = { cache->SADSums.sumSAD[0], cache->SADSums.sumSAD[1], cache->SADSums.sumSAD[2] };
+	const __int64 totalArea = cache->Width * cache->Height;
+	// sad limit is unknown and at this point it has no meaning to make a check against it
+	if (SAD_Limit > totalArea * 255 * 3)
 	{
-		LPCOLORREF bigSADSumsRow = &bigSADSums[y * stride];
-		for (size_t x = 0; x < big_width; x++)
+		for (size_t y = 0; y < big_height; y++)
 		{
-			if (SAD_MIN <= (int)(*bigSADSumsRow) && (int)(*bigSADSumsRow) <= SAD_MAX)
+			LPCOLORREF bigSADSumsRow_0 = &bigSADSums[0][y * stride];
+			LPCOLORREF bigSADSumsRow_1 = &bigSADSums[1][y * stride];
+			LPCOLORREF bigSADSumsRow_2 = &bigSADSums[2][y * stride];
+			for (size_t x = 0; x < big_width; x++)
 			{
-				size_t sadSums = abs((int)small_SAD - (int)*bigSADSumsRow);
-				if (sadSums < bestSumSAD)
+				__int64 sadSums_0 = (__int64)small_SAD[0] - (__int64)*bigSADSumsRow_0;
+				__int64 sadSums_1 = (__int64)small_SAD[1] - (__int64)*bigSADSumsRow_1;
+				__int64 sadSums_2 = (__int64)small_SAD[2] - (__int64)*bigSADSumsRow_2;
+				__int64 sadExp = sadSums_0 * sadSums_0 + sadSums_1 * sadSums_1 + sadSums_2 * sadSums_2;
+				if (sadExp > bestSumSAD)
 				{
-					// get the real sad at this point
-					int sadAlmostPrecise = ImgSAD(CurScreenshot->Pixels, CurScreenshot->GetWidth(), CurScreenshot->GetHeight(), CurScreenshot->GetWidth(),
-						cache->Pixels, cache->Width, cache->Height, cache->Width,
-						x, y);
-#if defined( _DEBUG ) && defined(_CONSOLE)
-					sadCalcs++;
-#endif
-					if (sadAlmostPrecise < bestSAD && sadAlmostPrecise <= SAD_Limit)
-					{
-						// these 2 will not be the same because SumSAD only captures a portion of the cached image
-						// SumSAD should be smaller than bestSAD
-						bestSAD = sadAlmostPrecise;
-//						bestSumSAD = sadSums + uncoveredAreaSAD;
-						bestSumSAD = sadSums;
-						SAD_MIN = small_SAD - sadSums;
-						SAD_MAX = small_SAD + sadSums;
-						retx = x;
-						rety = y;
-#if defined( _DEBUG ) && defined(_CONSOLE)
-						improved_result++;
-#endif
-					}
+					bigSADSumsRow_0++;
+					bigSADSumsRow_1++;
+					bigSADSumsRow_2++;
+					continue;
 				}
+
+				// get the real sad at this point
+				__int64 sadAlmostPrecise = ImgSAD(CurScreenshot->Pixels, CurScreenshot->GetWidth(), CurScreenshot->GetHeight(), CurScreenshot->GetWidth(),
+					cache->Pixels, cache->Width, cache->Height, cache->Width,
+					x, y);
+
+#if defined( _DEBUG ) && defined(_CONSOLE)
+				sadCalcs++;
+#endif
+				if (sadAlmostPrecise < bestSAD && sadAlmostPrecise <= SAD_Limit)
+				{
+					// these 2 will not be the same because SumSAD only captures a portion of the cached image
+					// SumSAD should be smaller than bestSAD
+					bestSAD = sadAlmostPrecise;
+					bestSumSAD = sadExp;
+					retx = (int)x;
+					rety = (int)y;
+#if defined( _DEBUG ) && defined(_CONSOLE)
+					improved_result++;
+#endif
+				}
+
+				bigSADSumsRow_0++;
+				bigSADSumsRow_1++;
+				bigSADSumsRow_2++;
 			}
-			bigSADSumsRow++;
+		}
+	}
+	else
+	{
+		const __int64 uncoveredArea = (cache->Width - cache->SADSums.widt_height) * (cache->Height - cache->SADSums.widt_height) + 1;
+		const __int64 sad_limit_limited = (totalArea - uncoveredArea) * SAD_Limit / totalArea;
+		const __int64 sad_limit_1_channel = (sad_limit_limited / 3) * (sad_limit_limited / 3);
+		for (size_t y = 0; y < big_height; y++)
+		{
+			LPCOLORREF bigSADSumsRow_0 = &bigSADSums[0][y * stride];
+			LPCOLORREF bigSADSumsRow_1 = &bigSADSums[1][y * stride];
+			LPCOLORREF bigSADSumsRow_2 = &bigSADSums[2][y * stride];
+			for (size_t x = 0; x < big_width; x++)
+			{
+				__int64 sadSums_0 = (__int64)small_SAD[0] - (__int64)*bigSADSumsRow_0;
+				sadSums_0 = sadSums_0 * sadSums_0;
+				if (sadSums_0 > sad_limit_1_channel)
+				{
+					bigSADSumsRow_0++;
+					bigSADSumsRow_1++;
+					bigSADSumsRow_2++;
+					continue;
+				}
+				__int64 sadSums_1 = (__int64)small_SAD[1] - (__int64)*bigSADSumsRow_1;
+				sadSums_1 = sadSums_1 * sadSums_1;
+				if (sadSums_1 > sad_limit_1_channel)
+				{
+					bigSADSumsRow_0++;
+					bigSADSumsRow_1++;
+					bigSADSumsRow_2++;
+					continue;
+				}
+				__int64 sadSums_2 = (__int64)small_SAD[2] - (__int64)*bigSADSumsRow_2;
+				sadSums_2 = sadSums_2 * sadSums_2;
+				if (sadSums_2 > sad_limit_1_channel)
+				{
+					bigSADSumsRow_0++;
+					bigSADSumsRow_1++;
+					bigSADSumsRow_2++;
+					continue;
+				}
+				__int64 sadExp = sadSums_0 + sadSums_1 + sadSums_2;
+				if (sadExp > bestSumSAD)
+				{
+					bigSADSumsRow_0++;
+					bigSADSumsRow_1++;
+					bigSADSumsRow_2++;
+					continue;
+				}
+
+				// get the real sad at this point
+				__int64 sadAlmostPrecise = ImgSAD(CurScreenshot->Pixels, CurScreenshot->GetWidth(), CurScreenshot->GetHeight(), CurScreenshot->GetWidth(),
+					cache->Pixels, cache->Width, cache->Height, cache->Width,
+					x, y);
+
+#if defined( _DEBUG ) && defined(_CONSOLE)
+				sadCalcs++;
+#endif
+				if (sadAlmostPrecise < bestSAD && sadAlmostPrecise <= SAD_Limit)
+				{
+					// these 2 will not be the same because SumSAD only captures a portion of the cached image
+					// SumSAD should be smaller than bestSAD
+					bestSAD = sadAlmostPrecise;
+					bestSumSAD = sadExp;
+					retx = (int)x;
+					rety = (int)y;
+#if defined( _DEBUG ) && defined(_CONSOLE)
+					improved_result++;
+#endif
+				}
+
+				bigSADSumsRow_0++;
+				bigSADSumsRow_1++;
+				bigSADSumsRow_2++;
+			}
 		}
 	}
 
 	ReturnBuff[0] = 0;
-	sprintf_s(ReturnBuff, DEFAULT_STR_BUFFER_SIZE * 10, "1|%d|%d|%d", retx, rety, bestSAD);
+	sprintf_s(ReturnBuff, DEFAULT_STR_BUFFER_SIZE * 10, "1|%d|%d|%d", retx, rety, (int)bestSAD);
 	size_t endStamp = GetTickCount();
 
 #if defined( _DEBUG ) && defined(_CONSOLE)

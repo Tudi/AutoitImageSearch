@@ -75,9 +75,10 @@ void main(int argc, char **arg)
 	{
 		char* res;
 		TakeScreenshot(0, 0, 1920, 1080);
+//		SaveScreenshot();
 		
 		int Start = GetTimeTickI();
-		res = ImageSearch_SAD("bobber_try2.bmp");
+		res = ImageSearch_SAD("visual_studio_text.bmp");
 		int End = GetTimeTickI();
 		printf("result of  SAD search benchmarking : %d ms duration, %f FPS\n", End - Start, 1000.0 / (float)(End - Start + 1));
 		
@@ -94,7 +95,7 @@ void main(int argc, char **arg)
 		Start = GetTimeTickI();
 		for (size_t i = 0; i < SUMSAD_REPEAT_TEST_COUNT; i++)
 		{
-			char *ret = ImageSearch_SAD_Limit("bobber_try2.bmp", 750 * 100 * 100);
+			char *ret = ImageSearch_SAD_Limit("visual_studio_text.bmp", 750 * 100 * 100);
 		}
 		End = GetTimeTickI();
 		printf("result of SUM SAD search : %d ms duration, %f FPS\n", (End - Start) / SUMSAD_REPEAT_TEST_COUNT, 1000.0 / (float)(End - Start + 1) * SUMSAD_REPEAT_TEST_COUNT);

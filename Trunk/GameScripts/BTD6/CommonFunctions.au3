@@ -1,5 +1,6 @@
 #include <AutoItConstants.au3>
 #include <date.au3>
+#include <WinAPISys.au3>
 
 Func ResetDebugLog($sFileName)
    Local $hFilehandle = FileOpen($sFileName, $FO_OVERWRITE)
@@ -116,10 +117,12 @@ func ClickButtonIfAvailable( $ImageName, $X = -1, $Y = -1, $SearchRadius = 0, $S
 	endif
 	while( $retryCount > 0 )
 		_WriteDebugLog("log.txt", "new search name=" & $ImageName & " x=" & $x & " y=" & $y & " SearchRadius=" & $SearchRadius & " SleepBetweenRetrys=" & $SleepBetweenRetrys & " retryCount=" & $retryCount & " AcceptableSAD=" & $AcceptableSAD)
-		local $Pos = ImageIsAt($ImageName, $X, $Y, $SearchRadius)
-		_WriteDebugLog("log.txt", "found at " & $Pos[0] & " " & $Pos[1] & " SAD " & $Pos[2])
+		local $startStamp = _WinAPI_GetTickCount()
+		local $Pos = ImageIsAt($ImageName, $X, $Y, $SearchRadius, $AcceptableSAD)
+		local $searchDuration = _WinAPI_GetTickCount() - $startStamp
+		_WriteDebugLog("log.txt", "found at " & $Pos[0] & " " & $Pos[1] & " SAD " & $Pos[2] & " searching took " & $searchDuration & " ms")
 		; if SAD is small enough, we consider it as found
-		if( $Pos[2] <= $AcceptableSAD ) then
+		if( $Pos[0] > 0 and $Pos[2] <= $AcceptableSAD ) then
 			MouseClick( $MOUSE_CLICK_LEFT, $Pos[0] + 16, $Pos[1] + 16, 1, 1 )
 			return 1
 		endif
@@ -201,7 +204,7 @@ Func GetCoordFromImageFileName( $ImgName, ByRef $x, ByRef $y, $AbsoluteCoord = 0
 	endif
 endfunc
 
-Func ImageIsAt( $ImgName, $x = -1, $y = -1, $Radius = 0)
+Func ImageIsAt( $ImgName, $x = -1, $y = -1, $Radius = 0, $AcceptableSAD = 0)
 	; in case the image file name in a common sense format we can extract the coordinate of it
 	if( $x == -1 ) then
 		GetCoordFromImageFileName( $ImgName, $x, $y )
@@ -222,7 +225,8 @@ Func ImageIsAt( $ImgName, $x = -1, $y = -1, $Radius = 0)
 
 	local $result = DllCall( $dllhandle, "NONE", "TakeScreenshot", "int", $start_x, "int", $start_y, "int", $end_x, "int", $end_y)
 ;	$result = DllCall( $dllhandle, "NONE", "ApplyColorBitmask", "int", 0x00F0F0F0) ; remove small aberations due to color merge
-	$result = DllCall( $dllhandle, "str", "ImageSearch_SAD", "str", $ImgName)
+;	$result = DllCall( $dllhandle, "str", "ImageSearch_SAD", "str", $ImgName)
+	$result = DllCall( $dllhandle, "str", "ImageSearch_SAD_Limit", "str", $ImgName, "int", $AcceptableSAD)
 	; put back previous screenshot. Maybe we were parsing it
 ;	DllCall( $dllhandle, "str", "CycleScreenshots")
 	local $res = SearchResultToVectSingleRes( $result )
