@@ -77,17 +77,19 @@ void main(int argc, char **arg)
 		TakeScreenshot(0, 0, 1920, 1080);
 //		SaveScreenshot();
 		
-		int Start = GetTimeTickI();
-		res = ImageSearch_SAD("visual_studio_text.bmp");
-		int End = GetTimeTickI();
-		printf("result of  SAD search benchmarking : %d ms duration, %f FPS\n", End - Start, 1000.0 / (float)(End - Start + 1));
+		int Start,End;
 		
 #define SUMSAD_REPEAT_TEST_COUNT 10
+		// ignore first run from benchmark
+		char* ret = ImageSearch_Similar("visual_studio_text.bmp", 40);
+		printf("New method Returned : %s\n", ret);
+
+		// test how much time it takes to prepare the whole screenshot
 		Start = GetTimeTickI();
 		for (size_t i = 0; i < SUMSAD_REPEAT_TEST_COUNT; i++)
 		{
 			FreeSADSUMScreenshot(&CurScreenshot->SADSums);
-			ComputeSADSumScreenshot(CurScreenshot->Pixels, 1920, 1080, &CurScreenshot->SADSums);
+			ComputeSADSumScreenshot(CurScreenshot->Pixels, 1920, 1080, &CurScreenshot->SADSums, SSAS_128x128);
 		}
 		End = GetTimeTickI();
 		printf("result of SUM SAD prepare : %d ms duration, %f FPS\n", (End - Start)/ SUMSAD_REPEAT_TEST_COUNT, 1000.0 / (float)(End - Start + 1) * SUMSAD_REPEAT_TEST_COUNT);
@@ -95,10 +97,16 @@ void main(int argc, char **arg)
 		Start = GetTimeTickI();
 		for (size_t i = 0; i < SUMSAD_REPEAT_TEST_COUNT; i++)
 		{
-			char *ret = ImageSearch_SAD_Limit("visual_studio_text.bmp", 750 * 100 * 100);
+			char *ret = ImageSearch_Similar("visual_studio_text.bmp", 0);
 		}
 		End = GetTimeTickI();
 		printf("result of SUM SAD search : %d ms duration, %f FPS\n", (End - Start) / SUMSAD_REPEAT_TEST_COUNT, 1000.0 / (float)(End - Start + 1) * SUMSAD_REPEAT_TEST_COUNT);
+
+		Start = GetTimeTickI();
+		res = ImageSearch_SAD("visual_studio_text.bmp");
+		End = GetTimeTickI();
+		printf("result of SAD search benchmarking : %d ms duration, %f FPS\n", End - Start, 1000.0 / (float)(End - Start + 1));
+		printf("Returned : %s\n", ret);
 	}/**/
 /*	{
 		OCR_RegisterFont( "OCR_1_green.bmp", '1' );
