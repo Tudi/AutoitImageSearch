@@ -94,6 +94,12 @@
     <ClCompile Include="ImageSearchPreSAD.cpp">
       <Filter>ImageTools</Filter>
     </ClCompile>
+    <ClCompile Include="ImageSAD.cpp">
+      <Filter>ImageTools</Filter>
+    </ClCompile>
+    <ClCompile Include="ImageHash.cpp">
+      <Filter>ImageTools</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EdgeDetect.h">
@@ -184,6 +190,12 @@
       <Filter>ImageTools</Filter>
     </ClInclude>
     <ClInclude Include="ImageSearchPreSAD.h">
+      <Filter>ImageTools</Filter>
+    </ClInclude>
+    <ClInclude Include="ImageSAD.h">
+      <Filter>ImageTools</Filter>
+    </ClInclude>
+    <ClInclude Include="ImageHash.h">
       <Filter>ImageTools</Filter>
     </ClInclude>
   </ItemGroup>

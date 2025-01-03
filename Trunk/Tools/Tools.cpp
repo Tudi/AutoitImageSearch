@@ -124,8 +124,10 @@ THELOOP:
 
 void GetMaxDesktopResolution( int *Width, int *Height )
 {
-   RECT desktop;
-   GetWindowRect( GetDesktopWindow(), &desktop );
+	static RECT desktop = { 0 };
+	if (desktop.bottom == 0 && desktop.top == 0) {
+		GetWindowRect(GetDesktopWindow(), &desktop);
+	}
    *Width = desktop.right;
    *Height = desktop.bottom;
 }

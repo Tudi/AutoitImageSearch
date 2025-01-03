@@ -15,5 +15,37 @@ void DecreaseColorPrecision(ScreenshotStruct *cache, unsigned int Div, unsigned 
 void DecreaseColorCount_(ScreenshotStruct *cache, unsigned int ColorsPerChannel);
 void GetUniqueColorsInRegion(int StartX, int StartY, int EndX, int EndY);
 LPCOLORREF BlurrImage_(int HalfKernelSize, int MiddleFactor, LPCOLORREF Pixels, int Width, int Height);
-void ApplyColorBitmask_(LPCOLORREF Pixels, int Width, int Height, int Mask);
+void ApplyColorBitmask_(LPCOLORREF Pixels, int Width, int Height, DWORD Mask);
+
+
+
+template <__int64 HalfKernelSize>
+LPCOLORREF BlurrImage2_(const LPCOLORREF Pixels, const size_t Width, const size_t Height, const size_t Stride, double MiddleFactor)
+{
+	LPCOLORREF new_Pixels = (COLORREF*)_aligned_malloc(Width * Height * sizeof(COLORREF) + SSE_PADDING, SSE_ALIGNMENT);
+	if (new_Pixels == NULL)
+	{
+		FileDebug("Error:Could not allocate buffer for blur!");
+		return NULL;
+	}
+	const size_t CharWidth = Width * 4;
+	const size_t kernel_pixel_count = (2 * HalfKernelSize + 1) * (2 * HalfKernelSize + 1);
+	for (size_t y = HalfKernelSize; y < Height - HalfKernelSize; y += 1)
+		for (size_t x = HalfKernelSize; x < Width - HalfKernelSize; x += 1)
+		{
+			unsigned char* RowStart = (unsigned char*)&Pixels[y * Stride + x];
+			size_t SumOfValuesR = (size_t)(MiddleFactor * RowStart[0]);
+			size_t SumOfValuesG = (size_t)(MiddleFactor * RowStart[1]);
+			size_t SumOfValuesB = (size_t)(MiddleFactor * RowStart[2]);
+			for (__int64 ky = -HalfKernelSize; ky <= HalfKernelSize; ky++)
+				for (__int64 kx = -HalfKernelSize * 4; kx <= HalfKernelSize * 4; kx += 4)
+				{
+					SumOfValuesR += RowStart[ky * CharWidth + kx + 0];
+					SumOfValuesG += RowStart[ky * CharWidth + kx + 1];
+					SumOfValuesB += RowStart[ky * CharWidth + kx + 2];
+				}
+			new_Pixels[y * Width + x] = RGB(SumOfValuesR / (kernel_pixel_count + MiddleFactor), SumOfValuesG / (kernel_pixel_count + MiddleFactor), SumOfValuesB / (kernel_pixel_count + MiddleFactor));
+		}
+	return new_Pixels;
+}
 #endif

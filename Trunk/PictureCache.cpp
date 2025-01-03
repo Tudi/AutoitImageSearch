@@ -36,12 +36,12 @@ void FixAlphaChannelZero()
 		for (size_t x = 0; x < (size_t)PictureCache[NrPicturesCached].Width; x++)
 		{
 			Pixels[x] |= 0xFF000000;
+//			Pixels[x] = Pixels[x] & 0x00FFFFFF;
 		}
 		Pixels += PictureCache[NrPicturesCached].Width;
 	}
 
 	FileDebug("\tFinished FixAlphaChannelZero");
-
 }
 
 CachedPicture *CachePicture( char *aFilespec )
@@ -101,7 +101,11 @@ CachedPicture *CachePicture( char *aFilespec )
 
 	PictureCache[NrPicturesCached].OCRCache = NULL;
 
-	FixAlphaChannelZero();
+	PictureCache[NrPicturesCached].PrevSearchImageId = 0x7FFFFF;
+	PictureCache[NrPicturesCached].PrevSearchTop = PictureCache[NrPicturesCached].PrevSearchLeft = -1;
+	PictureCache[NrPicturesCached].PrevSearchReturnVal[0] = 0;
+
+	//FixAlphaChannelZero();
 
 	NrPicturesCached++;
 	ReleaseDC(NULL, hdc);

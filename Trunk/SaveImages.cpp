@@ -2,13 +2,13 @@
 
 static int ImageFileAutoIncrement = 0;
 
-void SaveImageAutoName(LPCOLORREF Pixels, int Width, int Height, char *BaseName, int BytesPerPixel)
+void SaveImageAutoName(LPCOLORREF Pixels, int aLeft, int aTop, int Width, int Height, char *BaseName, int BytesPerPixel)
 {
 	//find an available file name
 	char MyFileName[DEFAULT_STR_BUFFER_SIZE];
 	BOOL FileExists;
 	do {
-		sprintf_s(MyFileName, DEFAULT_STR_BUFFER_SIZE, "%s_%04d_%04d_%04d.bmp", "Screenshot", ImageFileAutoIncrement, Width, Height);
+		sprintf_s(MyFileName, DEFAULT_STR_BUFFER_SIZE, "%s_%04d_%04d_%04d_%04d_%04d.bmp", "Screenshot", ImageFileAutoIncrement, aLeft, aTop, Width, Height);
 		FileExists = (_access(MyFileName, 0) == 0);
 		ImageFileAutoIncrement++;
 	} while (FileExists == TRUE);
@@ -51,7 +51,7 @@ void SaveScreenshot_(ScreenshotStruct	*CurScreenshot)
 	}
 	int Width = CurScreenshot->Right - CurScreenshot->Left;
 	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
-	SaveImageAutoName(CurScreenshot->Pixels, Width, Height, "Screenshot", CurScreenshot->BytesPerPixel);
+	SaveImageAutoName(CurScreenshot->Pixels, CurScreenshot->Left, CurScreenshot->Top, Width, Height, "Screenshot", CurScreenshot->BytesPerPixel);
 }
 
 void WINAPI SaveScreenshot()

@@ -366,28 +366,66 @@ void ComputeSADSumScreenshot(LPCOLORREF pixels, int in_width, int in_height, SAD
 
 
 			// last 64 columns / rows would contain bad data
-			in_width2 = in_width - 16;
-			in_height2 = in_height;
+			in_width2 = in_width - 8;
+			in_height2 = in_height - 8;
 
 			// first we process just collumns
+//			size_t AvgPrev = 128;
 			for (size_t y = 0; y < in_height2; y += 1)
 			{
-				unsigned char* pixels2 = (unsigned char*)&pixels[y * stride];
-				pixels2 += color;
 				LPCOLORREF writeTo = &(out_SADSums->SADSum16x16[color][y * stride + 0]);
-				writeTo[0] = 0;
-				for (size_t tx = 0; tx < 16 * 4; tx += 4) // sum 16 pixels
+//				writeTo[0] = 0;
+				for (size_t x = 0; x < in_width2; x += 1)
 				{
-					writeTo[0] += pixels2[tx + 0];
-				}
-				for (size_t x = 1; x < in_width2; x += 1)
-				{
-					// from previous sum of colors, substract the first column and add the next column
-					writeTo[1] = writeTo[0]
-						- (pixels2[0]) // substract first
-						+ (pixels2[16 * 4 + 0]); // add next
-					pixels2 += 4;
-					writeTo += 1;
+					unsigned char* pixels2 = (unsigned char*)&pixels[y * stride + x];
+					pixels2 += color;
+//					size_t sum = 0;
+					unsigned __int64 hash1 = 0; // relative to prev value
+					if (pixels2[0] < pixels2[4]) hash1 |= (1 << (0));
+					if (pixels2[4] < pixels2[8]) hash1 |= (1 << (1));
+					if (pixels2[8] < pixels2[12]) hash1 |= (1 << (2));
+					if (pixels2[12] < pixels2[16]) hash1 |= (1 << (3));
+					pixels2 += (stride * 4);
+					if (pixels2[0] < pixels2[4]) hash1 |= (1 << (4));
+					if (pixels2[4] < pixels2[8]) hash1 |= (1 << (5));
+					if (pixels2[8] < pixels2[12]) hash1 |= (1 << (6));
+					if (pixels2[12] < pixels2[16]) hash1 |= (1 << (7));
+					pixels2 += (stride * 4);
+					if (pixels2[0] < pixels2[4]) hash1 |= (1 << (8));
+					if (pixels2[4] < pixels2[8]) hash1 |= (1 << (9));
+					if (pixels2[8] < pixels2[12]) hash1 |= (1 << (10));
+					if (pixels2[12] < pixels2[16]) hash1 |= (1 << (11));
+					pixels2 += (stride * 4);
+					if (pixels2[0] < pixels2[4]) hash1 |= (1 << (12));
+					if (pixels2[4] < pixels2[8]) hash1 |= (1 << (13));
+					if (pixels2[8] < pixels2[12]) hash1 |= (1 << (14));
+					if (pixels2[12] < pixels2[16]) hash1 |= (1 << (15));
+#if 0
+//					unsigned __int64 hash2 = 0; // relative to avg value
+					for (size_t y2 = 0; y2 < 4; y2++)
+					{
+						for (size_t x2 = 0; x2 < 4; x2++)
+						{
+//							sum += pixels2[x2];
+							if (pixels2[x2] > pixels2[x2 - 1])
+								hash1 |= ( 1 << (y2 * 4 + x2));
+
+/*							if (pixels2[x2] > AvgPrev)
+							{
+								hash2 = (hash2 << 1) | 1;
+							}
+							else
+							{
+								hash2 = (hash2 << 1);
+							}*/
+						}
+						pixels2 += 8 * 4;
+					}
+//					AvgPrev = sum / (8 * 8);
+#endif
+					writeTo[0] = (DWORD)hash1;
+//					writeTo[1] = (DWORD)hash2;
+					writeTo++;
 				}
 			}
 
@@ -525,7 +563,7 @@ void ComputeSADSumCached(LPCOLORREF pixels, int in_width, int in_height, SADSumS
 	size_t stride = in_width;
 
 	// one time init 
-	if (out_SADSums->widt_height != 0)
+	if (out_SADSums->width_height != 0)
 	{
 		return;
 	}
@@ -536,29 +574,29 @@ void ComputeSADSumCached(LPCOLORREF pixels, int in_width, int in_height, SADSumS
 	{
 		in_width = 128;
 		in_height = 128;
-		out_SADSums->widt_height = 128;
+		out_SADSums->width_height = 128;
 	}
 	else if (in_width >= 64 && in_height >= 64)
 	{
 		in_width = 64;
 		in_height = 64;
-		out_SADSums->widt_height = 64;
+		out_SADSums->width_height = 64;
 	}
 	else if (in_width >= 32 && in_height >= 32)
 	{
 		in_width = 32;
 		in_height = 32;
-		out_SADSums->widt_height = 32;
+		out_SADSums->width_height = 32;
 	}
 	else if (in_width >= 16 && in_height >= 16)
 	{
 		in_width = 16;
 		in_height = 16;
-		out_SADSums->widt_height = 16;
+		out_SADSums->width_height = 16;
 	}
 	else
 	{
-		out_SADSums->widt_height = 0;
+		out_SADSums->width_height = 0;
 		return;
 	}
 
@@ -631,7 +669,7 @@ void ImageSearch_SAD_BestMatchAlwaysFind(CachedPicture* cache, const size_t big_
 // !! this expects the cached image to be at least 16x16
 __forceinline __int64 IsSADSum16x16OSmallEnough(CachedPicture* cache, size_t atX, size_t atY, size_t stride, __int64 sad_limit_1_channel_16x16)
 {
-	const size_t nr16 = cache->SADSums.widt_height/16;
+	const size_t nr16 = cache->SADSums.width_height/16;
 	for (size_t color = 0; color < 3; color++)
 	{
 		for (size_t y = 0; y < nr16; y++)
@@ -662,12 +700,12 @@ char* WINAPI ImageSearch_Similar(char* aImageFile, float differencePCT)
 	}
 
 	// not yet initialized ?
-	if (cache->SADSums.widt_height == 0)
+	if (cache->SADSums.width_height == 0)
 	{
 		ComputeSADSumCached(cache->Pixels, cache->Width, cache->Height, &cache->SADSums);
 	}
 	// image is smaller than 16x16
-	if (cache->SADSums.widt_height == 0 || cache->SADSums.widt_height > 128)
+	if (cache->SADSums.width_height == 0 || cache->SADSums.width_height > 128)
 	{
 		return ImageSearch_SAD(aImageFile);
 	}
@@ -675,32 +713,32 @@ char* WINAPI ImageSearch_Similar(char* aImageFile, float differencePCT)
 	size_t big_width = CurScreenshot->GetWidth();
 	size_t big_height = CurScreenshot->GetHeight();
 	size_t stride = big_width;
-	ComputeSADSumScreenshot(CurScreenshot->Pixels, (int)big_width, (int)big_height, &CurScreenshot->SADSums, (SADSumAvailableSizes)cache->SADSums.widt_height);
+	ComputeSADSumScreenshot(CurScreenshot->Pixels, (int)big_width, (int)big_height, &CurScreenshot->SADSums, (SADSumAvailableSizes)cache->SADSums.width_height);
 
 	int retx = -1;
 	int rety = -1;
 	LPCOLORREF *bigSADSums = NULL;
 	const __int64 small_SAD[3] = { cache->SADSums.SADSum[0], cache->SADSums.SADSum[1], cache->SADSums.SADSum[2] };
 
-	if (cache->SADSums.widt_height == 16)
+	if (cache->SADSums.width_height == 16)
 	{
 		big_height -= 16;
 		big_width -= 16;
 		bigSADSums = CurScreenshot->SADSums.SADSum16x16;
 	}
-	else if (cache->SADSums.widt_height == 32)
+	else if (cache->SADSums.width_height == 32)
 	{
 		big_height -= 32;
 		big_width -= 32;
 		bigSADSums = CurScreenshot->SADSums.SADSum32x32;
 	}
-	else if (cache->SADSums.widt_height == 64)
+	else if (cache->SADSums.width_height == 64)
 	{
 		big_height -= 64;
 		big_width -= 64;
 		bigSADSums = CurScreenshot->SADSums.SADSum64x64;
 	}
-	else if (cache->SADSums.widt_height == 128)
+	else if (cache->SADSums.width_height == 128)
 	{
 		big_height -= 128;
 		big_width -= 128;
@@ -717,7 +755,7 @@ char* WINAPI ImageSearch_Similar(char* aImageFile, float differencePCT)
 	const float SADPerPixelChannel = 255.0f * differencePCT / 100.0f;
 	const __int64 totalArea = cache->Width * cache->Height;
 	__int64 bestSAD = (__int64)(totalArea * 3.0f * SADPerPixelChannel);
-	const __int64 totalAreaPrecached = (__int64)cache->SADSums.widt_height * (__int64)cache->SADSums.widt_height;
+	const __int64 totalAreaPrecached = (__int64)cache->SADSums.width_height * (__int64)cache->SADSums.width_height;
 	const float areaPrecachedRatio = (float)totalAreaPrecached / (float)totalArea; // best case it's 1
 	__int64 sad_limit_1_channel = (__int64)(totalAreaPrecached * SADPerPixelChannel);
 	__int64 sad_limit_1_channel_16x16 = (__int64)(16.0f * 16.0f * SADPerPixelChannel);

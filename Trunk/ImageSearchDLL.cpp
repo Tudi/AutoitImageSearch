@@ -72,7 +72,7 @@ void main(int argc, char **arg)
 #endif
 
 #if defined(_DEBUG) || defined(_CONSOLE)
-	{
+/* {
 		char* res;
 		TakeScreenshot(0, 0, 1920, 1080);
 //		SaveScreenshot();
@@ -97,7 +97,7 @@ void main(int argc, char **arg)
 		Start = GetTimeTickI();
 		for (size_t i = 0; i < SUMSAD_REPEAT_TEST_COUNT; i++)
 		{
-			char *ret = ImageSearch_Similar("visual_studio_text.bmp", 0);
+			char *ret = ImageSearch_Similar("visual_studio_text.bmp", 40);
 		}
 		End = GetTimeTickI();
 		printf("result of SUM SAD search : %d ms duration, %f FPS\n", (End - Start) / SUMSAD_REPEAT_TEST_COUNT, 1000.0 / (float)(End - Start + 1) * SUMSAD_REPEAT_TEST_COUNT);
@@ -106,7 +106,7 @@ void main(int argc, char **arg)
 		res = ImageSearch_SAD("visual_studio_text.bmp");
 		End = GetTimeTickI();
 		printf("result of SAD search benchmarking : %d ms duration, %f FPS\n", End - Start, 1000.0 / (float)(End - Start + 1));
-		printf("Returned : %s\n", ret);
+		printf("Old method returned : %s\n", ret);
 	}/**/
 /*	{
 		OCR_RegisterFont( "OCR_1_green.bmp", '1' );
@@ -153,7 +153,7 @@ void main(int argc, char **arg)
 		printf("result of search benchmarking : %d %d FPS\n", End - Start, 1000 * 1000 / ( End - Start + 1 ) );
 		_getch();
 		}/**/
-/* {
+ {
 		_getch();
 		char *res;
 		TakeScreenshot(0, 0, 1920, 1080);

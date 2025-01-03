@@ -29,6 +29,10 @@ struct CachedPicture
 	bool			NeedsPSCache;
 	bool			NeedsSCCache;
 	OCRStore		*OCRCache;
+	// avoid searching too fast that would increase CPU usage
+	size_t			PrevSearchImageId;
+	int				PrevSearchTop, PrevSearchLeft;
+	char			PrevSearchReturnVal[512];
 };
 
 int GetCacheIndex( char *aFilespec );

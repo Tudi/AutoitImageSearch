@@ -227,6 +227,10 @@ char * WINAPI ReadTextFromScreenshot( int StartX, int StartY, int EndX, int EndY
 //printf( "Found %d different font colors\n", OCRTextColors.size() );
 
 	CachedPicture *BestMatch = &PictureCache[ 0 ];
+	if (BestMatch == NULL)
+	{
+		return "|0";
+	}
 	for( int x = StartX; x < EndX; x++ )
 	{
 		if( IsColumnEmpty( x, StartY, EndY ) )
@@ -275,6 +279,10 @@ char * WINAPI ReadTextFromScreenshot( int StartX, int StartY, int EndX, int EndY
 	sprintf_s( td, 500, "Best match is %s - %c with hitcount %d and misscount %d at %d %d", BestMatch->FileName, BestMatch->OCRCache->AssignedChar, BestMatch->OCRCache->LastSearchHitCount, BestMatch->OCRCache->LastSearchMissCount, BestMatch->OCRCache->LastSearchX, BestMatch->OCRCache->LastSearchY );
 	FileDebug( td );
 }/**/
+		if (BestMatch == NULL || BestMatch->OCRCache == NULL)
+		{
+			return "|0";
+		}
 		// best search result is taken even if we are wrong
 		if( BestMatch->OCRCache->LastSearchMissCount * 100 / ( BestMatch->OCRCache->LastSearchHitCount + 1 ) < 50 )
 		{
@@ -300,7 +308,7 @@ char * WINAPI ReadTextFromScreenshot( int StartX, int StartY, int EndX, int EndY
 	FileDebug( "\tFinished  OCR" );
 	return OCRReturnBuff;
 }
-
+/*
 void WINAPI OCR_LoadFontsFromFile(char *aFilespec)
 {
 	FILE *f;
@@ -318,7 +326,7 @@ void WINAPI OCR_LoadFontsFromFile(char *aFilespec)
 		}
 		fclose(f);
 	}
-}
+}*/
 
 void WINAPI OCR_LoadFontsFromDir(char *Path, char *SkipFileNameStart)
 {
@@ -332,7 +340,7 @@ void WINAPI OCR_LoadFontsFromDir(char *Path, char *SkipFileNameStart)
 	if (FontSetDirectory[OCRActiveFontSet][0] == 0)
 		strcpy_s(&FontSetDirectory[OCRActiveFontSet][0], sizeof(FontSetDirectory), Path);
 	*/
-	int skiptocharpos = strlen(SkipFileNameStart);
+	int skiptocharpos = (int)strlen(SkipFileNameStart);
 	std::string search_path = Path;
 	search_path += "/*.*";
 	WIN32_FIND_DATA fd;

@@ -6,7 +6,8 @@ EXPORTS
 	TakeScreenshot
 	SetScreehotFPSLimit
 	SaveScreenshot
-	ImageSearch_SAD	
+	ImageSearch_SAD
+	ImageSearch_SAD_Region
 	ImageSearch_Similar
 	ImageSearch_Multiple_ExactMatch
 	ImageSearch_Multiple_Transparent

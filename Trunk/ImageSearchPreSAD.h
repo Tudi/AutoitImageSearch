@@ -13,7 +13,7 @@ typedef struct SADSumStoreCached
 {
 	COLORREF SADSum16x16[3][8][8]; // always available
 	COLORREF SADSum[3];
-	int widt_height;
+	int width_height;
 }SADSumStoreCached;
 
 typedef enum SADSumAvailableSizes
@@ -28,6 +28,8 @@ void InitSADSUMScreenshot(SADSumStoreScreenshot* sss);
 void FreeSADSUMScreenshot(SADSumStoreScreenshot* sss);
 void ComputeSADSumScreenshot(LPCOLORREF pixels, int in_width, int in_height, SADSumStoreScreenshot *out_SADSums, SADSumAvailableSizes requiredSize);
 
+// sum up R,G,B values in up to a 128x128 square. Used to make a quick prematch before doing a full SAD check
+// functions used for cached images
 void InitSADSUMCached(SADSumStoreCached* sss);
 void FreeSADSUMCached(SADSumStoreCached* sss);
 void ComputeSADSumCached(LPCOLORREF pixels, int in_width, int in_height, SADSumStoreCached* out_SADSums);

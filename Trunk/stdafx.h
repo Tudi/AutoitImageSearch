@@ -98,6 +98,8 @@
 #include "ProjectionDistanceMap.h"
 #include "DrawLine.h"
 #include "ImageSearchPreSAD.h"
+#include "ImageSAD.h"
+#include "ImageHash.h"
 
 #ifdef _CONSOLE
     #include "Tools\CommandProcessor.h"

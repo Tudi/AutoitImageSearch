@@ -378,41 +378,6 @@ docleanupandreturn:
 }
 #endif
 #ifdef COMPARE_STREAM_READ_SPEED
-__inline unsigned int GetSADAtPos2(const unsigned char *RGB1, const int Widthx3, const unsigned char *A2, const unsigned char *RGB2, const int CacheWidthx3, const int CacheStride, const int CacheHeight)
-{
-	unsigned int sad_array[4];
-	__m128i l0, l1, line_sad, acc_sad, alpha_mask;
-	acc_sad = _mm_setzero_si128();
-
-	for (int y2 = 0; y2<CacheHeight; y2++)
-	{
-		for (int x2 = 0; x2<CacheWidthx3; x2 += 16) // 5 pixels at a time
-		{
-			// load the alpha mask
-			alpha_mask = _mm_load_si128((__m128i*)(A2+x2));
-
-			// load 16 bytes of RGB values
-			l0 = _mm_loadu_si128((__m128i*)(RGB1+x2));
-			l1 = _mm_load_si128((__m128i*)(RGB2+x2)); // we could skip 1 byte to make an alligned read ?
-			// apply mask to not count transparent values
-			l0 = _mm_and_si128(l0, alpha_mask);
-			l1 = _mm_and_si128(l1, alpha_mask);
-			// sad RGB values
-			line_sad = _mm_sad_epu8(l0, l1);
-			// add to acc
-			acc_sad = _mm_add_epi32(acc_sad, line_sad);
-		}
-
-		RGB1 += Widthx3;
-		A2 += CacheStride;
-		RGB2 += CacheStride;
-	}
-
-	_mm_storeu_si128((__m128i*)(&sad_array[0]), acc_sad);
-
-	unsigned int sad = sad_array[0] + sad_array[2];
-	return sad;
-}
 
 char* WINAPI ImageSearchOnScreenshotBest_Transparent_SAD(char *aFilespec)
 {
@@ -482,7 +447,7 @@ char* WINAPI ImageSearchOnScreenshotBest_Transparent_SAD(char *aFilespec)
 			}
 		}
 	}
-docleanupandreturn:
+//docleanupandreturn:
 	if (MatchesFound == 0)
 		FileDebug("\t Image search found no matches");
 

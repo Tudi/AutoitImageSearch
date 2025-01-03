@@ -13,20 +13,27 @@ class ScreenshotStruct
 {
 public:
 	LPCOLORREF		Pixels;
-	int				Left, Top, Right, Bottom;
+	int				Left, Top, Right, Bottom, Width, Height;
 	int				BytesPerPixel;	//default is 4, could be 1
 	bool			IsDiffMap;	//width and height needs to be divided by 4
 	bool			NeedsSSCache;
 	bool			NeedsPSCache;
 	bool			NeedsAlphaRemoved;
 	bool			NeedsSplitChannelCache;
+	bool			AppliedColorMask;
+	bool			bPixelsAreReadonly;
 	SimilarSearch	*SSCache;
 	PiramidImage	*PSCache;
 	SplitChannel	*SCCache;
 	SADSumStoreScreenshot		SADSums;
 	size_t			TimeStampTaken;
+	size_t			UniqueFameCounter;
 
 	ScreenshotStruct()
+	{
+		Constuctor();
+	}
+	void Constuctor()
 	{
 		Pixels = NULL;
 		SSCache = NULL;
@@ -36,6 +43,10 @@ public:
 		Left = Top = Right = Bottom = 0;
 		IsDiffMap = false;
 		NeedsSSCache = NeedsPSCache = NeedsSplitChannelCache = true;
+		AppliedColorMask = false;
+		static size_t g_UnqiueFrameCounter = 0;
+		UniqueFameCounter = (++g_UnqiueFrameCounter);
+		bPixelsAreReadonly = true;
 	}
 	int				GetWidth()
 	{
@@ -65,6 +76,7 @@ public:
 	{
 		Pixels[y * (Right - Left) + x] = NewColor;
 	}
+	void ReplaceReadOnlyPixels();
 };
 
 #define NR_SCREENSHOTS_CACHED	2
@@ -73,5 +85,12 @@ extern LIBRARY_API ScreenshotStruct ScreenshotCache[NR_SCREENSHOTS_CACHED];
 extern LIBRARY_API ScreenshotStruct	*CurScreenshot, *PrevScreenshot;
 extern LIBRARY_API int ScreenshotStoreIndex;
 extern LIBRARY_API char ReturnBuff[DEFAULT_STR_BUFFER_SIZE * 10];
+
+// if no screenshot region is specified, try to guess that we wanted the minimum region as last time
+struct SearchedRegionMinMax
+{
+	int aLeft, aTop, aRight, aBottom;
+};
+extern LIBRARY_API SearchedRegionMinMax g_SearchedRegions;
 
 #endif

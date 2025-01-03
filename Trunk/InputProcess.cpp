@@ -4,6 +4,8 @@ LIBRARY_API ScreenshotStruct	ScreenshotCache[ NR_SCREENSHOTS_CACHED ];
 LIBRARY_API ScreenshotStruct	*CurScreenshot, *PrevScreenshot;
 LIBRARY_API int					ScreenshotStoreIndex;
 
+LIBRARY_API SearchedRegionMinMax g_SearchedRegions = { 10000, 10000, -1, -1 };
+
 void WINAPI CycleScreenshots()
 {
 	FileDebug("Started CycleScreenshots");
@@ -17,7 +19,11 @@ void WINAPI ReleaseScreenshot()
 {
 	if (CurScreenshot->Pixels)
 	{
-		_aligned_free(CurScreenshot->Pixels);
+		if (CurScreenshot->bPixelsAreReadonly == false)
+		{
+			_aligned_free(CurScreenshot->Pixels);
+//			free(CurScreenshot->Pixels);
+		}
 		CurScreenshot->Pixels = NULL;
 	}
 	if (CurScreenshot->PSCache)
@@ -45,6 +51,7 @@ void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 		FileDebug( "Can not take screenshot as older one was not yet released." );
 		return;
 	}
+	CurScreenshot->Constuctor(); 
 	CurScreenshot->Left = aLeft;
 	CurScreenshot->Top = aTop;
 	CurScreenshot->Right = aRight;
@@ -55,11 +62,13 @@ void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 	CurScreenshot->NeedsSplitChannelCache = true;
 	CurScreenshot->BytesPerPixel = 4;
 	CurScreenshot->TimeStampTaken = GetTickCount();
+	CurScreenshot->bPixelsAreReadonly = true;
 
-	HDC sdc = NULL;
+	COLORREF trans_color = CLR_NONE; // The default must be a value that can't occur naturally in an image.
 	HBITMAP hbitmap_screen = NULL;
 	HGDIOBJ sdc_orig_select = NULL;
-	COLORREF trans_color = CLR_NONE; // The default must be a value that can't occur naturally in an image.
+	HDC hdc = NULL;
+	HDC sdc = NULL;
     
 	// Create an empty bitmap to hold all the pixels currently visible on the screen that lie within the search area:
 	int search_width = aRight - aLeft;
@@ -78,16 +87,20 @@ void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 	if( CurScreenshot->Bottom - CurScreenshot->Top > search_height )
 		CurScreenshot->Bottom = CurScreenshot->Top + search_height;
 
-	HDC hdc = GetDC(NULL);
+	hdc = GetDC(NULL);
 	if( !hdc )
 	{
+		FileDebug("\nTakeScreenshot:Failed GetDC");
+		return;
+	}
+	sdc = CreateCompatibleDC(hdc);
+	if (!sdc)
+	{
+		FileDebug("\nTakeScreenshot:Failed CreateCompatibleDC");
 		return;
 	}
 
-	sdc = CreateCompatibleDC(hdc);
-	if( !sdc )
-		goto end;
-
+#if defined(good_old_read_only_screen) || 1
 	hbitmap_screen = CreateCompatibleBitmap(hdc, search_width, search_height);
 	if( !hbitmap_screen )
 		goto end;
@@ -105,17 +118,54 @@ void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 	CurScreenshot->Pixels = getbits(hbitmap_screen, sdc, screen_width, screen_height, screen_is_16bit);
 	if( !CurScreenshot->Pixels )
 		goto end;
-
-	LONG Pixels_count = screen_width * screen_height;
+	CurScreenshot->Width = screen_width;
+	CurScreenshot->Height = screen_height;
 
 	// If either is 16-bit, convert *both* to the 16-bit-compatible 32-bit format:
-	if( screen_is_16bit )
+	if (screen_is_16bit)
 	{
 		if (trans_color != CLR_NONE)
 			trans_color &= 0x00F8F8F8; // Convert indicated trans-color to be compatible with the conversion below.
+		LONG Pixels_count = screen_width * screen_height;
 		for (int i = 0; i < Pixels_count; ++i)
 			CurScreenshot->Pixels[i] &= 0x00F8F8F8; // Highest order byte must be masked to zero for consistency with use of 0x00FFFFFF below.
 	}
+#else
+	BITMAPINFO bmi = { 0 };
+	bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+	bmi.bmiHeader.biWidth = search_width;
+	bmi.bmiHeader.biHeight = -search_height;  // Negative height for top-down bitmap
+	bmi.bmiHeader.biPlanes = 1;
+	bmi.bmiHeader.biBitCount = 32;  // Ensure 32-bit for alpha channel
+	bmi.bmiHeader.biCompression = BI_RGB;
+
+	void* pBits = nullptr;
+	hbitmap_screen = CreateDIBSection(hdc, &bmi, DIB_RGB_COLORS, &pBits, NULL, 0);
+	if (!hbitmap_screen)
+	{
+		FileDebug("\nTakeScreenshot:No CreateDIBSection");
+		goto end;
+	}
+
+	sdc_orig_select = SelectObject(sdc, hbitmap_screen);
+	if (!sdc_orig_select)
+	{
+		FileDebug("\nTakeScreenshot:No SelectObject");
+		goto end;
+	}
+
+	// Copy the screen area into the DIB section
+	if (!BitBlt(sdc, 0, 0, search_width, search_height, hdc, aLeft, aTop, SRCCOPY))
+	{
+		FileDebug("\nTakeScreenshot:No BitBlt");
+		goto end;
+	}
+
+	// Now the pixels are writable in pBits
+	CurScreenshot->Pixels = static_cast<LPCOLORREF>(pBits); 
+	CurScreenshot->Width = search_width;
+	CurScreenshot->Height = search_height;
+#endif
 
 end:
 	// If found==false when execution reaches here, ErrorLevel is already set to the right value, so just
@@ -141,16 +191,71 @@ void WINAPI SetScreehotFPSLimit(float newFPSLimit)
 
 void WINAPI TakeScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 {
-	char TBuff[2000];
+	FileDebug("\nTakeScreenshot:");
+	// use auto optimized based on previous frame statistics
+	if (aLeft == -1)
+	{
+		if (g_SearchedRegions.aBottom > 0)
+		{
+			aLeft = g_SearchedRegions.aLeft;
+			aTop = g_SearchedRegions.aTop;
+			aRight = g_SearchedRegions.aRight;
+			aBottom = g_SearchedRegions.aBottom;
+			FileDebug("TakeScreenshot:Auto adjusted screenshot region");
+		}
+		else
+		{
+			aLeft = aTop = aRight = aBottom = 0;
+			FileDebug("TakeScreenshot:Unknown screenshot region");
+		}
+	}
+	// if we want a full screen screenshot
+	if (aBottom == 0) {
+		int MaxWidth, MaxHeight;
+		GetMaxDesktopResolution(&MaxWidth, &MaxHeight);
+		aBottom = MaxHeight;
+		FileDebug("TakeScreenshot:Bottom was too large, adjusted to max");
+	}
+	if (aRight == 0) {
+		int MaxWidth, MaxHeight;
+		GetMaxDesktopResolution(&MaxWidth, &MaxHeight);
+		aRight = MaxWidth;
+		FileDebug("TakeScreenshot:Right was 0, adjusted to max");
+	}
+
+	// sanity checks
+	if (aLeft == aRight || aTop == aBottom) {
+		FileDebug("TakeScreenshot:Width or height is zero");
+		return;
+	}
+
+	// in case params are inversed. Flip them to avoid negative numbers
+	if (aLeft > aRight) {
+		int t = aLeft;
+		aLeft = aRight;
+		aRight = t;
+		FileDebug("TakeScreenshot:Flipped x cords");
+	}
+	// top is the smaller number
+	if (aTop > aBottom) {
+		int t = aTop;
+		aTop = aBottom;
+		aBottom = t;
+		FileDebug("TakeScreenshot:Flipped y cords");
+	}
 	size_t startStamp = GetTickCount();
+	char TBuff[2000];
 	sprintf_s(TBuff, sizeof(TBuff), "Started taking the screenshot [%d,%d][%d,%d]", aLeft, aTop, aRight, aBottom);
 	FileDebug(TBuff);
 
 	if (CurScreenshot != NULL && TakeScreenshotFPSLimit > 0)
 	{
-		if (CurScreenshot->TimeStampTaken + 1000 / TakeScreenshotFPSLimit > GetTickCount()) // limit to 5 FPS ? Every 200 ms ? This process takes time :(
-		{
-			FileDebug("\tFinished taking the screenshot. Skipped because recent screenshot is too fresh");
+		if (CurScreenshot->Left <= aLeft && CurScreenshot->Top <= aTop &&
+			CurScreenshot->Right >= aRight && CurScreenshot->Bottom >= aBottom) {
+			if (CurScreenshot->TimeStampTaken + 1000 / TakeScreenshotFPSLimit > GetTickCount()) // limit to 5 FPS ? Every 200 ms ? This process takes time :(
+			{
+				FileDebug("\tFinished taking the screenshot. Skipped because recent screenshot is too fresh");
+			}
 		}
 	}
 
@@ -159,7 +264,7 @@ void WINAPI TakeScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 	TakeNewScreenshot( aLeft, aTop, aRight, aBottom );
 
 	size_t endStamp = GetTickCount();
-	sprintf_s(TBuff, sizeof(TBuff), "\tFinished taking the screenshot. Took %d ms", (int)(endStamp- startStamp));
+	sprintf_s(TBuff, sizeof(TBuff), "\tFinished taking the screenshot. Took %d ms", (int)(endStamp - startStamp));
 
 	FileDebug(TBuff);
 //	if( CurScreenshot->Pixels == NULL )
@@ -236,4 +341,21 @@ char* WINAPI IsAnythingChanced( int StartX, int StartY, int EndX, int EndY )
 			}
 	FileDebug( "\tEnd IsAnythingChanced" );
 	return "0|0|0";
+}
+
+void ScreenshotStruct::ReplaceReadOnlyPixels()
+{
+	if (bPixelsAreReadonly == true && Pixels)
+	{
+		size_t buffByteCount = Width * Height * sizeof(COLORREF);
+		LPCOLORREF PixelsNew = (LPCOLORREF)_aligned_malloc(buffByteCount + SSE_PADDING, SSE_ALIGNMENT);
+//		LPCOLORREF PixelsNew = (LPCOLORREF)malloc(buffByteCount + SSE_PADDING);
+		if (PixelsNew)
+		{
+			FileDebug("\tReplaceReadOnlyPixels: Done");
+			bPixelsAreReadonly = false;
+			memcpy(PixelsNew, Pixels, buffByteCount);
+			Pixels = PixelsNew;
+		}
+	}
 }

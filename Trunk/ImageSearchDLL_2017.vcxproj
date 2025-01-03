@@ -323,6 +323,8 @@
     <ClCompile Include="GameScripts\LordsMobile_NoOCR.cpp" />
     <ClCompile Include="GradientRemove.cpp" />
     <ClCompile Include="ImageFilters.cpp" />
+    <ClCompile Include="ImageHash.cpp" />
+    <ClCompile Include="ImageSAD.cpp" />
     <ClCompile Include="ImageSearch.cpp" />
     <ClCompile Include="ImageSearchDLL.cpp" />
     <ClCompile Include="ImageSearchPreSAD.cpp" />
@@ -370,6 +372,8 @@
     <ClInclude Include="GameScripts\stdafx.h" />
     <ClInclude Include="GradientRemove.h" />
     <ClInclude Include="ImageFilters.h" />
+    <ClInclude Include="ImageHash.h" />
+    <ClInclude Include="ImageSAD.h" />
     <ClInclude Include="ImageSearch.h" />
     <ClInclude Include="ImageSearchPreSAD.h" />
     <ClInclude Include="InputProcess.h" />

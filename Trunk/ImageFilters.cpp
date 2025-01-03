@@ -13,8 +13,9 @@ LPCOLORREF BlurrImage_(int HalfKernelSize, int MiddleFactor, LPCOLORREF Pixels, 
 	{
 		//32 fps
 		int CharWidth = Width * 4;
-		for( int y = HalfKernelSize; y < Height- HalfKernelSize; y +=1 )
-			for( int x = HalfKernelSize; x < Width- HalfKernelSize; x += 1 )
+		const size_t kernel_pixel_count = (2 * HalfKernelSize + 1) * (2 * HalfKernelSize + 1);
+		for( int y = HalfKernelSize; y < Height - HalfKernelSize; y +=1 )
+			for( int x = HalfKernelSize; x < Width - HalfKernelSize; x += 1 )
 			{
 				unsigned char *RowStart = (unsigned char *)&Pixels[ y * Width + x ];
 				int SumOfValuesR = 0;
@@ -30,7 +31,7 @@ LPCOLORREF BlurrImage_(int HalfKernelSize, int MiddleFactor, LPCOLORREF Pixels, 
 				SumOfValuesR += MiddleFactor * RowStart[0];
 				SumOfValuesG += MiddleFactor * RowStart[1];
 				SumOfValuesB += MiddleFactor * RowStart[2];
-				new_Pixels[ y * Width + x ] = RGB( SumOfValuesR / (9 + MiddleFactor), SumOfValuesG / (9 + MiddleFactor), SumOfValuesB / (9 + MiddleFactor));
+				new_Pixels[ y * Width + x ] = RGB( SumOfValuesR / (kernel_pixel_count + MiddleFactor), SumOfValuesG / (kernel_pixel_count + MiddleFactor), SumOfValuesB / (kernel_pixel_count + MiddleFactor));
 			} 
 	}
 	else if (HalfKernelSize == 1)
@@ -225,22 +226,34 @@ void WINAPI EdgeDetect( int HalfKernelSize )
 	FileDebug( "\tFinished bluring screenshot" );
 }
 
-void ApplyColorBitmask_(LPCOLORREF Pixels, int Width, int Height, int Mask)
+void ApplyColorBitmask_(LPCOLORREF Pixels, int Width, int Height, DWORD Mask)
 {
-	if (CurScreenshot == NULL)
+	if (Pixels == NULL)
 		return;
-	int PixelCount = Height * Width;
-	for (int i = 0; i < PixelCount; i++)
+	size_t PixelCount = Height * Width;
+	for (size_t i = 0; i < PixelCount; i++)
 		Pixels[i] = Pixels[i] & Mask;
 }
 
-void WINAPI ApplyColorBitmask(int Mask)
+void WINAPI ApplyColorBitmask(int paramMask)
 {
 	FileDebug("Started ApplyColorBitmask screenshot");
+	size_t startStamp = GetTickCount();
 	if (CurScreenshot == NULL)
 		return;
+	if (CurScreenshot->AppliedColorMask == true)
+	{
+		FileDebug("\tApplyColorBitmask: Already applied on screenshot. Skipping");
+		return;
+	}
+	CurScreenshot->AppliedColorMask = true;
+	DWORD Mask = *(DWORD*)&paramMask;
+	//CurScreenshot->ReplaceReadOnlyPixels();
 	ApplyColorBitmask_(CurScreenshot->Pixels, CurScreenshot->GetWidth(), CurScreenshot->GetHeight(), Mask);
-	FileDebug("\tFinished ApplyColorBitmask screenshot");
+	size_t endStamp = GetTickCount();
+	char dbgmsg[DEFAULT_STR_BUFFER_SIZE];
+	sprintf_s(dbgmsg, sizeof(dbgmsg), "\tFinished ApplyColorBitmask %#X screenshot in %d ms", Mask, (int)(endStamp - startStamp));
+	FileDebug(dbgmsg);
 }
 
 void DecreaseColorCount_(ScreenshotStruct *cache, unsigned int ColorsPerChannel)
