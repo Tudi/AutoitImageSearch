@@ -8,6 +8,7 @@ EXPORTS
 	SaveScreenshot
 	ImageSearch_SAD
 	ImageSearch_SAD_Region
+	ImageSearch_SAD_Region
 	ImageSearch_Similar
 	ImageSearch_Multiple_ExactMatch
 	ImageSearch_Multiple_Transparent
@@ -15,6 +16,7 @@ EXPORTS
 	ImageSearch_Multipass_PixelCount
 
 	ApplyColorBitmask
+	ApplyColorBitmaskCache
 	DecreaseColorCount
 
 	; OCR related functions

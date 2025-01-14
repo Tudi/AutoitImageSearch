@@ -1,5 +1,7 @@
 #pragma once
 
+struct CachedPicture;
+class ScreenshotStruct;
 // !! hashes are very susceptible to edge changes
 // !! it is very advised to do a blurring on the input images to avoid sharp edges
 // !! due to blurry radius, it might be impossible to hash small images ( because at the edge there are no neighbours )
@@ -36,7 +38,8 @@ struct ImgHashWholeIage
 };
 
 // a simple cache is probably not enough. Perform multiple steps so that it becomes easy
-ImgHashWholeIage *GenHashesForCachedImage(CachedPicture *pic);
+void GenHashesForCachedImage(CachedPicture *pic, ImgHashWholeIage* out_hashes);
+void GenHashesOnScreenshotForCachedImage(CachedPicture* pic, ScreenshotStruct* ss, int atX, int atY, ImgHashWholeIage* out_hashes);
 
 // get the average luminosity of the image, compare each pixel of the image to the avg. If lower than avg produce a 0, else 1 bit
 // pro : mostly ignores luminozity related image changes + similar to SAD but can be cached
@@ -51,3 +54,4 @@ void genBHash_8x8(const LPCOLORREF pixels, const size_t stride, ImgHash8x8* out_
 // cons : only retains row related locations + single extra row added might produce a 100% different hash
 void genCHash_8x8(const LPCOLORREF pixels, const size_t stride, ImgHash8x8* out_hash);
 void compareHash_8x8(ImgHash8x8* h1, ImgHash8x8* h2, ImgHash8x8_CompareResult* out, bool bIsAcumulate);
+void compareHash(ImgHashWholeIage* hash1, ImgHashWholeIage* hash2, ImgHash8x8_CompareResult* out);

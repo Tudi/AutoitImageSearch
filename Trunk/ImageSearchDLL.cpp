@@ -72,6 +72,41 @@ void main(int argc, char **arg)
 #endif
 
 #if defined(_DEBUG) || defined(_CONSOLE)
+ {
+		TakeScreenshot(0, 0, 1920, 1080);
+		ApplyColorBitmask(0x00F0F0F0);
+		ApplyColorBitmaskCache("visual_studio_text.bmp", 0x00F0F0F0);
+//		SaveScreenshot();
+
+		int Start,End;
+#ifdef _DEBUG
+	#define IMG_HASH_REPEAT_TEST_COUNT 1
+#else
+	#define IMG_HASH_REPEAT_TEST_COUNT 10
+#endif
+		// ignore first run from benchmark
+		char* ret = ImageSearch_SAD_Region("visual_studio_text.bmp", 0, 0, 1920, 1080, SADSearchRegionFlags::SSRF_ST_ENFORCE_SAD_WITH_HASH);
+		printf("New method Returned : %s\n", ret);
+		ret = ImageSearch_SAD_Region("visual_studio_text.bmp", 0, 0, 1920, 1080, SADSearchRegionFlags::SSRF_ST_PROCESS_INLCUDE_DIFF_INFO);
+		printf("Old method Returned : %s\n", ret);
+
+		// test how much time it takes to prepare the whole screenshot
+		Start = GetTimeTickI();
+		for (size_t i = 0; i < IMG_HASH_REPEAT_TEST_COUNT; i++)
+		{
+			ret = ImageSearch_SAD_Region("visual_studio_text.bmp", 0, 0, 1920, 1080, SADSearchRegionFlags::SSRF_ST_ENFORCE_SAD_WITH_HASH);
+		}
+		End = GetTimeTickI();
+		printf("result of HASH enforced SAD prepare : %d ms duration, %f FPS\n", (End - Start)/ IMG_HASH_REPEAT_TEST_COUNT, 1000.0 / (float)(End - Start + 1) * IMG_HASH_REPEAT_TEST_COUNT);
+
+		Start = GetTimeTickI();
+		for (size_t i = 0; i < IMG_HASH_REPEAT_TEST_COUNT; i++)
+		{
+			ret = ImageSearch_SAD_Region("visual_studio_text.bmp", 0, 0, 1920, 1080, SADSearchRegionFlags::SSRF_ST_NO_FLAGS);
+		}
+		End = GetTimeTickI();
+		printf("result of SAD search : %d ms duration, %f FPS\n", (End - Start) / IMG_HASH_REPEAT_TEST_COUNT, 1000.0 / (float)(End - Start + 1) * IMG_HASH_REPEAT_TEST_COUNT);
+	}/**/
 /* {
 		char* res;
 		TakeScreenshot(0, 0, 1920, 1080);

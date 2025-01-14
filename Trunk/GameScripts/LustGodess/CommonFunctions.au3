@@ -261,12 +261,10 @@ Func ImageIsAt( $ImgName, $x = -1, $y = -1, $Radius = 2, $AcceptableSAD = 0)
 		GetCoordFromImageFileName( $ImgName, $x, $y, $width, $height )
 	endif
 	global $dllhandle
-	local $x2 = $x
-	local $y2 = $y
-	local $start_x = $x2 - $Radius
-	local $start_y = $y2 - $Radius
-	local $end_x = $x2 + $Radius
-	local $end_y = $y2 + $Radius
+	local $start_x = $x - $Radius
+	local $end_x = $x + $Radius
+	local $start_y = $y - $Radius
+	local $end_y = $y + $Radius
 	
 	if $start_x < 0 then $start_x = 0
 	if $start_y < 0 then $start_y = 0
@@ -275,7 +273,8 @@ Func ImageIsAt( $ImgName, $x = -1, $y = -1, $Radius = 2, $AcceptableSAD = 0)
 
 	local $result = DllCall( $dllhandle, "NONE", "TakeScreenshot", "int", -1, "int", -1, "int", -1, "int", -1)
 	$result = DllCall( $dllhandle, "NONE", "ApplyColorBitmask", "int", 0x00F0F0F0) ; remove small aberations due to color merge
-	$result = DllCall( $dllhandle, "str", "ImageSearch_SAD_Region", "str", $ImgName, "int", $x - $Radius, "int", $y - $Radius, "int", $end_x, "int", $end_y)
+	$result = DllCall( $dllhandle, "str", "ImageSearch_SAD_Region", "str", $ImgName, "int", $x - $Radius, "int", $y - $Radius, "int", $end_x, "int", $end_y, "int", 0)
+	local $widthTruncated = int($width / 8) * 8 ; SAD only works on multiple of 8 pixels on width
 	local $res = SearchResultToVectSingleRes( $result )
 	return $res
 endfunc
@@ -283,15 +282,25 @@ endfunc
 func SearchResultToVectSingleRes( $result )
 	local $array = StringSplit($result[0],"|")
 	local $resCount = Number( $array[1] )
-	;MsgBox( 64, "", "res count " & $resCount )
-	local $ret[3]
-	$ret[0]=-1
-	$ret[1]=-1
-	$ret[2]=-1
-	if( $resCount >= 4 ) then
+	;MsgBox( 64, "", "res count " & $resCount & " and res " & $result[0] & " split count " & UBound($array) )
+	local $ret[8]
+	$ret[0]=-1 ; x
+	$ret[1]=-1 ; y
+	$ret[2]=-1 ; SAD
+	$ret[3]=-1 ; SAD / Pixel - because sad does not use exact width
+	$ret[4]=-1 ; avg color diff
+	$ret[5]=-1 ; color diff count
+	$ret[6]=100 ; color diff pct
+	$ret[7]=-1 ; Hash Diff if requested
+	if( $resCount >= 1 and UBound($array) >= 7 ) then
 		$ret[0]=Int(Number($array[2]))
 		$ret[1]=Int(Number($array[3]))
 		$ret[2]=Int(Number($array[4]))	; SAD
+		$ret[3]=Int(Number($array[5]))	; SAD / Pixel
+		$ret[4]=Int(Number($array[6]))	; avg color diff
+		$ret[5]=Int(Number($array[7]))	; color diff count
+		$ret[6]=Int(Number($array[8]))	; color diff pct
+		$ret[7]=Int(Number($array[9]))	; Hash diff pct
 		;MouseMove( $ret[0], $ret[1] );
 		;MsgBox( 64, "", "found at " & $ret[0] & " " & $ret[1] & " SAD " & $ret[2])
 	endif
@@ -392,6 +401,6 @@ func WaitScreenFinishLoading()
 	wend
 endfunc
 
-Func OnAutoItExit()     
-	DllClose($dllhandle)
-EndFunc ;==>OnAutoItExit
+;Func OnAutoItExit()     
+;	DllClose($dllhandle)
+;EndFunc ;==>OnAutoItExit

@@ -5,6 +5,7 @@ void WINAPI BlurrImage( int HalfKernelSize );
 void WINAPI ErrodeDiffMap( int HalfKernelSize );
 void WINAPI EdgeDetect( int HalfKernelSize );
 void WINAPI ApplyColorBitmask(int Mask);
+void WINAPI ApplyColorBitmaskCache(char* aFilespec, int Mask);
 void WINAPI DecreaseColorCount(unsigned int ColorsPerChannel);
 void WINAPI DecreaseColorCount(unsigned int ColorsPerChannel);
 void WINAPI ErrodeRegionToTransparent(int StartX = -1, int StartY = -1, int EndX = -1, int EndY = -1, int RequiredNeighbourCount = 2);
@@ -22,13 +23,13 @@ void ApplyColorBitmask_(LPCOLORREF Pixels, int Width, int Height, DWORD Mask);
 template <__int64 HalfKernelSize>
 LPCOLORREF BlurrImage2_(const LPCOLORREF Pixels, const size_t Width, const size_t Height, const size_t Stride, double MiddleFactor)
 {
-	LPCOLORREF new_Pixels = (COLORREF*)_aligned_malloc(Width * Height * sizeof(COLORREF) + SSE_PADDING, SSE_ALIGNMENT);
+	LPCOLORREF new_Pixels = (COLORREF*)_aligned_malloc(Stride * Height * sizeof(COLORREF) + SSE_PADDING, SSE_ALIGNMENT);
 	if (new_Pixels == NULL)
 	{
 		FileDebug("Error:Could not allocate buffer for blur!");
 		return NULL;
 	}
-	const size_t CharWidth = Width * 4;
+	const size_t CharWidth = Stride * 4;
 	const size_t kernel_pixel_count = (2 * HalfKernelSize + 1) * (2 * HalfKernelSize + 1);
 	for (size_t y = HalfKernelSize; y < Height - HalfKernelSize; y += 1)
 		for (size_t x = HalfKernelSize; x < Width - HalfKernelSize; x += 1)
@@ -44,7 +45,7 @@ LPCOLORREF BlurrImage2_(const LPCOLORREF Pixels, const size_t Width, const size_
 					SumOfValuesG += RowStart[ky * CharWidth + kx + 1];
 					SumOfValuesB += RowStart[ky * CharWidth + kx + 2];
 				}
-			new_Pixels[y * Width + x] = RGB(SumOfValuesR / (kernel_pixel_count + MiddleFactor), SumOfValuesG / (kernel_pixel_count + MiddleFactor), SumOfValuesB / (kernel_pixel_count + MiddleFactor));
+			new_Pixels[y * Stride + x] = RGB(SumOfValuesR / (kernel_pixel_count + MiddleFactor), SumOfValuesG / (kernel_pixel_count + MiddleFactor), SumOfValuesB / (kernel_pixel_count + MiddleFactor));
 		}
 	return new_Pixels;
 }

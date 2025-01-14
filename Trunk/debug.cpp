@@ -21,9 +21,4 @@ int StartTickCount = 0;
 #endif
 		fclose( f );
 	}
-#else
-	//life is a mistery. If i remove this function that "release" version crashes when used in autoit
-	inline void FileDebug( char *what )
-	{
-	}
 #endif

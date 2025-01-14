@@ -4,7 +4,7 @@ LIBRARY_API ScreenshotStruct	ScreenshotCache[ NR_SCREENSHOTS_CACHED ];
 LIBRARY_API ScreenshotStruct	*CurScreenshot, *PrevScreenshot;
 LIBRARY_API int					ScreenshotStoreIndex;
 
-LIBRARY_API SearchedRegionMinMax g_SearchedRegions = { 10000, 10000, -1, -1 };
+LIBRARY_API SearchedRegionMinMax g_SearchedRegions = { 10000, 10000, -10000, -10000 };
 
 void WINAPI CycleScreenshots()
 {
@@ -51,6 +51,9 @@ void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 		FileDebug( "Can not take screenshot as older one was not yet released." );
 		return;
 	}
+	int MaxWidth, MaxHeight;
+	GetMaxDesktopResolution(&MaxWidth, &MaxHeight);
+
 	CurScreenshot->Constuctor(); 
 	CurScreenshot->Left = aLeft;
 	CurScreenshot->Top = aTop;
@@ -74,8 +77,6 @@ void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 	int search_width = aRight - aLeft;
 	int search_height = aBottom - aTop;
 
-	int MaxWidth, MaxHeight;
-	GetMaxDesktopResolution( &MaxWidth, &MaxHeight );
 	if( aLeft + search_width > MaxWidth )
 		search_width = MaxWidth - aLeft;
 	if( aTop + search_height > MaxHeight )
@@ -195,7 +196,7 @@ void WINAPI TakeScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 	// use auto optimized based on previous frame statistics
 	if (aLeft == -1)
 	{
-		if (g_SearchedRegions.aBottom > 0)
+		if (g_SearchedRegions.aBottom != -10000)
 		{
 			aLeft = g_SearchedRegions.aLeft;
 			aTop = g_SearchedRegions.aTop;
@@ -209,16 +210,15 @@ void WINAPI TakeScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 			FileDebug("TakeScreenshot:Unknown screenshot region");
 		}
 	}
+	int MaxWidth, MaxHeight;
+	GetMaxDesktopResolution(&MaxWidth, &MaxHeight);
+
 	// if we want a full screen screenshot
 	if (aBottom == 0) {
-		int MaxWidth, MaxHeight;
-		GetMaxDesktopResolution(&MaxWidth, &MaxHeight);
 		aBottom = MaxHeight;
 		FileDebug("TakeScreenshot:Bottom was too large, adjusted to max");
 	}
 	if (aRight == 0) {
-		int MaxWidth, MaxHeight;
-		GetMaxDesktopResolution(&MaxWidth, &MaxHeight);
 		aRight = MaxWidth;
 		FileDebug("TakeScreenshot:Right was 0, adjusted to max");
 	}
@@ -243,6 +243,27 @@ void WINAPI TakeScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 		aBottom = t;
 		FileDebug("TakeScreenshot:Flipped y cords");
 	}
+	if (aLeft < 0)
+	{
+		FileDebug("TakeScreenshot:Left was negative. Set it to 0");
+		aLeft = 0;
+	}
+	if (aTop < 0)
+	{
+		FileDebug("TakeScreenshot:Top was negative. Set it to 0");
+		aTop = 0;
+	}
+	if (aRight > MaxWidth)
+	{
+		FileDebug("TakeScreenshot:Right was too large. Set it to desktop");
+		aRight = MaxWidth;
+	}
+	if (aBottom > MaxHeight)
+	{
+		FileDebug("TakeScreenshot:Bottom was too large. Set it to desktop");
+		aBottom = MaxHeight;
+	}
+
 	size_t startStamp = GetTickCount();
 	char TBuff[2000];
 	sprintf_s(TBuff, sizeof(TBuff), "Started taking the screenshot [%d,%d][%d,%d]", aLeft, aTop, aRight, aBottom);

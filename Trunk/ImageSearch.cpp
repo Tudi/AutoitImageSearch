@@ -455,55 +455,60 @@ goto docleanupandreturn;
 // input images are A8R8G8B8 encoded -> 4 bytes / pixel = 32 bpp
 char* WINAPI ImageSearch_SAD(char* aFilespec)
 {
-	return ImageSearch_SAD_Region(aFilespec, CurScreenshot->Left, CurScreenshot->Top, CurScreenshot->Right, CurScreenshot->Bottom);
+	return ImageSearch_SAD_Region(aFilespec, CurScreenshot->Left, CurScreenshot->Top, CurScreenshot->Right, CurScreenshot->Bottom, SADSearchRegionFlags::SSRF_ST_NO_FLAGS);
 }
 
-char* WINAPI ImageSearch_SAD_Region(char* aFilespec, int aLeft, int aTop, int aRight, int aBottom)
+char* WINAPI ImageSearch_SAD_Region(char* aFilespec, int aLeft, int aTop, int aRight, int aBottom, SADSearchRegionFlags uSearchFlags)
 {
 	char ReturnBuff2[DEFAULT_STR_BUFFER_SIZE * 10];
-	int MatchesFound = 0;
 	ReturnBuff[0] = 0;
 	ReturnBuff2[0] = 0;
+#ifdef _DEBUG
+	int MatchesFound = 0;
 	size_t startStamp = GetTickCount();
+#endif
 	FileDebug("Started Image search");
 	CachedPicture* cache = CachePicture(aFilespec);
 
 	if (cache == NULL)
 	{
 		FileDebug("Skipping Image search as image could not be loaded");
-		return "";
+		return ReturnBuff;
 	}
 	if (cache->Pixels == NULL)
 	{
 		FileDebug("Skipping Image search as image pixels are missing");
-		return "";
+		return ReturnBuff;
 	}
 	if (cache->Height <= 0 || cache->Width < 8)
 	{
 		FileDebug("Skipping Image search as searched image height is 0");
-		return "";
+		return ReturnBuff;
 	}
 	if (CurScreenshot == NULL || CurScreenshot->Pixels == NULL)
 	{
 		FileDebug("Skipping Image search no screenshot is available");
-		return "";
+		return ReturnBuff;
 	}
+#if !defined(_CONSOLE) // because we do want to have benchmarks
 	if (cache->PrevSearchImageId == CurScreenshot->UniqueFameCounter &&
 		cache->PrevSearchTop == aTop && cache->PrevSearchLeft == aLeft)
 	{
 		FileDebug("Skipping Image search as it's done on same image with same params");
 		return cache->PrevSearchReturnVal;
 	}
+#endif 
 
 	cache->PrevSearchImageId = CurScreenshot->UniqueFameCounter;
 	cache->PrevSearchTop = aTop;
 	cache->PrevSearchLeft = aLeft;
 
 	// record searched regions so auto screenshot might know next time
-	g_SearchedRegions.aLeft = min(g_SearchedRegions.aLeft, aLeft);
-	g_SearchedRegions.aRight = max(g_SearchedRegions.aRight, aRight + cache->Width + 2);
-	g_SearchedRegions.aTop = min(g_SearchedRegions.aTop, aTop);
-	g_SearchedRegions.aBottom = max(g_SearchedRegions.aBottom, aBottom + cache->Height + 2);
+	const int dEstimatedSearchRadius = 3;
+	g_SearchedRegions.aLeft = min(g_SearchedRegions.aLeft, aLeft - dEstimatedSearchRadius);
+	g_SearchedRegions.aRight = max(g_SearchedRegions.aRight, aRight + cache->Width + dEstimatedSearchRadius);
+	g_SearchedRegions.aTop = min(g_SearchedRegions.aTop, aTop - dEstimatedSearchRadius);
+	g_SearchedRegions.aBottom = max(g_SearchedRegions.aBottom, aBottom + cache->Height + dEstimatedSearchRadius);
 
 	if (aLeft < CurScreenshot->Left)
 	{
@@ -515,15 +520,33 @@ char* WINAPI ImageSearch_SAD_Region(char* aFilespec, int aLeft, int aTop, int aR
 		aTop = CurScreenshot->Top;
 		FileDebug("ImageSearch_SAD_Region:aTop smaller than screenshot Top. Adjusting it");
 	}
-	if (aRight > CurScreenshot->Right - cache->Width)
+	if (aRight > (CurScreenshot->Right - cache->Width))
 	{
 		FileDebug("ImageSearch_SAD_Region:Search Right falls outside screenshot Right. Adjusting it");
+		if (CurScreenshot->Right <= cache->Width) {
+			FileDebug("ImageSearch_SAD_Region:Screenshot is too small for searching. Skipping search");
+			return ReturnBuff;
+		}
 		aRight = CurScreenshot->Right - cache->Width;
 	}
-	if (aBottom > CurScreenshot->Bottom - cache->Height)
+	if (aBottom > (CurScreenshot->Bottom - cache->Height))
 	{
 		FileDebug("ImageSearch_SAD_Region:Search Bottom falls outside screenshot Bottom. Adjusting it");
+		if (CurScreenshot->Bottom <= cache->Height) {
+			FileDebug("ImageSearch_SAD_Region:Screenshot is too small for searching. Skipping search");
+			return ReturnBuff;
+		}
 		aBottom = CurScreenshot->Bottom - cache->Height;
+	}
+	if (aRight <= aLeft)
+	{
+		FileDebug("ImageSearch_SAD_Region:Screenshot width is too small for searching. Skipping search");
+		return ReturnBuff;
+	}
+	if (aBottom <= aTop)
+	{
+		FileDebug("ImageSearch_SAD_Region:Screenshot height is too small for searching. Skipping search");
+		return ReturnBuff;
 	}
 
 	const LPCOLORREF Pixels1 = CurScreenshot->Pixels;
@@ -533,7 +556,7 @@ char* WINAPI ImageSearch_SAD_Region(char* aFilespec, int aLeft, int aTop, int aR
 #ifdef _DEBUG
 	if ((Pixels1[0] & 0xFF000000) != (Pixels2[0] & 0xFF000000))
 	{
-		FileDebug("ImageSearch_SAD_Region: ! Alpha channel mismatch between screenshot and loaded image");
+		FileDebug("ImageSearch_SAD_Region: !!!! Alpha channel mismatch between screenshot and loaded image");
 	}
 #endif
 
@@ -542,13 +565,24 @@ char* WINAPI ImageSearch_SAD_Region(char* aFilespec, int aLeft, int aTop, int aR
 	size_t search_start_y = aTop - CurScreenshot->Top;
 	size_t search_end_y = search_start_y + (aBottom - aTop);
 
+#ifdef _DEBUG
+	{
+		char dbgmsg[DEFAULT_STR_BUFFER_SIZE];
+		sprintf_s(dbgmsg, sizeof(dbgmsg), "\t\t search left=%d top=%d right=%d, bottom=%d", aLeft, aTop, aRight, aBottom);
+		FileDebug(dbgmsg);
+		sprintf_s(dbgmsg, sizeof(dbgmsg), "\t\t search startx=%llu endX=%llu starty=%llu, endy=%llu", search_start_x, search_end_x, search_start_y, search_end_y);
+		FileDebug(dbgmsg);
+	}
+#endif
+	double HashSmallestDiffPCT = 100;
+	ImgHashWholeIage imgHash = { 0 };
 	int retx = -1;
 	int rety = -1;
 	size_t BestSAD = 0x7FFFFFFF;
 	//DumpAsPPM( &CurScreenshot->Pixels[ 40 * Width + 40 ], 40, 40, Width );
 	const size_t stride1 = CurScreenshot->Width;
 	const size_t stride2 = cache->Width;
-	const size_t width_SAD = cache->Width;
+	const size_t width_SAD = (cache->Width/8)*8;
 	const size_t height_SAD = cache->Height;
 	for (size_t y = search_start_y; y < search_end_y; y++)
 	{
@@ -563,11 +597,30 @@ char* WINAPI ImageSearch_SAD_Region(char* aFilespec, int aLeft, int aTop, int aR
 				MatchesFound++;
 #endif
 				BestSAD = sad;
-				retx = (int)x;
-				rety = (int)y;
-				//exact match ? I doubt it will ever happen...
-				if (BestSAD == 0)
-					goto docleanupandreturn;
+				if (uSearchFlags & SSRF_ST_ENFORCE_SAD_WITH_HASH)
+				{
+					ImgHashWholeIage *cacheHash = GetCreateCacheHash(cache);
+					GenHashesOnScreenshotForCachedImage(cache, CurScreenshot, (int)x, (int)y, &imgHash);
+					ImgHash8x8_CompareResult compareRes;
+					compareHash(cacheHash, &imgHash, &compareRes);
+//					printf("New best sad at x=%llu y=%llu. Hash old %f, hash new %f\n", x, y, HashSmallestDiffPCT, compareRes.pctMatchAvg);
+					if (compareRes.pctMatchAvg < HashSmallestDiffPCT)
+					{
+						HashSmallestDiffPCT = compareRes.pctMatchAvg;
+						retx = (int)x;
+						rety = (int)y;
+						//exact match ? I doubt it will ever happen...
+						if (HashSmallestDiffPCT == 100)
+							goto docleanupandreturn;
+					}
+				}
+				else {
+					retx = (int)x;
+					rety = (int)y;
+					//exact match ? I doubt it will ever happen...
+					if (BestSAD == 0)
+						goto docleanupandreturn;
+				}
 			}
 		}
 	}
@@ -578,14 +631,14 @@ docleanupandreturn:
 	size_t colorDiffCount = 0;
 	size_t colorDifferentPct = 0;
 	size_t avgColorDiff = 0;
-	if (rety != -1)
+	if (rety != -1 && (uSearchFlags & SSRF_ST_PROCESS_INLCUDE_DIFF_INFO))
 	{
-		const LPCOLORREF AddrBig = &Pixels1[rety * CurScreenshot->Width + retx];
+		const LPCOLORREF AddrBig = &Pixels1[rety * stride1 + retx];
 		const LPCOLORREF AddrSmall = &Pixels2[0];
-		const size_t truncatedWidth = cache->Width & (~7); // because sad can only process 8 pixels
+//		uint64_t sad = ImageSad(AddrBig, stride1, AddrSmall, stride2, width_SAD, height_SAD);
 		for (size_t row = 0; row < cache->Height; row++)
 		{
-			for (size_t col = 0; col < truncatedWidth; col++)
+			for (size_t col = 0; col < width_SAD; col++)
 			{
 				if (AddrBig[row * stride1 + col] != AddrSmall[row * stride2 + col])
 				{
@@ -596,7 +649,7 @@ docleanupandreturn:
 					if (AddrBig2[2] != AddrSmall2[2]) colorDiffCount++;
 #ifdef _DEBUG
 					char dbgmsg[DEFAULT_STR_BUFFER_SIZE];
-					sprintf_s(dbgmsg, sizeof(dbgmsg), "\t\t diff at %lld %lld screenshot %X cache %X", col, row, AddrBig[row * stride1 + col], AddrSmall[row * stride2 + col]);
+					sprintf_s(dbgmsg, sizeof(dbgmsg), "\t\t diff at %lld %lld screenshot %X cache %X DiffCount %llu", col, row, AddrBig[row * stride1 + col], AddrSmall[row * stride2 + col], colorDiffCount);
 					FileDebug(dbgmsg);
 #endif
 				}
@@ -605,11 +658,15 @@ docleanupandreturn:
 		if (colorDiffCount)
 		{
 			avgColorDiff = BestSAD / colorDiffCount;
-			colorDifferentPct = (size_t)((double)colorDiffCount * 100.0 / (double)(truncatedWidth * cache->Height * 3));
+			colorDifferentPct = (size_t)((double)colorDiffCount * 100.0 / (double)(width_SAD * cache->Height * 3));
 		}
 	}
 
 #ifdef _DEBUG
+	if (((BestSAD == 0 && colorDiffCount != 0) || (BestSAD != 0 && colorDiffCount == 0)) && (uSearchFlags & SSRF_ST_PROCESS_INLCUDE_DIFF_INFO))
+	{
+		FileDebug("\t\t!!!Unexpected difference between SIMD SAD and manual SAD");
+	}
 	char dbgmsg[DEFAULT_STR_BUFFER_SIZE];
 	if (rety == -1) { rety = 0; retx = 0; }
 	sprintf_s(dbgmsg, sizeof(dbgmsg), "\t\t retxy %d %d", retx, rety);
@@ -624,9 +681,11 @@ docleanupandreturn:
 	FileDebug(dbgmsg);
 #endif
 
+	size_t SADPerPixel = BestSAD / (width_SAD * height_SAD * 3);
 	retx = (int)(retx + CurScreenshot->Left);
 	rety = (int)(rety + CurScreenshot->Top);
-	sprintf_s(ReturnBuff, DEFAULT_STR_BUFFER_SIZE * 10, "1|%d|%d|%llu|%llu|%llu|%llu", retx, rety, BestSAD, avgColorDiff, colorDiffCount, colorDifferentPct);
+	sprintf_s(ReturnBuff, DEFAULT_STR_BUFFER_SIZE * 10, "1|%d|%d|%llu|%llu|%llu|%llu|%llu|%d", 
+		retx, rety, BestSAD, SADPerPixel, avgColorDiff, colorDiffCount, colorDifferentPct, int(HashSmallestDiffPCT));
 
 	// in case caller is spamming searches more than we are able to keep up the pace with
 	strcpy_s(cache->PrevSearchReturnVal, ReturnBuff);
@@ -636,6 +695,10 @@ docleanupandreturn:
 	sprintf_s(dbgmsg, sizeof(dbgmsg), "\tImage search finished in %d ms. Name %s. Improved match %d. Returning %s. ", (int)(endStamp - startStamp), cache->FileName, MatchesFound, ReturnBuff);
 	FileDebug(dbgmsg);
 #endif
+	if (imgHash.hashes != NULL)
+	{
+		free(imgHash.hashes);
+	}
 
 	return ReturnBuff;
 }

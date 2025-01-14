@@ -2,7 +2,7 @@
 
 // do a sad between 2 images
 // width / height is from the smaller image
-// width will be truncated to a multiple of 8 !
+// !!! width needs to be truncated to a multiple of 8 !!!
 inline uint64_t ImageSad(const LPCOLORREF pixels1, const size_t stride1, const LPCOLORREF pixels2, const size_t stride2, const size_t width, const size_t height)
 {
 	__m256i acc_sad = _mm256_setzero_si256();

@@ -4,8 +4,8 @@
 #ifdef _DEBUG
 	void FileDebug( char *what );
 #else
-//	#define FileDebug( what )
-	void FileDebug( char *what );
+	//	#define FileDebug( what )
+	inline void FileDebug(char* what) {}
 #endif
 
 #endif

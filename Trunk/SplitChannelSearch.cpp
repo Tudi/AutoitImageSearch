@@ -447,7 +447,7 @@ char* WINAPI ImageSearchOnScreenshotBest_Transparent_SAD(char *aFilespec)
 			}
 		}
 	}
-//docleanupandreturn:
+docleanupandreturn:
 	if (MatchesFound == 0)
 		FileDebug("\t Image search found no matches");
 

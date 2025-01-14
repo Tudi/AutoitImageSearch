@@ -105,6 +105,8 @@ CachedPicture *CachePicture( char *aFilespec )
 	PictureCache[NrPicturesCached].PrevSearchTop = PictureCache[NrPicturesCached].PrevSearchLeft = -1;
 	PictureCache[NrPicturesCached].PrevSearchReturnVal[0] = 0;
 
+	PictureCache[NrPicturesCached].m_Hash.hashes = NULL;
+	
 	//FixAlphaChannelZero();
 
 	NrPicturesCached++;
@@ -293,4 +295,21 @@ void UnloadCache(char *aFilespec)
 	_aligned_free(PictureCache[ExistingCacheIndex].Pixels);
 	PictureCache[ExistingCacheIndex].Pixels = NULL;
 	PictureCache[ExistingCacheIndex].NameHash = 0;
+}
+
+ImgHashWholeIage* GetCreateCacheHash(CachedPicture* cache)
+{
+	if (cache->m_Hash.hashes != NULL)
+	{
+		return &cache->m_Hash;
+	}
+
+	if (cache->Width < 8 || cache->Height < 8)
+	{
+		return NULL;
+	}
+	
+	GenHashesForCachedImage(cache, &cache->m_Hash);
+
+	return &cache->m_Hash;
 }

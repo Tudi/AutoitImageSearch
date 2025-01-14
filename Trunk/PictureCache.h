@@ -4,6 +4,7 @@
 #define MAX_PICTURE_CACHE_COUNT 3500
 
 #include "ImageSearchPreSAD.h"
+#include "ImageHash.h"
 
 class SimilarSearch;
 class PiramidImage;
@@ -33,6 +34,7 @@ struct CachedPicture
 	size_t			PrevSearchImageId;
 	int				PrevSearchTop, PrevSearchLeft;
 	char			PrevSearchReturnVal[512];
+	ImgHashWholeIage m_Hash;
 };
 
 int GetCacheIndex( char *aFilespec );
@@ -44,6 +46,7 @@ void RemoveCacheAlphaChannel( CachedPicture *cache );
 void WINAPI LoadCacheOverScreenshot(char *aFilename, int Atx, int Aty);
 void UnloadLastCache(); //right now only used when training OCR with huge amount of files
 void UnloadCache(char *aFilespec);
+ImgHashWholeIage* GetCreateCacheHash(CachedPicture* cache);
 
 extern LIBRARY_API CachedPicture PictureCache[MAX_PICTURE_CACHE_COUNT];
 extern LIBRARY_API int NrPicturesCached;

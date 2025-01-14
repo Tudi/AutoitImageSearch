@@ -1,6 +1,13 @@
 #ifndef _IMAGE_SEARCH_H_
 #define _IMAGE_SEARCH_H_
 
+enum SADSearchRegionFlags : int
+{
+	SSRF_ST_NO_FLAGS = 0,
+	SSRF_ST_PROCESS_INLCUDE_DIFF_INFO = 1 << 0,
+	SSRF_ST_ENFORCE_SAD_WITH_HASH = 1 << 1,
+};
+
 char* WINAPI ImageSearchOnScreenshot(char *aImageFile, int TransparentColor, int AcceptedColorDiff, int AcceptedErrorCount, int StopAfterNFullMatches);
 char* WINAPI ImageSearchOnScreenshotBest_SAD(char *aImageFile);
 char* WINAPI ImageSearchOnScreenshotBestTransparent(char *aImageFile);
@@ -8,7 +15,7 @@ char* WINAPI ImageSearchOnScreenshotBestTransparent(char *aImageFile);
 // mask value 1 = screenshot pixel is visible and should be searched
 char* WINAPI ImageSearchOnScreenshotMasked(char *ImageFile, char *MaskFile, int TransparentColor, int AcceptedColorDiff, int AcceptedErrorCount, int StopAfterNFullMatches);
 char* WINAPI ImageSearch_SAD(char *aImageFile);
-char* WINAPI ImageSearch_SAD_Region(char* aImageFile, int aLeft, int aTop, int aRight, int aBottom); // when we want to search only a subreagion. Used for IsImageAt
+char* WINAPI ImageSearch_SAD_Region(char* aImageFile, int aLeft, int aTop, int aRight, int aBottom, SADSearchRegionFlags uSearchFlags); // when we want to search only a subreagion. Used for IsImageAt
 char* WINAPI ImageSearch_Multiple_ExactMatch(char *aImageFile);
 char* WINAPI ImageSearch_Multiple_Transparent(char *aImageFile);
 char* WINAPI ImageSearch_Multiple_PixelCount(int Color, int Percent, int AreaWidth, int AreaHeight);
