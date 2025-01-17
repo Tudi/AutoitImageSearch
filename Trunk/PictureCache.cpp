@@ -161,8 +161,8 @@ void CheckPrepareToleranceMaps( CachedPicture *cache, int NewTolerance, int Tran
 	{
 		for( int i = 0;i<3;i++)
 		{
-			cache->MinMap[i] = (unsigned char *)_aligned_malloc( cache->Width * cache->Height + SSE_PADDING, SSE_ALIGNMENT );
-			cache->MaxMap[i] = (unsigned char *)_aligned_malloc( cache->Width * cache->Height + SSE_PADDING, SSE_ALIGNMENT );
+			cache->MinMap[i] = (unsigned char *)MY_ALLOC( cache->Width * cache->Height + SSE_PADDING );
+			cache->MaxMap[i] = (unsigned char *)MY_ALLOC( cache->Width * cache->Height + SSE_PADDING );
 		}
 	}
 
@@ -218,7 +218,7 @@ void WINAPI MoveScreenshotToCache( char *Name )
 	PictureCache[ NrPicturesCached ].LoadedPicture = NULL;
 
 	int PixelsByteSize = CurScreenshot->GetWidth() * CurScreenshot->GetHeight() * sizeof( COLORREF );
-	PictureCache[ NrPicturesCached ].Pixels = (LPCOLORREF) _aligned_malloc( PixelsByteSize, SSE_ALIGNMENT );
+	PictureCache[ NrPicturesCached ].Pixels = (LPCOLORREF)MY_ALLOC( PixelsByteSize );
 	memcpy(	PictureCache[ NrPicturesCached ].Pixels, CurScreenshot->Pixels, PixelsByteSize );
 
 	PictureCache[ NrPicturesCached ].Width = CurScreenshot->GetWidth();
@@ -280,7 +280,7 @@ void UnloadLastCache()
 	if (NrPicturesCached == 0)
 		return;
 	// PictureCache[NrPicturesCached - 1].LoadedPicture; // leaking this :(
-	_aligned_free(PictureCache[NrPicturesCached - 1].Pixels);
+	MY_FREE(PictureCache[NrPicturesCached - 1].Pixels);
 	PictureCache[NrPicturesCached - 1].Pixels = NULL;
 	NrPicturesCached--;
 }
@@ -292,7 +292,7 @@ void UnloadCache(char *aFilespec)
 	{
 		FileDebug("No cache to unload");
 	}
-	_aligned_free(PictureCache[ExistingCacheIndex].Pixels);
+	MY_FREE(PictureCache[ExistingCacheIndex].Pixels);
 	PictureCache[ExistingCacheIndex].Pixels = NULL;
 	PictureCache[ExistingCacheIndex].NameHash = 0;
 }

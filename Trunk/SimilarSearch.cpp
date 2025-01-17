@@ -34,10 +34,10 @@ SimilarSearch::~SimilarSearch()
 {
 	if( R != NULL )
 	{
-		_aligned_free( R );
+		MY_FREE( R );
 #if !( defined( SS_SUM_RGB ) || defined( ADD_COLOR_LOCALIZATION_DIAG3RGB ) || defined( ADD_COLOR_LOCALIZATION_MULBUGRGB ) || defined( ADD_COLOR_LOCALIZATION_2MULBUGRGB ) )
-		_aligned_free( G );
-		_aligned_free( B );
+		MY_FREE( G );
+		MY_FREE( B );
 #endif
 		R = G = B = NULL;
 	}
@@ -458,10 +458,10 @@ void SimilarSearch::BuildFromImg( LPCOLORREF Pixels, int pWidth, int pHeight, in
 {
 	if( R != NULL && ( pWidth != Width || pHeight != Height || SimilarSearchGroupingSizeX != BlockWidth || BlockHeight != SimilarSearchGroupingSizeY || SearchType != SimilarSearchSearchType || SearchDownScale != SimilarSearchResizeStep ) )
 	{
-		_aligned_free( R );
+		MY_FREE( R );
 #if !( defined( SS_SUM_RGB ) || defined( ADD_COLOR_LOCALIZATION_DIAG3RGB ) || defined( ADD_COLOR_LOCALIZATION_MULBUGRGB ) || defined( ADD_COLOR_LOCALIZATION_2MULBUGRGB ) )
-		_aligned_free( G );
-		_aligned_free( B );
+		MY_FREE( G );
+		MY_FREE( B );
 #endif
 		R = G = B = NULL;
 	}
@@ -492,10 +492,10 @@ void SimilarSearch::BuildFromImg( LPCOLORREF Pixels, int pWidth, int pHeight, in
 
 		BlockWidth = SimilarSearchGroupingSizeX;
 		BlockHeight = SimilarSearchGroupingSizeY;
-		R = (int*)_aligned_malloc( Width * Height * sizeof( int ) + SSE_PADDING, SSE_ALIGNMENT );
+		R = (int*)MY_ALLOC( Width * Height * sizeof( int ) + SSE_PADDING );
 #if !( defined( SS_SUM_RGB ) || defined( ADD_COLOR_LOCALIZATION_DIAG3RGB ) || defined( ADD_COLOR_LOCALIZATION_MULBUGRGB ) || defined( ADD_COLOR_LOCALIZATION_2MULBUGRGB ) )
-		G = (int*)_aligned_malloc( Width * Height * sizeof( int ) + SSE_PADDING, SSE_ALIGNMENT );
-		B = (int*)_aligned_malloc( Width * Height * sizeof( int ) + SSE_PADDING, SSE_ALIGNMENT );
+		G = (int*)MY_ALLOC( Width * Height * sizeof( int ) + SSE_PADDING );
+		B = (int*)MY_ALLOC( Width * Height * sizeof( int ) + SSE_PADDING );
 #endif
 
 #ifndef IMPLEMENTING_MULTI_BLOCKS

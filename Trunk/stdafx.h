@@ -67,7 +67,7 @@
 #define SSE_ALIGNMENT			64
 #define SSE_BYTE_COUNT			64
 #define SSE_PADDING				64	//12 bytes would be enough
-#define MY_ALLOC(x)			_aligned_malloc(x+SSE_PADDING,SSE_ALIGNMENT)
+#define MY_ALLOC(x)			_aligned_malloc((x)+SSE_PADDING,SSE_ALIGNMENT)
 #define MY_FREE(x)			if(x){_aligned_free(x); x = NULL;}
 
 #define TRANSPARENT_COLOR			(0x00FFFFFF)

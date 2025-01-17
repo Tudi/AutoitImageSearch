@@ -6,19 +6,19 @@ void ProjectionDistanceMap::DestroyAllocatedMemmory()
 {
 	if (PrevImage != NULL)
 	{
-		_aligned_free(PrevImage);
+		MY_FREE(PrevImage);
 		PrevImage = NULL;
 	}
 
 	if (MergedDistanceMaps != NULL)
 	{
-		_aligned_free(MergedDistanceMaps);
+		MY_FREE(MergedDistanceMaps);
 		MergedDistanceMaps = NULL;
 	}
 
 	if (TempDiffBuffer != NULL)
 	{
-		_aligned_free(TempDiffBuffer);
+		MY_FREE(TempDiffBuffer);
 		TempDiffBuffer = NULL;
 	}
 }
@@ -195,7 +195,7 @@ void ProjectionDistanceMap::SaveMergedMapToFile(char *FileName)
 	SaveImage(DistanceMapColors, DiffMapWidth, DiffMapHeight, FileName);
 
 	//dealloc temp memory
-	_aligned_free(DistanceMapColors);
+	MY_FREE(DistanceMapColors);
 }
 
 void ResetDistanceMapScreenshot()

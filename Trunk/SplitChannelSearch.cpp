@@ -17,18 +17,18 @@ SplitChannel::~SplitChannel()
 #ifdef COMPARE_MULTI_REGION_READ_SPEED
 	if (A)
 	{
-		_aligned_free(A);
-		_aligned_free(R);
-		_aligned_free(G);
-		_aligned_free(B);
+		MY_FREE(A);
+		MY_FREE(R);
+		MY_FREE(G);
+		MY_FREE(B);
 		A = R = G = B = NULL;
 	}
 #endif
 #ifdef COMPARE_STREAM_READ_SPEED
 	if (A2)
 	{
-		_aligned_free(A2);
-		_aligned_free(RGB);
+		MY_FREE(A2);
+		MY_FREE(RGB);
 		A2 = RGB = NULL;
 	}
 #endif
@@ -137,14 +137,14 @@ void SplitChannelSearchGenCache(ScreenshotStruct *Img)
 
 #ifdef COMPARE_MULTI_REGION_READ_SPEED
 	Img->SCCache->A = NULL;	// only smaller image Alpha channel is used
-	Img->SCCache->R = (unsigned char*)_aligned_malloc(PixelCount + SSE_PADDING, SSE_ALIGNMENT);
-	Img->SCCache->G = (unsigned char*)_aligned_malloc(PixelCount + SSE_PADDING, SSE_ALIGNMENT);
-	Img->SCCache->B = (unsigned char*)_aligned_malloc(PixelCount + SSE_PADDING, SSE_ALIGNMENT);
+	Img->SCCache->R = (unsigned char*)MY_ALLOC(PixelCount + SSE_PADDING);
+	Img->SCCache->G = (unsigned char*)MY_ALLOC(PixelCount + SSE_PADDING);
+	Img->SCCache->B = (unsigned char*)MY_ALLOC(PixelCount + SSE_PADDING);
 	CopyFromRGBToSplitChannelScreenshot_((unsigned char *)Img->Pixels, Img->SCCache->R, Img->SCCache->G, Img->SCCache->B, Width, Img->GetHeight());
 #endif
 #ifdef COMPARE_STREAM_READ_SPEED
 	Img->SCCache->A2 = NULL; // NULL
-	Img->SCCache->RGB = (unsigned char*)_aligned_malloc( ( WidthRounded * Img->GetHeight() + SSE_PADDING ) * 4, SSE_ALIGNMENT);
+	Img->SCCache->RGB = (unsigned char*)MY_ALLOC( ( WidthRounded * Img->GetHeight() + SSE_PADDING ) * 4);
 	CopyFromRGBToSplitChannelScreenshot((unsigned char *)Img->Pixels, Img->SCCache->RGB, Width, Img->GetHeight());
 #endif
 
@@ -163,15 +163,15 @@ void SplitChannelSearchGenCache(CachedPicture *Img)
 	int WidthRounded = (Width + 15) / 16 * 16;
 	int PixelCount = Img->Height * WidthRounded;
 #ifdef COMPARE_MULTI_REGION_READ_SPEED
-	Img->SCCache->A = (unsigned char*)_aligned_malloc(PixelCount + SSE_PADDING, SSE_ALIGNMENT);
-	Img->SCCache->R = (unsigned char*)_aligned_malloc(PixelCount + SSE_PADDING, SSE_ALIGNMENT);
-	Img->SCCache->G = (unsigned char*)_aligned_malloc(PixelCount + SSE_PADDING, SSE_ALIGNMENT);
-	Img->SCCache->B = (unsigned char*)_aligned_malloc(PixelCount + SSE_PADDING, SSE_ALIGNMENT);
+	Img->SCCache->A = (unsigned char*)MY_ALLOC(PixelCount + SSE_PADDING);
+	Img->SCCache->R = (unsigned char*)MY_ALLOC(PixelCount + SSE_PADDING);
+	Img->SCCache->G = (unsigned char*)MY_ALLOC(PixelCount + SSE_PADDING);
+	Img->SCCache->B = (unsigned char*)MY_ALLOC(PixelCount + SSE_PADDING);
 	CopyFromRGBToSplitChannelCache_((unsigned char *)Img->Pixels, Img->SCCache->A, Img->SCCache->R, Img->SCCache->G, Img->SCCache->B, Width, Img->Height);
 #endif
 #ifdef COMPARE_STREAM_READ_SPEED
-	Img->SCCache->A2 = (unsigned char*)_aligned_malloc((WidthRounded * Img->Height + SSE_PADDING) * 4, SSE_ALIGNMENT);
-	Img->SCCache->RGB = (unsigned char*)_aligned_malloc((WidthRounded * Img->Height + SSE_PADDING) * 4, SSE_ALIGNMENT);
+	Img->SCCache->A2 = (unsigned char*)MY_ALLOC((WidthRounded * Img->Height + SSE_PADDING) * 4);
+	Img->SCCache->RGB = (unsigned char*)MY_ALLOC((WidthRounded * Img->Height + SSE_PADDING) * 4);
 	CopyFromRGBToSplitChannelCache((unsigned char *)Img->Pixels, Img->SCCache->A2, Img->SCCache->RGB, Width, Img->Height);
 #endif
 

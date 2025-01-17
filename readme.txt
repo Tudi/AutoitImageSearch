@@ -7,7 +7,7 @@ How to use:
 	- use 'SaveScreenshot' to save the recently captured image to a BMP file
 	- use 'ImageSearch_SAD_Region' to search for a recently captured BMP file on the last screen capture
 	- if you have many many searched images on large area, use HASH based image searching that can precompute searched image data
-	- if you have many many searched images done on the "same" location, use some optimized search ('ImageSearch_Similar' ?) that caches SAD for both BMP files and screen capture. 
+	- Fastest is probably 'SearchSimilarOnScreenshot', but it's also innacurate ( sums up RGB values into a single value and does 3 compares / location ). Maybe combine it with SAD and Hash to determine best result
 	
 Good to know :
 	- screen capture is frames per second limited to avoid 100% cpu usage. You can disable FPS limit

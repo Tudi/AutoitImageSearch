@@ -23,7 +23,7 @@ void ApplyColorBitmask_(LPCOLORREF Pixels, int Width, int Height, DWORD Mask);
 template <__int64 HalfKernelSize>
 LPCOLORREF BlurrImage2_(const LPCOLORREF Pixels, const size_t Width, const size_t Height, const size_t Stride, double MiddleFactor)
 {
-	LPCOLORREF new_Pixels = (COLORREF*)_aligned_malloc(Stride * Height * sizeof(COLORREF) + SSE_PADDING, SSE_ALIGNMENT);
+	LPCOLORREF new_Pixels = (COLORREF*)MY_ALLOC(Stride * Height * sizeof(COLORREF) + SSE_PADDING);
 	if (new_Pixels == NULL)
 	{
 		FileDebug("Error:Could not allocate buffer for blur!");

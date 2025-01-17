@@ -5,6 +5,12 @@
 // !!! width needs to be truncated to a multiple of 8 !!!
 inline uint64_t ImageSad(const LPCOLORREF pixels1, const size_t stride1, const LPCOLORREF pixels2, const size_t stride2, const size_t width, const size_t height)
 {
+#if defined(_DEBUG) || defined(_CONSOLE)
+	if (((width/8) * 8) != width)
+	{
+		assert(false);
+	}
+#endif
 	__m256i acc_sad = _mm256_setzero_si256();
 
 	for (size_t y2 = 0; y2 < (size_t)height; y2++)

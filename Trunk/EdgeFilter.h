@@ -25,11 +25,11 @@ class LineStore
 public:
 	LineStore(int Length)
 	{
-		Line = (char *)_aligned_malloc(Length + SSE_PADDING, SSE_ALIGNMENT);
+		Line = (char *)MY_ALLOC(Length + SSE_PADDING);
 	}
 	~LineStore()
 	{
-		_aligned_free(Line);
+		MY_FREE(Line);
 		Line = NULL;
 	}
 	char *Line; // does not support Alpha channel

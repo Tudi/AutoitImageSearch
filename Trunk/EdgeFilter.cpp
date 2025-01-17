@@ -118,7 +118,7 @@ LineFilter *LineFilterParseImage(char *aFileName, int LineLength)
 
 	//blurr the image with 3x3 mask, middle gets added 8 times
 //	LPCOLORREF new_Pixels = BlurrImage(1, 7, cache->Pixels, cache->Width, cache->Height);
-//	_aligned_free(cache->Pixels);
+//	MY_FREE(cache->Pixels);
 //	cache->Pixels = new_Pixels;
 
 	//reduce color count to half
@@ -135,7 +135,7 @@ LineFilter *LineFilterParseImage(char *aFileName, int LineLength)
 	int ValuesAdded = 0;
 
 	//break up the image into multiple lines
-	char *LineBuff = (char *)_aligned_malloc(MAX_LINE_LENGTH_PIXELS * 4 + SSE_PADDING, SSE_ALIGNMENT);
+	char *LineBuff = (char *)MY_ALLOC(MAX_LINE_LENGTH_PIXELS * 4 + SSE_PADDING);
 //	for (int LineLength = MIN_LINE_LENGTH_PIXELS; LineLength < MAX_LINE_LENGTH_PIXELS; LineLength++)
 	{
 		int NumberOfPossibleLines = 2 * (LineLength + 1) + 2 * (LineLength - 1);
@@ -154,7 +154,7 @@ LineFilter *LineFilterParseImage(char *aFileName, int LineLength)
 				}
 			}
 	}
-	_aligned_free(LineBuff);
+	MY_FREE(LineBuff);
 
 	//number of pixels we added to statistcs
 	UsedLineFilter->LinesAdded += ValuesAdded;
@@ -224,10 +224,10 @@ void LineFilter_MarkObjectProbability(int ObjectIndex, char *aFileName)
 	if (cache == NULL)
 		return;
 
-	LPCOLORREF NewPicture = (LPCOLORREF)_aligned_malloc(cache->Width * cache->Height * sizeof(COLORREF) + SSE_PADDING, SSE_ALIGNMENT);
+	LPCOLORREF NewPicture = (LPCOLORREF)MY_ALLOC(cache->Width * cache->Height * sizeof(COLORREF) + SSE_PADDING);
 	memset(NewPicture, 0, cache->Width * cache->Height * sizeof(COLORREF) + SSE_PADDING);
 
-	char *LineBuff = (char *)_aligned_malloc(MAX_LINE_LENGTH_PIXELS * 4 + SSE_PADDING, SSE_ALIGNMENT);
+	char *LineBuff = (char *)MY_ALLOC(MAX_LINE_LENGTH_PIXELS * 4 + SSE_PADDING);
     int LineLength = LO_Active->Lines[0]->GetKeySize() / PIXEL_BYTE_COUNT;
 //	for (int LineLength = MIN_LINE_LENGTH_PIXELS; LineLength < MAX_LINE_LENGTH_PIXELS; LineLength++)
 	{
@@ -269,9 +269,9 @@ void LineFilter_MarkObjectProbability(int ObjectIndex, char *aFileName)
 				}
 			}
 	}
-	_aligned_free(LineBuff);
+	MY_FREE(LineBuff);
 
-	_aligned_free(cache->Pixels);
+	MY_FREE(cache->Pixels);
 	cache->Pixels = NewPicture;
 }
 

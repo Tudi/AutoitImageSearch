@@ -35,6 +35,12 @@ func InitScreenshotDllIfRequired()
 	endif
 endfunc
 
+; limit how many frames we can capture per second. Because we do not want to spend 99% of the time of the script capturing frames ;)
+func SetScreenshotMaxFPS($MaxFPS)
+	InitScreenshotDllIfRequired()
+	$result = DllCall( $dllhandle,"NONE","SetScreehotFPSLimit","int",int($MaxFPS))
+endfunc
+
 func GetWindowRelativPos()
 	local $ret[2]
 	$ret[0] = 0
@@ -253,6 +259,11 @@ Func GetCoordFromImageFileName( $ImgName, ByRef $x, ByRef $y, ByRef $width, ByRe
 	endif
 endfunc
 
+func ApplyColorMaskOnCachedImage($ImgName, $Mask = 0x00F0F0F0)
+	InitScreenshotDllIfRequired()
+	$result = DllCall( $dllhandle, "NONE", "ApplyColorBitmaskCache", "str", $ImgName, "int", $Mask) ; remove small aberations due to color merge
+endfunc
+
 Func ImageIsAt( $ImgName, $x = -1, $y = -1, $Radius = 2, $AcceptableSAD = 0)
 	InitScreenshotDllIfRequired()
 	; in case the image file name in a common sense format we can extract the coordinate of it
@@ -274,16 +285,12 @@ Func ImageIsAt( $ImgName, $x = -1, $y = -1, $Radius = 2, $AcceptableSAD = 0)
 	local $result = DllCall( $dllhandle, "NONE", "TakeScreenshot", "int", -1, "int", -1, "int", -1, "int", -1)
 	$result = DllCall( $dllhandle, "NONE", "ApplyColorBitmask", "int", 0x00F0F0F0) ; remove small aberations due to color merge
 	$result = DllCall( $dllhandle, "str", "ImageSearch_SAD_Region", "str", $ImgName, "int", $x - $Radius, "int", $y - $Radius, "int", $end_x, "int", $end_y, "int", 0)
-	local $widthTruncated = int($width / 8) * 8 ; SAD only works on multiple of 8 pixels on width
 	local $res = SearchResultToVectSingleRes( $result )
 	return $res
 endfunc
 
 func SearchResultToVectSingleRes( $result )
-	local $array = StringSplit($result[0],"|")
-	local $resCount = Number( $array[1] )
-	;MsgBox( 64, "", "res count " & $resCount & " and res " & $result[0] & " split count " & UBound($array) )
-	local $ret[8]
+	local $ret[9]
 	$ret[0]=-1 ; x
 	$ret[1]=-1 ; y
 	$ret[2]=-1 ; SAD
@@ -292,6 +299,13 @@ func SearchResultToVectSingleRes( $result )
 	$ret[5]=-1 ; color diff count
 	$ret[6]=100 ; color diff pct
 	$ret[7]=-1 ; Hash Diff if requested
+	if UBound($result) == 0 then
+		$ret[8] = $result
+		return $ret
+	endif
+	local $array = StringSplit($result[0],"|")
+	local $resCount = Number( $array[1] )
+	;MsgBox( 64, "", "res count " & $resCount & " and res " & $result[0] & " split count " & UBound($array) )
 	if( $resCount >= 1 and UBound($array) >= 7 ) then
 		$ret[0]=Int(Number($array[2]))
 		$ret[1]=Int(Number($array[3]))

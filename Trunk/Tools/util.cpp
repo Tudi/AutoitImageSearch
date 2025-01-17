@@ -139,7 +139,7 @@ void strlcpy(char *aDst, const char *aSrc, size_t aDstSize) // Non-inline becaus
 	aDst[aDstSize] = '\0';
 }
 
-LPCOLORREF getbits(HBITMAP ahImage, HDC hdc, LONG &aWidth, LONG &aHeight, bool &aIs16Bit, int aMinColorDepth )
+LPCOLORREF getbits(HBITMAP ahImage, HDC hdc, LONG &aWidth, LONG &aHeight, bool &aIs16Bit, int aMinColorDepth, LPCOLORREF pReusePrevStore)
 // Helper function used by PixelSearch below.
 // Returns an array of pixels to the caller, which it must free when done.  Returns NULL on failure,
 // in which case the contents of the output parameters is indeterminate.
@@ -179,7 +179,14 @@ LPCOLORREF getbits(HBITMAP ahImage, HDC hdc, LONG &aWidth, LONG &aHeight, bool &
 	aHeight = bmi.bmiHeader.biHeight;
 
 	int image_pixel_count = aWidth * aHeight;
-	image_pixel = (LPCOLORREF)_aligned_malloc( aWidth * (aHeight + SSE_PADDING) * sizeof(COLORREF), SSE_ALIGNMENT );
+	if (pReusePrevStore)
+	{
+		image_pixel = (LPCOLORREF)MY_ALLOC(aWidth * (aHeight + SSE_PADDING) * sizeof(COLORREF));
+	}
+	else
+	{
+		image_pixel = (LPCOLORREF)MY_ALLOC(aWidth * (aHeight + SSE_PADDING) * sizeof(COLORREF));
+	}
 	if( !image_pixel )
 		goto end;
 
@@ -246,7 +253,7 @@ end:
 	DeleteDC(tdc);
 	if (!success && image_pixel)
 	{
-		_aligned_free(image_pixel);
+		MY_FREE(image_pixel);
 		image_pixel = NULL;
 	}
 	return image_pixel;
@@ -1075,11 +1082,11 @@ end:
 	if (hbitmap_screen)
 		DeleteObject(hbitmap_screen);
 	if (image_pixel)
-		_aligned_free(image_pixel);
+		MY_FREE(image_pixel);
 	if (image_mask)
-		_aligned_free(image_mask);
+		MY_FREE(image_mask);
 	if (screen_pixel)
-		_aligned_free(screen_pixel);
+		MY_FREE(screen_pixel);
 
 	if (!found) // Let ErrorLevel, which is either "1" or "2" as set earlier, tell the story.
 			return "0";

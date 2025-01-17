@@ -77,7 +77,7 @@ void WINAPI EdgeDetectRobertCross3Channels()
 		return;
 	int Width = CurScreenshot->GetWidth();
 	int Height = CurScreenshot->GetHeight();
-	int *Dest = (int*)malloc(Width * Height * sizeof(int));
+	int *Dest = (int*)MY_ALLOC(Width * Height * sizeof(int));
 	memset(Dest, 0, Width * Height * sizeof(int));	//leaves 1 pixel edge untouched
 	for (int y = 0; y < Height - 1; y++)
 	{
@@ -92,7 +92,7 @@ void WINAPI EdgeDetectRobertCross3Channels()
 	//copy back Dest
 	memcpy(CurScreenshot->Pixels, Dest, Width * Height * sizeof(int));
 	// free Villie
-	free(Dest);
+	MY_FREE(Dest);
 }
 
 void WINAPI EdgeDetectRobertCross1Channel()
@@ -101,7 +101,7 @@ void WINAPI EdgeDetectRobertCross1Channel()
 		return;
 	int Width = CurScreenshot->GetWidth();
 	int Height = CurScreenshot->GetHeight();
-	int *Dest = (int*)malloc(Width * Height * sizeof(int));
+	int *Dest = (int*)MY_ALLOC(Width * Height * sizeof(int));
 	memset(Dest, 0, Width * Height * sizeof(int));	//leaves 1 pixel edge untouched
 	for (int y = 0; y < Height - 1; y++)
 	{
@@ -125,7 +125,7 @@ void WINAPI EdgeDetectRobertCross1Channel()
 	//copy back Dest
 	memcpy(CurScreenshot->Pixels, Dest, Width * Height * sizeof(int));
 	// free Villie
-	free(Dest);
+	MY_FREE(Dest);
 }
 
 void WINAPI EdgeKeepUpperPercent(int Percent)
@@ -195,7 +195,7 @@ void WINAPI EdgeDetectSobel3Channels()
 		return;
 	int Width = CurScreenshot->GetWidth();
 	int Height = CurScreenshot->GetHeight();
-	int *Dest = (int*)malloc(Width * Height * sizeof(int));
+	int *Dest = (int*)MY_ALLOC(Width * Height * sizeof(int));
 	memset(Dest, 0, Width * Height * sizeof(int));	//Sobel leaves 1 pixel edge untouched
 	for (int y = 1; y < Height - 1; y++)
 	{
@@ -207,7 +207,7 @@ void WINAPI EdgeDetectSobel3Channels()
 	//copy back Dest
 	memcpy(CurScreenshot->Pixels, Dest, Width * Height * sizeof(int));
 	// free Villie
-	free(Dest);
+	MY_FREE(Dest);
 }
 
 int IsLocalMaxima(unsigned char *SP, int Width, int Radius)
@@ -247,7 +247,7 @@ void WINAPI EdgeKeepLocalMaximaMaximaOnly(int Radius)
 		Radius = 1;
 	int Width = CurScreenshot->GetWidth();
 	int Height = CurScreenshot->GetHeight();
-	int *Dest = (int*)malloc(Width * Height * sizeof(int));
+	int *Dest = (int*)MY_ALLOC(Width * Height * sizeof(int));
 	memcpy(Dest, CurScreenshot->Pixels, Width * Height * sizeof(int));
 	//first rows
 	for (int y = 0; y < Radius; y++)
@@ -291,7 +291,7 @@ void WINAPI EdgeKeepLocalMaximaMaximaOnly(int Radius)
 	//copy back Dest
 	memcpy(CurScreenshot->Pixels, Dest, Width * Height * sizeof(int));
 	// free Villie
-	free(Dest);
+	MY_FREE(Dest);
 }
 
 // Have to check why this does not produce as expected !

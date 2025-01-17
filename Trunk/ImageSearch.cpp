@@ -697,7 +697,7 @@ docleanupandreturn:
 #endif
 	if (imgHash.hashes != NULL)
 	{
-		free(imgHash.hashes);
+		MY_FREE(imgHash.hashes);
 	}
 
 	return ReturnBuff;
@@ -1009,7 +1009,7 @@ char* WINAPI ImageSearch_Multiple_PixelCount(int Color, int Percent, int AreaWid
 	int Height = CurScreenshot->GetHeight();
 	int AreaSize = AreaWidth * AreaHeight;
 	float AreaSizeP = AreaSize / 100.0f;
-	int *TempBuff = (int*)malloc(Width * Height * sizeof(int));
+	int *TempBuff = (int*)MY_ALLOC(Width * Height * sizeof(int));
 	if (TempBuff == NULL)
 	{
 		return "";
@@ -1057,7 +1057,7 @@ char* WINAPI ImageSearch_Multiple_PixelCount(int Color, int Percent, int AreaWid
 		FileDebug("\t Image search found no matches");
 
 	sprintf_s(ReturnBuff, DEFAULT_STR_BUFFER_SIZE * 10, "%d%s", MatchesFound, ReturnBuff2);
-	free(TempBuff);
+	MY_FREE(TempBuff);
 	FileDebug("\tImage search finished");
 	return ReturnBuff;
 }
@@ -1079,7 +1079,7 @@ char* WINAPI ImageSearch_Multipass_PixelCount(int Color, int PercentMax, int Per
 	int Height = CurScreenshot->GetHeight();
 	int AreaSize = AreaWidth * AreaHeight;
 	float AreaSizeP = AreaSize / 100.0f;
-	int *TempBuff = (int*)malloc(Width * Height * sizeof(int));
+	int *TempBuff = (int*)MY_ALLOC(Width * Height * sizeof(int));
 	memcpy(TempBuff, CurScreenshot->Pixels, Width * Height * sizeof(int));
 
 	for (int Percent = PercentMax; Percent >= PercentMin; Percent -= PercentStep)
@@ -1128,7 +1128,7 @@ memset(&CurScreenshot->Pixels[(y + y2) * Width + x], Percent, AreaWidth*sizeof(i
 		FileDebug("\t Image search found no matches");
 
 	sprintf_s(ReturnBuff, DEFAULT_STR_BUFFER_SIZE * 10, "%d%s", MatchesFound, ReturnBuff2);
-	free(TempBuff);
+	MY_FREE(TempBuff);
 	FileDebug("\tImage search finished");
 	return ReturnBuff;
 }
@@ -1156,7 +1156,7 @@ char* WINAPI ImageSearch_Multiple_Gradient(int Color, int GradientMatchPercent, 
 	int Width = CurScreenshot->GetWidth();
 	int Height = CurScreenshot->GetHeight();
 	float AreaSize = AreaWidth * AreaHeight / 100.0f;
-	int *TempBuff = (int*)malloc(Width * Height * sizeof(int));
+	int *TempBuff = (int*)MY_ALLOC(Width * Height * sizeof(int));
 	memcpy(TempBuff, CurScreenshot->Pixels, Width * Height * sizeof(int));
 
 	for (int y = 0; y < Height - AreaHeight; y += 1)
@@ -1202,7 +1202,7 @@ char* WINAPI ImageSearch_Multiple_Gradient(int Color, int GradientMatchPercent, 
 		FileDebug("\t Image search found no matches");
 
 	sprintf_s(ReturnBuff, DEFAULT_STR_BUFFER_SIZE * 10, "%d|%s", MatchesFound, ReturnBuff2);
-	free(TempBuff);
+	MY_FREE(TempBuff);
 	FileDebug("\tImage search finished");
 	return ReturnBuff;
 }
@@ -1221,7 +1221,7 @@ void ImageSearch_Multipass_PixelCount2(int Color, int PercentMax, int PercentMin
 	int Width = CurScreenshot->GetWidth();
 	int Height = CurScreenshot->GetHeight();
 	int AreaSize = AreaWidth * AreaHeight;
-	int *TempBuff = (int*)malloc(Width * Height * sizeof(int));
+	int *TempBuff = (int*)MY_ALLOC(Width * Height * sizeof(int));
 	memcpy(TempBuff, CurScreenshot->Pixels, Width * Height * sizeof(int));
 
 	for (int Percent = PercentMax; Percent >= PercentMin; Percent -= PercentStep)
@@ -1296,7 +1296,7 @@ memset(&CurScreenshot->Pixels[y2 * Width + XStart], MatchesFound, tAreaWidth);
 	if (MatchesFound == 0)
 		FileDebug("\t Image search found no matches");
 
-	free(TempBuff);
+	MY_FREE(TempBuff);
 	FileDebug("\tImage search finished");
 	return;
 }
@@ -1316,7 +1316,7 @@ void ImageSearch_Multipass_PixelCount3(int Color, int PercentMin, int AreaWidth,
 	int Width = CurScreenshot->GetWidth();
 	int Height = CurScreenshot->GetHeight();
 	int AreaSize = AreaWidth * AreaHeight;
-	int *TempBuff = (int*)malloc(Width * Height * sizeof(int));
+	int *TempBuff = (int*)MY_ALLOC(Width * Height * sizeof(int));
 	memcpy(TempBuff, CurScreenshot->Pixels, Width * Height * sizeof(int));
 
 	{
@@ -1369,7 +1369,7 @@ void ImageSearch_Multipass_PixelCount3(int Color, int PercentMin, int AreaWidth,
 	if (MatchesFound == 0)
 		FileDebug("\t Image search found no matches");
 
-	free(TempBuff);
+	MY_FREE(TempBuff);
 	FileDebug("\tImage search finished");
 	return;
 }

@@ -41,7 +41,7 @@ void TestTextureLearnOnPictures()
 	//cache = CachePicturePrintErrors("1.bmp", __FUNCTION__);
 
 //	LPCOLORREF new_Pixels = BlurrImage(1, 7, cache->Pixels, cache->Width, cache->Height);
-//	_aligned_free(cache->Pixels);
+//	MY_FREE(cache->Pixels);
 //	cache->Pixels = new_Pixels;
 //	SaveImage(cache->Pixels, cache->Width, cache->Height, "1_blured.bmp");
 

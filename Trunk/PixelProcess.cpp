@@ -432,7 +432,7 @@ void WINAPI ErodeNotInLine(int StartX, int StartY, int EndX, int EndY)
 		return;
 	}
 	int Width = CurScreenshot->Right - CurScreenshot->Left;
-	int *TempBuff = (int*)malloc(Width * CurScreenshot->GetHeight() * sizeof(int));
+	int *TempBuff = (int*)MY_ALLOC(Width * CurScreenshot->GetHeight() * sizeof(int));
 	memcpy(TempBuff, CurScreenshot->Pixels, Width * CurScreenshot->GetHeight() * sizeof(int));
 	for (int y = StartY; y < EndY; y += 1)
 		for (int x = StartX; x < EndX; x += 1)
@@ -450,7 +450,7 @@ void WINAPI ErodeNotInLine(int StartX, int StartY, int EndX, int EndY)
 				continue;
 			CurScreenshot->Pixels[(y - 0) * Width + x - 0] = 0;
 		}
-	free(TempBuff);
+	MY_FREE(TempBuff);
 	FileDebug("Finished ErodeNotInLine");
 }
 
@@ -464,7 +464,7 @@ void WINAPI ErodeOnEdgeNeighbours(int EdgeStrength, int StartX, int StartY, int 
 		return;
 	}
 	int Width = CurScreenshot->Right - CurScreenshot->Left;
-	int *TempBuff = (int*)malloc(Width * CurScreenshot->GetHeight() * sizeof(int));
+	int *TempBuff = (int*)MY_ALLOC(Width * CurScreenshot->GetHeight() * sizeof(int));
 	memcpy(TempBuff, CurScreenshot->Pixels, Width * CurScreenshot->GetHeight() * sizeof(int));
 	for (int y = StartY; y < EndY; y += 1)
 		for (int x = StartX; x < EndX; x += 1)
@@ -493,7 +493,7 @@ void WINAPI ErodeOnEdgeNeighbours(int EdgeStrength, int StartX, int StartY, int 
 				}
 		ELIMINATED_WEAK_PIXEL:;
 		}
-	free(TempBuff);
+	MY_FREE(TempBuff);
 	FileDebug("Finished ErodeOnEdgeNeighbours");
 }
 

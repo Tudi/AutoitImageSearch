@@ -206,7 +206,7 @@ void ParseArgStrings(int argc, char **args)
             if (cache != NULL)
             {
                 LPCOLORREF NewImage = BlurrImage_(Size, Strength, cache->Pixels, cache->Width, cache->Height);
-                _aligned_free(cache->Pixels);
+                MY_FREE(cache->Pixels);
                 cache->Pixels = NewImage;
             }
             continue;

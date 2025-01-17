@@ -1,10 +1,27 @@
 #include "StdAfx.h"
 
-LIBRARY_API ScreenshotStruct	ScreenshotCache[ NR_SCREENSHOTS_CACHED ];
-LIBRARY_API ScreenshotStruct	*CurScreenshot, *PrevScreenshot;
-LIBRARY_API int					ScreenshotStoreIndex;
+LIBRARY_API ScreenshotStruct	ScreenshotCache[NR_SCREENSHOTS_CACHED];
+LIBRARY_API ScreenshotStruct	*CurScreenshot = NULL, *PrevScreenshot = NULL;
+LIBRARY_API int					ScreenshotStoreIndex = 0;
 
 LIBRARY_API SearchedRegionMinMax g_SearchedRegions = { 10000, 10000, -10000, -10000 };
+
+class ConstructorForStaticVars
+{
+public:
+	ConstructorForStaticVars()
+	{
+		for (size_t i = 0; i < NR_SCREENSHOTS_CACHED; i++)
+		{
+			ScreenshotCache[i].Constuctor();
+		}
+		CurScreenshot = PrevScreenshot = NULL;
+		ScreenshotStoreIndex = 0;
+		g_SearchedRegions = { 10000, 10000, -10000, -10000 };
+	}
+};
+// just in case the other init fails
+static ConstructorForStaticVars g_InitGlobalVariables;
 
 void WINAPI CycleScreenshots()
 {
@@ -17,15 +34,13 @@ void WINAPI CycleScreenshots()
 
 void WINAPI ReleaseScreenshot()
 {
+#ifndef REDUCE_ALLOC_COUNT
 	if (CurScreenshot->Pixels)
 	{
-		if (CurScreenshot->bPixelsAreReadonly == false)
-		{
-			_aligned_free(CurScreenshot->Pixels);
-//			free(CurScreenshot->Pixels);
-		}
+		MY_FREE(CurScreenshot->Pixels);
 		CurScreenshot->Pixels = NULL;
 	}
+#endif
 	if (CurScreenshot->PSCache)
 	{
 		delete CurScreenshot->PSCache;
@@ -46,14 +61,17 @@ void WINAPI ReleaseScreenshot()
 
 void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 {
+#ifndef REDUCE_ALLOC_COUNT
 	if( CurScreenshot->Pixels != NULL )
 	{
 		FileDebug( "Can not take screenshot as older one was not yet released." );
 		return;
 	}
+#endif
 	int MaxWidth, MaxHeight;
 	GetMaxDesktopResolution(&MaxWidth, &MaxHeight);
 
+	LPCOLORREF PixelsBeforeReset = CurScreenshot->Pixels;
 	CurScreenshot->Constuctor(); 
 	CurScreenshot->Left = aLeft;
 	CurScreenshot->Top = aTop;
@@ -65,7 +83,6 @@ void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 	CurScreenshot->NeedsSplitChannelCache = true;
 	CurScreenshot->BytesPerPixel = 4;
 	CurScreenshot->TimeStampTaken = GetTickCount();
-	CurScreenshot->bPixelsAreReadonly = true;
 
 	COLORREF trans_color = CLR_NONE; // The default must be a value that can't occur naturally in an image.
 	HBITMAP hbitmap_screen = NULL;
@@ -101,7 +118,6 @@ void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 		return;
 	}
 
-#if defined(good_old_read_only_screen) || 1
 	hbitmap_screen = CreateCompatibleBitmap(hdc, search_width, search_height);
 	if( !hbitmap_screen )
 		goto end;
@@ -116,7 +132,15 @@ void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 
 	LONG screen_width, screen_height;
 	bool screen_is_16bit;
-	CurScreenshot->Pixels = getbits(hbitmap_screen, sdc, screen_width, screen_height, screen_is_16bit);
+#ifdef REDUCE_ALLOC_COUNT
+	// alloc max possible size we can capture. We will be keeping this
+	if (PixelsBeforeReset == NULL) {
+		PixelsBeforeReset = (LPCOLORREF)MY_ALLOC(MaxWidth * (MaxHeight + SSE_PADDING) * sizeof(COLORREF));
+	}
+	CurScreenshot->Pixels = getbits(hbitmap_screen, sdc, screen_width, screen_height, screen_is_16bit, 8, PixelsBeforeReset);
+#else
+	CurScreenshot->Pixels = getbits(hbitmap_screen, sdc, screen_width, screen_height, screen_is_16bit, 8, PixelsBeforeReset);
+#endif
 	if( !CurScreenshot->Pixels )
 		goto end;
 	CurScreenshot->Width = screen_width;
@@ -131,42 +155,6 @@ void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 		for (int i = 0; i < Pixels_count; ++i)
 			CurScreenshot->Pixels[i] &= 0x00F8F8F8; // Highest order byte must be masked to zero for consistency with use of 0x00FFFFFF below.
 	}
-#else
-	BITMAPINFO bmi = { 0 };
-	bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-	bmi.bmiHeader.biWidth = search_width;
-	bmi.bmiHeader.biHeight = -search_height;  // Negative height for top-down bitmap
-	bmi.bmiHeader.biPlanes = 1;
-	bmi.bmiHeader.biBitCount = 32;  // Ensure 32-bit for alpha channel
-	bmi.bmiHeader.biCompression = BI_RGB;
-
-	void* pBits = nullptr;
-	hbitmap_screen = CreateDIBSection(hdc, &bmi, DIB_RGB_COLORS, &pBits, NULL, 0);
-	if (!hbitmap_screen)
-	{
-		FileDebug("\nTakeScreenshot:No CreateDIBSection");
-		goto end;
-	}
-
-	sdc_orig_select = SelectObject(sdc, hbitmap_screen);
-	if (!sdc_orig_select)
-	{
-		FileDebug("\nTakeScreenshot:No SelectObject");
-		goto end;
-	}
-
-	// Copy the screen area into the DIB section
-	if (!BitBlt(sdc, 0, 0, search_width, search_height, hdc, aLeft, aTop, SRCCOPY))
-	{
-		FileDebug("\nTakeScreenshot:No BitBlt");
-		goto end;
-	}
-
-	// Now the pixels are writable in pBits
-	CurScreenshot->Pixels = static_cast<LPCOLORREF>(pBits); 
-	CurScreenshot->Width = search_width;
-	CurScreenshot->Height = search_height;
-#endif
 
 end:
 	// If found==false when execution reaches here, ErrorLevel is already set to the right value, so just
@@ -184,8 +172,8 @@ end:
 
 // if you do a lot of operations you do not want to spend a lot of time taking screenshots
 // example : multiple image searches on the same screenshot : make sure to reuse the same screenshot to take advantage of lookup maps
-static float TakeScreenshotFPSLimit = 5;
-void WINAPI SetScreehotFPSLimit(float newFPSLimit)
+static int TakeScreenshotFPSLimit = 5;
+void WINAPI SetScreehotFPSLimit(int newFPSLimit)
 {
 	TakeScreenshotFPSLimit = newFPSLimit;
 }
@@ -364,14 +352,14 @@ char* WINAPI IsAnythingChanced( int StartX, int StartY, int EndX, int EndY )
 	return "0|0|0";
 }
 
+#if 0
 void ScreenshotStruct::ReplaceReadOnlyPixels()
 {
-	if (bPixelsAreReadonly == true && Pixels)
+	if (Pixels)
 	{
-		size_t buffByteCount = Width * Height * sizeof(COLORREF);
-		LPCOLORREF PixelsNew = (LPCOLORREF)_aligned_malloc(buffByteCount + SSE_PADDING, SSE_ALIGNMENT);
-//		LPCOLORREF PixelsNew = (LPCOLORREF)malloc(buffByteCount + SSE_PADDING);
-		if (PixelsNew)
+		size_t buffByteCount = Width * (Height + SSE_PADDING) * sizeof(COLORREF);
+		LPCOLORREF PixelsNew = (LPCOLORREF)MY_ALLOC(buffByteCount + SSE_PADDING);
+	if (PixelsNew)
 		{
 			FileDebug("\tReplaceReadOnlyPixels: Done");
 			bPixelsAreReadonly = false;
@@ -380,3 +368,4 @@ void ScreenshotStruct::ReplaceReadOnlyPixels()
 		}
 	}
 }
+#endif

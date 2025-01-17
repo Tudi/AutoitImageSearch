@@ -3,6 +3,9 @@
 
 #include "ImageSearchPreSAD.h"
 
+// autoit seems to crap out for some reason. Let's try to reduce allocations to see if it helps
+#define REDUCE_ALLOC_COUNT
+
 void WINAPI TakeScreenshot(int aLeft, int aTop, int aRight, int aBottom);
 void WINAPI ReleaseScreenshot( );
 char* WINAPI GetImageSize( char *aImageFile );
@@ -21,7 +24,6 @@ public:
 	bool			NeedsAlphaRemoved;
 	bool			NeedsSplitChannelCache;
 	bool			AppliedColorMask;
-	bool			bPixelsAreReadonly;
 	SimilarSearch	*SSCache;
 	PiramidImage	*PSCache;
 	SplitChannel	*SCCache;
@@ -46,7 +48,6 @@ public:
 		AppliedColorMask = false;
 		static size_t g_UnqiueFrameCounter = 0;
 		UniqueFameCounter = (++g_UnqiueFrameCounter);
-		bPixelsAreReadonly = true;
 	}
 	int				GetWidth()
 	{
@@ -76,7 +77,7 @@ public:
 	{
 		Pixels[y * (Right - Left) + x] = NewColor;
 	}
-	void ReplaceReadOnlyPixels();
+//	void ReplaceReadOnlyPixels();
 };
 
 #define NR_SCREENSHOTS_CACHED	2

@@ -87,7 +87,7 @@ void WINAPI TakeScreenshotKeepUniquePixels(int aLeft, int aTop, int aRight, int 
 	TakeScreenshotNext(aLeft, aTop, aRight, aBottom);
 
 	//remove non unique features from the previous one
-	COLORREF *PixelBlock = (COLORREF *)malloc(sizeof(COLORREF) * BlockSize);
+	COLORREF *PixelBlock = (COLORREF *)MY_ALLOC(sizeof(COLORREF) * BlockSize);
 	COLORREF TransparentColor = TRANSPARENT_COLOR;
 	for (int y = 0; y < CurScreenshot->GetHeight() - MATCH_REGION_SIZE; y++)
 		for (int x = 0; x < CurScreenshot->GetWidth() - MATCH_REGION_SIZE; x++)
@@ -122,7 +122,7 @@ FINISHED_NEW_IMAGE_SEARCH:
 			;
 		}
 	if (PixelBlock)
-		free(PixelBlock);
+		MY_FREE(PixelBlock);
 	return;
 }
 

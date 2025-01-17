@@ -150,7 +150,7 @@ static void GenHashesForGenericImage(LPCOLORREF Pixels, int Width, int Height, i
 	// store multiple out_hashes
 	if (out_hashes->hashes != NULL && (out_hashes->rows != (usable_height / 8) || out_hashes->cols != (usable_width / 8)))
 	{
-		free(out_hashes->hashes);
+		MY_FREE(out_hashes->hashes);
 		out_hashes->hashes = NULL;
 	}
 	out_hashes->rows = usable_height / 8;
@@ -161,7 +161,7 @@ static void GenHashesForGenericImage(LPCOLORREF Pixels, int Width, int Height, i
 	}
 	if (out_hashes->hashes == NULL)
 	{
-		out_hashes->hashes = (ImgHash8x8_All*)malloc(out_hashes->rows * out_hashes->cols * sizeof(ImgHash8x8_All));
+		out_hashes->hashes = (ImgHash8x8_All*)MY_ALLOC(out_hashes->rows * out_hashes->cols * sizeof(ImgHash8x8_All));
 	}
 	if (out_hashes->hashes == NULL)
 	{
@@ -181,7 +181,7 @@ static void GenHashesForGenericImage(LPCOLORREF Pixels, int Width, int Height, i
 		}
 	}
 
-	_aligned_free(blurredImg);
+	MY_FREE(blurredImg);
 }
 
 void GenHashesForCachedImage(CachedPicture* pic, ImgHashWholeIage* out_hashes)

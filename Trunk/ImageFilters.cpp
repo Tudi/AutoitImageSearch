@@ -2,7 +2,7 @@
 
 LPCOLORREF BlurrImage_(int HalfKernelSize, int MiddleFactor, LPCOLORREF Pixels, int Width, int Height)
 {
-	LPCOLORREF new_Pixels = (COLORREF*)_aligned_malloc(Width * Height * sizeof(COLORREF) + SSE_PADDING, SSE_ALIGNMENT);
+	LPCOLORREF new_Pixels = (COLORREF*)MY_ALLOC(Width * Height * sizeof(COLORREF) + SSE_PADDING);
 	if (new_Pixels == NULL)
 	{
 		FileDebug("Error:Could not allocate buffer for blur!");
@@ -92,7 +92,7 @@ void WINAPI BlurrImage( int HalfKernelSize )
 
 	LPCOLORREF new_Pixels = BlurrImage_(HalfKernelSize, 1, CurScreenshot->Pixels, Width, Height);
 
-	_aligned_free( CurScreenshot->Pixels );
+	MY_FREE( CurScreenshot->Pixels );
 	CurScreenshot->Pixels = new_Pixels;
 	FileDebug( "Finished bluring screenshot" );
 }
@@ -109,7 +109,7 @@ void WINAPI ErrodeDiffMap( int HalfKernelSize )
 	int Width = MotionDiff.GetWidth();
 	int Height = MotionDiff.GetHeight();
 	int AllocSize = Width * Height * sizeof( COLORREF ) + SSE_PADDING;
-	LPCOLORREF new_Pixels = (COLORREF*)_aligned_malloc( AllocSize, SSE_ALIGNMENT );
+	LPCOLORREF new_Pixels = (COLORREF*)MY_ALLOC( AllocSize );
 	if( new_Pixels == NULL )
 	{
 		FileDebug( "Error:Could not allocate buffer for blur!" );
@@ -138,7 +138,7 @@ void WINAPI ErrodeDiffMap( int HalfKernelSize )
 				Dst[ y * Width + x ] = 0;
 		}
 
-	_aligned_free( MotionDiff.Pixels );
+	MY_FREE( MotionDiff.Pixels );
 	MotionDiff.Pixels = new_Pixels;
 	FileDebug( "\tFinished eroding diffmap" );
 }
@@ -153,7 +153,7 @@ void WINAPI EdgeDetect( int HalfKernelSize )
 	}
 	int Width = CurScreenshot->Right - CurScreenshot->Left;
 	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
-	char *new_Pixels = (char*)_aligned_malloc( Width * Height * sizeof( COLORREF ) + SSE_PADDING, SSE_ALIGNMENT );
+	char *new_Pixels = (char*)MY_ALLOC( Width * Height * sizeof( COLORREF ) + SSE_PADDING );
 	if( new_Pixels == NULL )
 	{
 		FileDebug( "Error:Could not allocate buffer for blur!" );
@@ -220,7 +220,7 @@ void WINAPI EdgeDetect( int HalfKernelSize )
 				new_Pixels[ y * Width + x ] = Edge;
 			}
 	}
-	_aligned_free( CurScreenshot->Pixels );
+	MY_FREE( CurScreenshot->Pixels );
 	CurScreenshot->Pixels = (LPCOLORREF)new_Pixels;
 	CurScreenshot->BytesPerPixel = 1;
 	FileDebug( "\tFinished bluring screenshot" );
