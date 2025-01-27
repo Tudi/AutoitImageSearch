@@ -3,7 +3,7 @@
 LIBRARY_API CachedPicture PictureCache[MAX_PICTURE_CACHE_COUNT];
 LIBRARY_API int NrPicturesCached = 0;
 
-int GetCacheIndex( char *aFilespec )
+int GetCacheIndex( const char *aFilespec )
 {
 //	for( int i=0;i<NrPicturesCached;i++)
 //		if( strstr( PictureCache[i].FileName, aFilespec ) )
@@ -44,7 +44,7 @@ void FixAlphaChannelZero()
 	FileDebug("\tFinished FixAlphaChannelZero");
 }
 
-CachedPicture *CachePicture( char *aFilespec )
+CachedPicture *CachePicture( const char *aFilespec )
 {
 	FileDebug( "Started caching image" );
 	int ExistingCacheIndex = GetCacheIndex( aFilespec );
@@ -117,7 +117,7 @@ CachedPicture *CachePicture( char *aFilespec )
 	return &PictureCache[NrPicturesCached-1];
 }
 
-CachedPicture *CachePicturePrintErrors(char *aFilespec, char *CallerFunctionName)
+CachedPicture *CachePicturePrintErrors(const char *aFilespec, const char *CallerFunctionName)
 {
 	char TempBuf[250];
 	CachedPicture *cache = CachePicture(aFilespec);
@@ -195,7 +195,7 @@ void CheckPrepareToleranceMaps( CachedPicture *cache, int NewTolerance, int Tran
 		}
 }
 
-void WINAPI MoveScreenshotToCache( char *Name )
+void WINAPI MoveScreenshotToCache( const char *Name )
 {
 	if( CurScreenshot->Pixels == NULL )
 	{
@@ -243,7 +243,7 @@ void RemoveCacheAlphaChannel( CachedPicture *cache )
 	}
 }
 
-void WINAPI LoadCacheOverScreenshot(char *aFilename, int Atx, int Aty)
+void WINAPI LoadCacheOverScreenshot(const char *aFilename, int Atx, int Aty)
 {
 	FileDebug("LoadCacheOverScreenshot : Start");
 	CachedPicture *Cache = CachePicture(aFilename);

@@ -2,7 +2,7 @@
 #include <date.au3>
 #include <WinAPISys.au3>
 
-Opt("MustDeclareVars", 1)
+; Opt("MustDeclareVars", 1)
 
 global $dllhandle = null
 
@@ -38,7 +38,7 @@ endfunc
 ; limit how many frames we can capture per second. Because we do not want to spend 99% of the time of the script capturing frames ;)
 func SetScreenshotMaxFPS($MaxFPS)
 	InitScreenshotDllIfRequired()
-	$result = DllCall( $dllhandle,"NONE","SetScreehotFPSLimit","int",int($MaxFPS))
+	local $result = DllCall( $dllhandle,"NONE","SetScreehotFPSLimit","int",int($MaxFPS))
 endfunc
 
 func GetWindowRelativPos()
@@ -49,19 +49,23 @@ func GetWindowRelativPos()
 endfunc
 
 func TakeScreenshotAtMousePos($width, $height, $ColorMask = 0x00F0F0F0)
-	InitScreenshotDllIfRequired()
 	local $mpos = MouseGetPos()
-	$result = DllCall( $dllhandle,"NONE","TakeScreenshot","int",$mpos[0],"int",$mpos[1],"int",$mpos[0] + $width,"int",$mpos[1] + $height)
-	if $ColorMask <> 0 then 
-		$result = DllCall( $dllhandle,"NONE", "ApplyColorBitmask", "int", 0x00F0F0F0)
-	endif
-	$result = DllCall( $dllhandle,"NONE","SaveScreenshot")
+	TakeScreenshotRegionAndSaveit($mpos[0],$mpos[1],$mpos[0] + $width,$mpos[1] + $height)
 endfunc
 
 func CopyArray($FromArray, ByRef $ToArray)
 	For $i = 0 To UBound($FromArray) - 1
 		$ToArray[$i] = $FromArray[$i]
 	Next
+endfunc
+
+func CycleHistoryArray(ByRef $HistoryArray, $PushNewValue = -100000)
+	For $i = UBound($HistoryArray) - 1 To 1 step -1
+		$HistoryArray[$i] = $HistoryArray[$i - 1]
+	Next
+	if $PushNewValue <> -100000 then
+		$HistoryArray[0] = $PushNewValue
+	endif
 endfunc
 
 global $PrevMousePos[2], $PrevPrevMousePos[2]
@@ -74,11 +78,14 @@ func TakeScreenshotCyclePositions()
 	CopyArray($mousePosNow, $PrevMousePos)
 endfunc
 func TakeScreenshotAtMousePosPreRecorded()
+	TakeScreenshotRegionAndSaveit($PrevPrevMousePos[0],$PrevPrevMousePos[1],$PrevMousePos[0],$PrevMousePos[1])
+endfunc
+func TakeScreenshotRegionAndSaveit($start_x, $start_y, $end_x, $end_y, $ColorMask = 0x00F0F0F0)
 	InitScreenshotDllIfRequired()
-	local $result = DllCall( $dllhandle,"NONE","TakeScreenshot","int",$PrevPrevMousePos[0],"int",$PrevPrevMousePos[1],"int",$PrevMousePos[0],"int",$PrevMousePos[1])
-	local $ColorMask = 0x00F0F0F0
+	local $mpos = MouseGetPos()
+	Local $result = DllCall( $dllhandle,"NONE","TakeScreenshot","int",$start_x,"int",$start_y,"int",$end_x,"int",$end_y)
 	if $ColorMask <> 0 then 
-		$result = DllCall( $dllhandle,"NONE", "ApplyColorBitmask", "int", $ColorMask)
+		$result = DllCall( $dllhandle,"NONE", "ApplyColorBitmask", "int", 0x00F0F0F0)
 	endif
 	$result = DllCall( $dllhandle,"NONE","SaveScreenshot")
 endfunc
@@ -248,6 +255,15 @@ EndFunc  ;==>_MakeLong
 Func GetCoordFromImageFileName( $ImgName, ByRef $x, ByRef $y, ByRef $width, ByRef $height, $AbsoluteCoord = 0 )
 	local $array = StringSplit($ImgName,"_")
 	local $resCount = $array[0]
+	if $resCount < 4 then
+		;global $BotIsRunning = 0
+		;MsgBox( 64, "", $ImgName )
+		$width=0
+		$height=0
+		$x=0
+		$y=0
+		return
+	endif
 	$width=Int(Number($array[$resCount-1]))
 	$height=Int(Number($array[$resCount-0]))
 	$x=Int(Number($array[$resCount-3]))
@@ -261,30 +277,49 @@ endfunc
 
 func ApplyColorMaskOnCachedImage($ImgName, $Mask = 0x00F0F0F0)
 	InitScreenshotDllIfRequired()
-	$result = DllCall( $dllhandle, "NONE", "ApplyColorBitmaskCache", "str", $ImgName, "int", $Mask) ; remove small aberations due to color merge
+	local $result = DllCall( $dllhandle, "NONE", "ApplyColorBitmaskCache", "str", $ImgName, "int", $Mask) ; remove small aberations due to color merge
 endfunc
 
-Func ImageIsAt( $ImgName, $x = -1, $y = -1, $Radius = 2, $AcceptableSAD = 0)
+Func ImageIsAtRadius( $ImgName, $start_x = -1, $start_y = -1, $Radius = 2)
+	; in case the image file name in a common sense format we can extract the coordinate of it
+	local $end_x, $end_y
+	if( $start_x < 0 ) then
+		local $x, $y, $width, $height
+		GetCoordFromImageFileName( $ImgName, $x, $y, $width, $height )
+		$start_x = $x - $Radius
+		$start_y = $y - $Radius
+		$end_x = $x + $Radius
+		$end_y = $y + $Radius
+	else
+		$end_x = $start_x + $Radius
+		$end_y = $start_y + $Radius
+	endif
+	return ImageIsAtRegion( $ImgName, $start_x, $start_y, $end_x, $end_y)
+endfunc
+
+Func ImageIsAtRegion( $ImgName, $start_x = -1, $start_y = -1, $end_x = -1, $end_y = -1, $SearchFlags = 0)
+	global $dllhandle
 	InitScreenshotDllIfRequired()
 	; in case the image file name in a common sense format we can extract the coordinate of it
-	local $width, $height
-	if( $x == -1 ) then
+	if( $start_x < 0 ) then
+		local $x, $y, $width, $height
 		GetCoordFromImageFileName( $ImgName, $x, $y, $width, $height )
+		local $Radius = 2 ; probably precise...nothing is precise
+		$start_x = $x - $Radius
+		$start_y = $y - $Radius
+		$end_x = $x + $Radius
+		$end_y = $y + $Radius
 	endif
-	global $dllhandle
-	local $start_x = $x - $Radius
-	local $end_x = $x + $Radius
-	local $start_y = $y - $Radius
-	local $end_y = $y + $Radius
 	
 	if $start_x < 0 then $start_x = 0
 	if $start_y < 0 then $start_y = 0
 	if $end_x > @DesktopWidth then $end_x = @DesktopWidth
 	if $end_y > @DesktopHeight then $end_y = @DesktopHeight
 
+	; take screenshot rate will be limited to what we set at the start of the script. 2 FPS ?
 	local $result = DllCall( $dllhandle, "NONE", "TakeScreenshot", "int", -1, "int", -1, "int", -1, "int", -1)
 	$result = DllCall( $dllhandle, "NONE", "ApplyColorBitmask", "int", 0x00F0F0F0) ; remove small aberations due to color merge
-	$result = DllCall( $dllhandle, "str", "ImageSearch_SAD_Region", "str", $ImgName, "int", $x - $Radius, "int", $y - $Radius, "int", $end_x, "int", $end_y, "int", 0)
+	$result = DllCall( $dllhandle, "str", "ImageSearch_SAD_Region", "str", $ImgName, "int", $start_x, "int", $start_y, "int", $end_x, "int", $end_y, "int", int($SearchFlags))
 	local $res = SearchResultToVectSingleRes( $result )
 	return $res
 endfunc
@@ -298,7 +333,7 @@ func SearchResultToVectSingleRes( $result )
 	$ret[4]=-1 ; avg color diff
 	$ret[5]=-1 ; color diff count
 	$ret[6]=100 ; color diff pct
-	$ret[7]=-1 ; Hash Diff if requested
+	$ret[7]=-1 ; Hash Diff if requested. The higher the more similar
 	if UBound($result) == 0 then
 		$ret[8] = $result
 		return $ret
@@ -314,7 +349,7 @@ func SearchResultToVectSingleRes( $result )
 		$ret[4]=Int(Number($array[6]))	; avg color diff
 		$ret[5]=Int(Number($array[7]))	; color diff count
 		$ret[6]=Int(Number($array[8]))	; color diff pct
-		$ret[7]=Int(Number($array[9]))	; Hash diff pct
+		$ret[7]=Int(Number($array[9]))	; Hash diff pct. The higher the more similar
 		;MouseMove( $ret[0], $ret[1] );
 		;MsgBox( 64, "", "found at " & $ret[0] & " " & $ret[1] & " SAD " & $ret[2])
 	endif

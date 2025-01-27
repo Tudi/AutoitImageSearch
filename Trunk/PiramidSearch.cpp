@@ -337,7 +337,7 @@ int PiramidSearch( PiramidImage *Big, PiramidImage *Small, int *RetX, int *RetY,
 }
 
 char PSReturnBuff[DEFAULT_STR_BUFFER_SIZE*10];
-char * WINAPI SearchPiramidOnScreenshot( char *aImageFile )
+char * WINAPI SearchPiramidOnScreenshot( const char *aImageFile )
 {
 	PSReturnBuff[0]=0;
 	FileDebug( "Started Similar Image search" );
@@ -346,18 +346,18 @@ char * WINAPI SearchPiramidOnScreenshot( char *aImageFile )
 	if( cache == NULL )
 	{
 		FileDebug( "Skipping Image search as image could not be loaded" );
-		return "";
+		return PSReturnBuff;
 	}
 	if( cache->Pixels == NULL )
 	{
 		FileDebug( "Skipping Image search as image pixels are missing" );
-		return "";
+		return PSReturnBuff;
 	}
 
 	if( CurScreenshot->Pixels == NULL )
 	{
 		FileDebug( "Skipping Image search no screenshot is available" );
-		return "";
+		return PSReturnBuff;
 	}
 
 	if( cache->PSCache == NULL )

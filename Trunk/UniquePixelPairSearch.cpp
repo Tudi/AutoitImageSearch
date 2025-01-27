@@ -148,17 +148,17 @@ char* WINAPI ImageSearchOnScreenshotUniqueFeatures(char *aFilespec, int Accepted
 	if (cache == NULL)
 	{
 		FileDebug("Skipping Image search as image could not be loaded");
-		return "";
+		return ReturnBuff;
 	}
 	if (cache->Pixels == NULL)
 	{
 		FileDebug("Skipping Image search as image pixels are missing");
-		return "";
+		return ReturnBuff;
 	}
 	if (CurScreenshot->Pixels == NULL)
 	{
 		FileDebug("Skipping Image search no screenshot is available");
-		return "";
+		return ReturnBuff;
 	}
 
 	int Width = CurScreenshot->Right - CurScreenshot->Left;

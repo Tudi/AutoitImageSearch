@@ -688,15 +688,18 @@ __forceinline __int64 IsSADSum16x16OSmallEnough(CachedPicture* cache, size_t atX
 	return 1;
 }
 
+static char g_FuncReturnBuff[MAX_PATH];
+
 char* WINAPI ImageSearch_Similar(char* aImageFile, float differencePCT)
 {
 	size_t startStamp = GetTickCount();
 
 	CachedPicture* cache = CachePicture(aImageFile);
+	g_FuncReturnBuff[0] = 0;
 	if (cache == NULL)
 	{
 		FileDebug("Skipping Image search as image could not be loaded");
-		return "";
+		return g_FuncReturnBuff;
 	}
 
 	// not yet initialized ?

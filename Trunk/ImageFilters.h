@@ -5,7 +5,7 @@ void WINAPI BlurrImage( int HalfKernelSize );
 void WINAPI ErrodeDiffMap( int HalfKernelSize );
 void WINAPI EdgeDetect( int HalfKernelSize );
 void WINAPI ApplyColorBitmask(int Mask);
-void WINAPI ApplyColorBitmaskCache(char* aFilespec, int Mask);
+void WINAPI ApplyColorBitmaskCache(const char* aFilespec, int Mask);
 void WINAPI DecreaseColorCount(unsigned int ColorsPerChannel);
 void WINAPI DecreaseColorCount(unsigned int ColorsPerChannel);
 void WINAPI ErrodeRegionToTransparent(int StartX = -1, int StartY = -1, int EndX = -1, int EndY = -1, int RequiredNeighbourCount = 2);

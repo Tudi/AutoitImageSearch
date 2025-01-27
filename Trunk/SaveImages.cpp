@@ -2,7 +2,7 @@
 
 static int ImageFileAutoIncrement = 0;
 
-void SaveImageAutoName(LPCOLORREF Pixels, int aLeft, int aTop, int Width, int Height, char *BaseName, int BytesPerPixel)
+void SaveImageAutoName(LPCOLORREF Pixels, int aLeft, int aTop, int Width, int Height, const char *BaseName, int BytesPerPixel)
 {
 	//find an available file name
 	char MyFileName[DEFAULT_STR_BUFFER_SIZE];

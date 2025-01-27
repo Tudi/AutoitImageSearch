@@ -379,7 +379,7 @@ docleanupandreturn:
 #endif
 #ifdef COMPARE_STREAM_READ_SPEED
 
-char* WINAPI ImageSearchOnScreenshotBest_Transparent_SAD(char *aFilespec)
+char* WINAPI ImageSearchOnScreenshotBest_Transparent_SAD(const char *aFilespec)
 {
 	char ReturnBuff2[DEFAULT_STR_BUFFER_SIZE * 10];
 	int MatchesFound = 0;
@@ -390,17 +390,17 @@ char* WINAPI ImageSearchOnScreenshotBest_Transparent_SAD(char *aFilespec)
 	if (cache == NULL)
 	{
 		FileDebug("Skipping Image search as image could not be loaded");
-		return "";
+		return ReturnBuff;
 	}
 	if (cache->Pixels == NULL)
 	{
 		FileDebug("Skipping Image search as image pixels are missing");
-		return "";
+		return ReturnBuff;
 	}
 	if (CurScreenshot->Pixels == NULL)
 	{
 		FileDebug("Skipping Image search no screenshot is available");
-		return "";
+		return ReturnBuff;
 	}
 	//make sure we have the split image
 	SplitChannelSearchGenCache(cache);
@@ -447,7 +447,9 @@ char* WINAPI ImageSearchOnScreenshotBest_Transparent_SAD(char *aFilespec)
 			}
 		}
 	}
+#ifndef _CONSOLE
 docleanupandreturn:
+#endif
 	if (MatchesFound == 0)
 		FileDebug("\t Image search found no matches");
 

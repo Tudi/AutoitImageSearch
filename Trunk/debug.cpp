@@ -4,7 +4,7 @@ int PrevTickCount = 0;
 int StartTickCount = 0;
 #ifdef _DEBUG
 //#if defined( _DEBUG ) || 1
-	void FileDebug( char *what )
+	void FileDebug( const char *what )
 	{
 		if( StartTickCount == 0 )
 		{
@@ -20,5 +20,13 @@ int StartTickCount = 0;
 		printf("%d-%d)%s\n", TickNow - StartTickCount, Diff, what);
 #endif
 		fclose( f );
+	}
+
+	void WINAPI DumpAllocationsToLogger()
+	{
+		char* allocs = StrDumpAllocatedRegions();
+		if (allocs) {
+			FileDebug(allocs);
+		}
 	}
 #endif

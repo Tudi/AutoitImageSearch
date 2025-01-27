@@ -37,13 +37,13 @@ struct CachedPicture
 	ImgHashWholeIage m_Hash;
 };
 
-int GetCacheIndex( char *aFilespec );
-CachedPicture *CachePicture( char *aFilespec );
-CachedPicture *CachePicturePrintErrors(char *aFilespec, char *CallerFunctionName);
+int GetCacheIndex( const char *aFilespec );
+CachedPicture *CachePicture( const char *aFilespec );
+CachedPicture *CachePicturePrintErrors(const char *aFilespec, const char *CallerFunctionName);
 void CheckPrepareToleranceMaps( CachedPicture *cache, int NewTolerance, int TransparentColor );
-void WINAPI MoveScreenshotToCache( char *Name );
+void WINAPI MoveScreenshotToCache( const char *Name );
 void RemoveCacheAlphaChannel( CachedPicture *cache );
-void WINAPI LoadCacheOverScreenshot(char *aFilename, int Atx, int Aty);
+void WINAPI LoadCacheOverScreenshot(const char *aFilename, int Atx, int Aty);
 void UnloadLastCache(); //right now only used when training OCR with huge amount of files
 void UnloadCache(char *aFilespec);
 ImgHashWholeIage* GetCreateCacheHash(CachedPicture* cache);

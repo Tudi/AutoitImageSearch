@@ -43,7 +43,7 @@ public:
 };
 
 int GetNextBestMatch( SimilarSearch *SearchIn, SimilarSearch *SearchFor, int &retx, int &rety );
-char * WINAPI SearchSimilarOnScreenshot( char *aImageFile );
+char * WINAPI SearchSimilarOnScreenshot(const char *aImageFile );
 void WINAPI SetupSimilarSearch( int MaxImageSize, int DownScale, int SearchType, int OnlyAtDiffMask );
 
 enum SS_SEARCH_TYPES

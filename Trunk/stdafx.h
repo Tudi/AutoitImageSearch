@@ -5,25 +5,6 @@
 
 #pragma once
 
-// Modify the following defines if you have to target a platform prior to the ones specified below.
-// Refer to MSDN for the latest info on corresponding values for different platforms.
-#ifndef WINVER				// Allow use of features specific to Windows XP or later.
-#define WINVER 0x0501		// Change this to the appropriate value to target other versions of Windows.
-#endif
-
-#ifndef _WIN32_WINNT		// Allow use of features specific to Windows XP or later.                   
-#define _WIN32_WINNT 0x0501	// Change this to the appropriate value to target other versions of Windows.
-#endif						
-
-#ifndef _WIN32_WINDOWS		// Allow use of features specific to Windows 98 or later.
-#define _WIN32_WINDOWS 0x0410 // Change this to the appropriate value to target Windows Me or later.
-#endif
-
-#ifndef _WIN32_IE			// Allow use of features specific to IE 6.0 or later.
-#define _WIN32_IE 0x0600	// Change this to the appropriate value to target other versions of IE.
-#endif
-
-#define WIN32_LEAN_AND_MEAN		// Exclude rarely-used stuff from Windows headers
 // Windows Header Files:
 #include <windows.h>
 #include <stdio.h>
@@ -64,15 +45,10 @@
 
 #define DEFAULT_STR_BUFFER_SIZE 1024
 
-#define SSE_ALIGNMENT			64
-#define SSE_BYTE_COUNT			64
-#define SSE_PADDING				64	//12 bytes would be enough
-#define MY_ALLOC(x)			_aligned_malloc((x)+SSE_PADDING,SSE_ALIGNMENT)
-#define MY_FREE(x)			if(x){_aligned_free(x); x = NULL;}
-
 #define TRANSPARENT_COLOR			(0x00FFFFFF)
 #define REMOVE_ALPHA_CHANNEL_MASK	(0x00FFFFFF)
 
+#include "Tools/Allocator.h"
 #include "PictureCache.h"
 #include "Tools/util.h"
 #include "resampling.h"

@@ -63,7 +63,7 @@ COLORREF ColorNameToBGR(char *aColorName)
 	return CLR_NONE;
 }
 
-inline char *StrChrAny(char *aStr, char *aCharList)
+inline const char *StrChrAny(const char *aStr, const char *aCharList)
 // Returns the position of the first char in aStr that is of any one of the characters listed in aCharList.
 // Returns NULL if not found.
 // Update: Yes, this seems identical to strpbrk().  However, since the corresponding code would
@@ -76,10 +76,9 @@ inline char *StrChrAny(char *aStr, char *aCharList)
 	// Don't use strchr() because that would just find the first occurrence
 	// of the first search-char, which is not necessarily the first occurrence
 	// of *any* search-char:
-	char *look_for_this_char, char_being_analyzed;
 	for (; *aStr; ++aStr)
 		// If *aStr is any of the search char's, we're done:
-		for (char_being_analyzed = *aStr, look_for_this_char = aCharList; *look_for_this_char; ++look_for_this_char)
+		for (const char char_being_analyzed = *aStr, *look_for_this_char = aCharList; *look_for_this_char; ++look_for_this_char)
 			if (char_being_analyzed == *look_for_this_char)
 				return aStr;  // Match found.
 	return NULL; // No match.
@@ -144,6 +143,8 @@ LPCOLORREF getbits(HBITMAP ahImage, HDC hdc, LONG &aWidth, LONG &aHeight, bool &
 // Returns an array of pixels to the caller, which it must free when done.  Returns NULL on failure,
 // in which case the contents of the output parameters is indeterminate.
 {
+	int image_pixel_count = 0;
+	bool is_8bit = false;
 	HDC tdc = CreateCompatibleDC(hdc);
 	if (!tdc)
 		return NULL;
@@ -178,10 +179,10 @@ LPCOLORREF getbits(HBITMAP ahImage, HDC hdc, LONG &aWidth, LONG &aHeight, bool &
 	aWidth = bmi.bmiHeader.biWidth;
 	aHeight = bmi.bmiHeader.biHeight;
 
-	int image_pixel_count = aWidth * aHeight;
+	image_pixel_count = aWidth * aHeight;
 	if (pReusePrevStore)
 	{
-		image_pixel = (LPCOLORREF)MY_ALLOC(aWidth * (aHeight + SSE_PADDING) * sizeof(COLORREF));
+		image_pixel = pReusePrevStore;
 	}
 	else
 	{
@@ -194,7 +195,7 @@ LPCOLORREF getbits(HBITMAP ahImage, HDC hdc, LONG &aWidth, LONG &aHeight, bool &
 	// of the extra color table handling for 1-bpp images.  Update: For code simplification, support only
 	// 8-bpp images.  If ever support lower color depths, use something like "bmi.bmiHeader.biBitCount > 1
 	// && bmi.bmiHeader.biBitCount < 9";
-	bool is_8bit = (bmi.bmiHeader.biBitCount == 8);
+	is_8bit = (bmi.bmiHeader.biBitCount == 8);
 	if (!is_8bit)
 		bmi.bmiHeader.biBitCount = 32;
 	bmi.bmiHeader.biHeight = -bmi.bmiHeader.biHeight; // Storing a negative inside the bmiHeader struct is a signal for GetDIBits().
@@ -259,7 +260,7 @@ end:
 	return image_pixel;
 }
 
-HBITMAP LoadPicture(char *aFilespec, int aWidth, int aHeight, int &aImageType, int aIconNumber, bool aUseGDIPlusIfAvailable)
+HBITMAP LoadPicture(const char *aFilespec, int aWidth, int aHeight, int &aImageType, int aIconNumber, bool aUseGDIPlusIfAvailable)
 // Returns NULL on failure.
 // If aIconNumber > 0, an HICON or HCURSOR is returned (both should be interchangeable), never an HBITMAP.
 // However, aIconNumber==1 is treated as a special icon upon which LoadImage is given preference over ExtractIcon
@@ -283,7 +284,7 @@ HBITMAP LoadPicture(char *aFilespec, int aWidth, int aHeight, int &aImageType, i
 	if (aIconNumber < 0) // Allowed to be called this way by GUI and others (to avoid need for validation of user input there).
 		aIconNumber = 0; // Use the default behavior, which is "load icon or bitmap, whichever is most appropriate".
 
-	char *file_ext = strrchr(aFilespec, '.');
+	const char *file_ext = strrchr(aFilespec, '.');
 	if (file_ext)
 		++file_ext;
 
@@ -777,7 +778,7 @@ char* WINAPI ImageSearch(int aLeft, int aTop, int aRight, int aBottom, char *aIm
 				cp += 5;  // Now it's the character after the word.
 				// Isolate the color name/number for ColorNameToBGR():
 				strlcpy(color_name, cp, sizeof(color_name));
-				if (dp = StrChrAny(color_name, " \t")) // Find space or tab, if any.
+				if (dp = (char*)StrChrAny(color_name, " \t")) // Find space or tab, if any.
 					*dp = '\0';
 				// Fix for v1.0.44.10: Treat trans_color as containing an RGB value (not BGR) so that it matches
 				// the documented behavior.  In older versions, a specified color like "TransYellow" was wrong in
@@ -804,8 +805,11 @@ char* WINAPI ImageSearch(int aLeft, int aTop, int aRight, int aBottom, char *aIm
 				// filename itself:
 			}
 		} // switch()
-		if (   !(cp = StrChrAny(cp, " \t"))   ) // Find the first space or tab after the option.
-			return "0"; //new
+		if (!(cp = (char*)StrChrAny(cp, " \t"))) // Find the first space or tab after the option.
+		{
+			strcpy_s(answer, "0");
+			return answer; //new
+		}
 		//	return OK; // Bad option/format.  Let ErrorLevel tell the story.
 		// Now it's the space or tab (if there is one) after the option letter.  Advance by exactly one character
 		// because only one space or tab is considered the delimiter.  Any others are considered to be part of the
@@ -837,14 +841,18 @@ char* WINAPI ImageSearch(int aLeft, int aTop, int aRight, int aBottom, char *aIm
 	// by the search.  In other words, nothing works.  Obsolete comment: Pass "true" so that an attempt
 	// will be made to load icons as bitmaps if GDIPlus is available.
 	if (!hbitmap_image)
-		return "0"; // new
+	{
+		strcpy_s(answer, "0");
+		return answer; //new
 	//	return OK; // Let ErrorLevel tell the story.
+	}
 
 	HDC hdc = GetDC(NULL);
 	if (!hdc)
 	{
 		DeleteObject(hbitmap_image);
-		return "0"; // new
+		strcpy_s(answer, "0");
+		return answer; //new
 		// return OK; // Let ErrorLevel tell the story.
 	}
 
@@ -856,6 +864,8 @@ char* WINAPI ImageSearch(int aLeft, int aTop, int aRight, int aBottom, char *aIm
 	LPCOLORREF image_pixel = NULL, screen_pixel = NULL, image_mask = NULL;
 	HGDIOBJ sdc_orig_select = NULL;
 	bool found = false; // Must init here for use by "goto end".
+	int search_width = 0, search_height = 0;
+	LONG image_pixel_count = 0, screen_pixel_count = 0;
     
 	bool image_is_16bit;
 	LONG image_width, image_height;
@@ -880,17 +890,21 @@ char* WINAPI ImageSearch(int aLeft, int aTop, int aRight, int aBottom, char *aIm
 			DeleteObject(ii.hbmColor); // DeleteObject() probably handles NULL okay since few MSDN/other examples ever check for NULL.
 			DeleteObject(ii.hbmMask);
 		}
-		if (   !(hbitmap_image = IconToBitmap((HICON)hbitmap_image, true))   )
-			return "0"; //new
-		//	return OK; // Let ErrorLevel tell the story.
+		hbitmap_image = IconToBitmap((HICON)hbitmap_image, true);
+		if (!(hbitmap_image))
+		{
+			strcpy_s(answer, "0");
+			return answer; //new
+			//	return OK; // Let ErrorLevel tell the story.
+		}
 	}
 
 	if (   !(image_pixel = getbits(hbitmap_image, hdc, image_width, image_height, image_is_16bit))   )
 		goto end;
 
 	// Create an empty bitmap to hold all the pixels currently visible on the screen that lie within the search area:
-	int search_width = aRight - aLeft + 1;
-	int search_height = aBottom - aTop + 1;
+	search_width = aRight - aLeft + 1;
+	search_height = aBottom - aTop + 1;
 	if (   !(sdc = CreateCompatibleDC(hdc)) || !(hbitmap_screen = CreateCompatibleBitmap(hdc, search_width, search_height))   )
 		goto end;
 
@@ -906,8 +920,8 @@ char* WINAPI ImageSearch(int aLeft, int aTop, int aRight, int aBottom, char *aIm
 	if (   !(screen_pixel = getbits(hbitmap_screen, sdc, screen_width, screen_height, screen_is_16bit))   )
 		goto end;
 
-	LONG image_pixel_count = image_width * image_height;
-	LONG screen_pixel_count = screen_width * screen_height;
+	image_pixel_count = image_width * image_height;
+	screen_pixel_count = screen_width * screen_height;
 	int i, j, k, x, y; // Declaring as "register" makes no performance difference with current compiler, so let the compiler choose which should be registers.
 
 	// If either is 16-bit, convert *both* to the 16-bit-compatible 32-bit format:
@@ -1089,7 +1103,10 @@ end:
 		MY_FREE(screen_pixel);
 
 	if (!found) // Let ErrorLevel, which is either "1" or "2" as set earlier, tell the story.
-			return "0";
+	{
+		strcpy_s(answer, "0");
+		return answer; //new
+	}
 
 	// Otherwise, success.  Calculate xpos and ypos of where the match was found and adjust
 	// coords to make them relative to the position of the target window (rect will contain
@@ -1111,8 +1128,8 @@ end:
 		return answer;
 		//return "ZZ";
 	}
-	return "0";
-
+	strcpy_s(answer, "0");
+	return answer; //new
 }
 
 void WINAPI RemoveCharFromNumberString(char *str, char c)

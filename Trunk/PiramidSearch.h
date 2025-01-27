@@ -38,6 +38,6 @@ public:
 };
 
 int PiramidSearch( PiramidImage *Big, PiramidImage *Small, int *RetX, int *RetY, int *RSad, int *GSad, int *BSad, int SadLimit, int pLayer = -1, int AtX = -1, int AtY = -1, int RecCount = 0 );
-char * WINAPI SearchPiramidOnScreenshot( char *aImageFile );
+char * WINAPI SearchPiramidOnScreenshot( const char *aImageFile );
 
 #endif

@@ -4,7 +4,7 @@ int SearchResultCount;
 int SearchResultXYSAD[500][3];
 
 char ReturnBuff[DEFAULT_STR_BUFFER_SIZE * 10];
-char* WINAPI ImageSearchOnScreenshot(char *aFilespec, int TransparentColor, int AcceptedColorDiff, int AcceptedErrorCount, int StopAfterNFullMatches)
+char* WINAPI ImageSearchOnScreenshot(const char *aFilespec, int TransparentColor, int AcceptedColorDiff, int AcceptedErrorCount, int StopAfterNFullMatches)
 {
 	char ReturnBuff2[DEFAULT_STR_BUFFER_SIZE * 10];
 	int MatchesFound = 0;
@@ -15,17 +15,17 @@ char* WINAPI ImageSearchOnScreenshot(char *aFilespec, int TransparentColor, int 
 	if (cache == NULL)
 	{
 		FileDebug("Skipping Image search as image could not be loaded");
-		return "";
+		return ReturnBuff;
 	}
 	if (cache->Pixels == NULL)
 	{
 		FileDebug("Skipping Image search as image pixels are missing");
-		return "";
+		return ReturnBuff;
 	}
 	if (CurScreenshot->Pixels == NULL)
 	{
 		FileDebug("Skipping Image search no screenshot is available");
-		return "";
+		return ReturnBuff;
 	}
 
 	int Width = CurScreenshot->Right - CurScreenshot->Left;
@@ -183,7 +183,7 @@ char* WINAPI ImageSearchOnScreenshot(char *aFilespec, int TransparentColor, int 
 	return ReturnBuff;
 }
 
-char* WINAPI ImageSearchOnScreenshotMasked(char *aFilespec, char *MaskFile, int TransparentColor, int AcceptedColorDiff, int AcceptedErrorCount, int StopAfterNFullMatches)
+char* WINAPI ImageSearchOnScreenshotMasked(const char *aFilespec, char *MaskFile, int TransparentColor, int AcceptedColorDiff, int AcceptedErrorCount, int StopAfterNFullMatches)
 {
 	char ReturnBuff2[DEFAULT_STR_BUFFER_SIZE * 10];
 	int MatchesFound = 0;
@@ -195,40 +195,40 @@ char* WINAPI ImageSearchOnScreenshotMasked(char *aFilespec, char *MaskFile, int 
 	if (cache == NULL)
 	{
 		FileDebug("Skipping Image search as image could not be loaded");
-		return "";
+		return ReturnBuff;
 	}
 	if (cache->Pixels == NULL)
 	{
 		FileDebug("Skipping Image search as image pixels are missing");
-		return "";
+		return ReturnBuff;
 	}
 	if (cache->LoadedPicture == NULL)
 	{
 		FileDebug("Skipping Image search as image is missing");
-		return "";
+		return ReturnBuff;
 	}
 
 	CachedPicture *mask = CachePicture(MaskFile);
 	if (mask == NULL)
 	{
 		FileDebug("Skipping Image search as mask could not be loaded");
-		return "";
+		return ReturnBuff;
 	}
 	if (mask->Pixels == NULL)
 	{
 		FileDebug("Skipping Image search as mask pixels are missing");
-		return "";
+		return ReturnBuff;
 	}
 	if (mask->LoadedPicture == NULL)
 	{
 		FileDebug("Skipping Image search as mask is missing");
-		return "";
+		return ReturnBuff;
 	}
 
 	if (CurScreenshot->Pixels == NULL)
 	{
 		FileDebug("Skipping Image search no screenshot is available");
-		return "";
+		return ReturnBuff;
 	}
 
 	int Width = CurScreenshot->Right - CurScreenshot->Left;
@@ -354,7 +354,7 @@ char* WINAPI ImageSearchOnScreenshotMasked(char *aFilespec, char *MaskFile, int 
 	return ReturnBuff;
 }
 
-char* WINAPI ImageSearchOnScreenshotBest_SAD(char *aFilespec)
+char* WINAPI ImageSearchOnScreenshotBest_SAD(const char *aFilespec)
 {
 	char ReturnBuff2[DEFAULT_STR_BUFFER_SIZE * 10];
 	int MatchesFound = 0;
@@ -365,17 +365,17 @@ char* WINAPI ImageSearchOnScreenshotBest_SAD(char *aFilespec)
 	if (cache == NULL)
 	{
 		FileDebug("Skipping Image search as image could not be loaded");
-		return "";
+		return ReturnBuff;
 	}
 	if (cache->Pixels == NULL)
 	{
 		FileDebug("Skipping Image search as image pixels are missing");
-		return "";
+		return ReturnBuff;
 	}
 	if (CurScreenshot->Pixels == NULL)
 	{
 		FileDebug("Skipping Image search no screenshot is available");
-		return "";
+		return ReturnBuff;
 	}
 
 	int Width = CurScreenshot->Right - CurScreenshot->Left;
@@ -453,12 +453,12 @@ goto docleanupandreturn;
 }
 
 // input images are A8R8G8B8 encoded -> 4 bytes / pixel = 32 bpp
-char* WINAPI ImageSearch_SAD(char* aFilespec)
+char* WINAPI ImageSearch_SAD(const char* aFilespec)
 {
 	return ImageSearch_SAD_Region(aFilespec, CurScreenshot->Left, CurScreenshot->Top, CurScreenshot->Right, CurScreenshot->Bottom, SADSearchRegionFlags::SSRF_ST_NO_FLAGS);
 }
 
-char* WINAPI ImageSearch_SAD_Region(char* aFilespec, int aLeft, int aTop, int aRight, int aBottom, SADSearchRegionFlags uSearchFlags)
+char* WINAPI ImageSearch_SAD_Region(const char* aFilespec, int aLeft, int aTop, int aRight, int aBottom, SADSearchRegionFlags uSearchFlags)
 {
 	char ReturnBuff2[DEFAULT_STR_BUFFER_SIZE * 10];
 	ReturnBuff[0] = 0;
@@ -628,6 +628,9 @@ docleanupandreturn:
 	if (retx == -1)
 		FileDebug("\t Image search found no matches");
 
+	// in theory we reused the allocated data multiple times
+	FreeHashAllocatedData(&imgHash);
+
 	size_t colorDiffCount = 0;
 	size_t colorDifferentPct = 0;
 	size_t avgColorDiff = 0;
@@ -703,7 +706,7 @@ docleanupandreturn:
 	return ReturnBuff;
 }
 
-char* WINAPI ImageSearch_Multiple_ExactMatch(char *aFilespec)
+char* WINAPI ImageSearch_Multiple_ExactMatch(const char *aFilespec)
 {
 	char ReturnBuff2[DEFAULT_STR_BUFFER_SIZE * 10];
 	int MatchesFound = 0;
@@ -714,17 +717,17 @@ char* WINAPI ImageSearch_Multiple_ExactMatch(char *aFilespec)
 	if (cache == NULL)
 	{
 		FileDebug("Skipping Image search as image could not be loaded");
-		return "";
+		return ReturnBuff;
 	}
 	if (cache->Pixels == NULL)
 	{
 		FileDebug("Skipping Image search as image pixels are missing");
-		return "";
+		return ReturnBuff;
 	}
 	if (CurScreenshot->Pixels == NULL)
 	{
 		FileDebug("Skipping Image search no screenshot is available");
-		return "";
+		return ReturnBuff;
 	}
 
 	int Width = CurScreenshot->Right - CurScreenshot->Left;
@@ -810,7 +813,7 @@ char* WINAPI ImageSearch_Multiple_ExactMatch(char *aFilespec)
 	return ReturnBuff;
 }
 
-char* WINAPI ImageSearch_Multiple_Transparent(char *aFilespec)
+char* WINAPI ImageSearch_Multiple_Transparent(const char *aFilespec)
 {
 	char ReturnBuff2[DEFAULT_STR_BUFFER_SIZE * 10];
 	int MatchesFound = 0;
@@ -821,17 +824,17 @@ char* WINAPI ImageSearch_Multiple_Transparent(char *aFilespec)
 	if (cache == NULL)
 	{
 		FileDebug("Skipping Image search as image could not be loaded");
-		return "";
+		return ReturnBuff;
 	}
 	if (cache->Pixels == NULL)
 	{
 		FileDebug("Skipping Image search as image pixels are missing");
-		return "";
+		return ReturnBuff;
 	}
 	if (CurScreenshot->Pixels == NULL)
 	{
 		FileDebug("Skipping Image search no screenshot is available");
-		return "";
+		return ReturnBuff;
 	}
 
 	int Width = CurScreenshot->Right - CurScreenshot->Left;
@@ -857,10 +860,13 @@ char* WINAPI ImageSearch_Multiple_Transparent(char *aFilespec)
 			}
 			// If we got here, there is a match
 			MatchesFound++;
-			int retx = x + CurScreenshot->Left;
-			int rety = y + CurScreenshot->Top;
-			sprintf_s(ReturnBuff2, DEFAULT_STR_BUFFER_SIZE * 10, "%s|%d|%d", ReturnBuff2, retx, rety);
-NO_MATCH_NO_MORE_SEARCH2:;
+			{
+				int retx = x + CurScreenshot->Left;
+				int rety = y + CurScreenshot->Top;
+				sprintf_s(ReturnBuff2, DEFAULT_STR_BUFFER_SIZE * 10, "%s|%d|%d", ReturnBuff2, retx, rety);
+			}
+NO_MATCH_NO_MORE_SEARCH2:
+			(void)0;
 		}
 	}
 	if (MatchesFound == 0)
@@ -871,7 +877,7 @@ NO_MATCH_NO_MORE_SEARCH2:;
 	return ReturnBuff;
 }
 
-char* WINAPI ImageSearchOnScreenshotBestTransparent(char *aFilespec)
+char* WINAPI ImageSearchOnScreenshotBestTransparent(const char *aFilespec)
 {
 	char ReturnBuff2[DEFAULT_STR_BUFFER_SIZE * 10];
 	int MatchesFound = 0;
@@ -882,17 +888,17 @@ char* WINAPI ImageSearchOnScreenshotBestTransparent(char *aFilespec)
 	if (cache == NULL)
 	{
 		FileDebug("Skipping Image search as image could not be loaded");
-		return "";
+		return ReturnBuff;
 	}
 	if (cache->Pixels == NULL)
 	{
 		FileDebug("Skipping Image search as image pixels are missing");
-		return "";
+		return ReturnBuff;
 	}
 	if (CurScreenshot->Pixels == NULL)
 	{
 		FileDebug("Skipping Image search no screenshot is available");
-		return "";
+		return ReturnBuff;
 	}
 
 	int Width = CurScreenshot->Right - CurScreenshot->Left;
@@ -1002,7 +1008,7 @@ char* WINAPI ImageSearch_Multiple_PixelCount(int Color, int Percent, int AreaWid
 	if (CurScreenshot->Pixels == NULL)
 	{
 		FileDebug("Skipping Image search no screenshot is available");
-		return "";
+		return ReturnBuff;
 	}
 
 	int Width = CurScreenshot->GetWidth();
@@ -1012,7 +1018,7 @@ char* WINAPI ImageSearch_Multiple_PixelCount(int Color, int Percent, int AreaWid
 	int *TempBuff = (int*)MY_ALLOC(Width * Height * sizeof(int));
 	if (TempBuff == NULL)
 	{
-		return "";
+		return ReturnBuff;
 	}
 	memcpy(TempBuff, CurScreenshot->Pixels, Width * Height * sizeof(int));
 
@@ -1072,7 +1078,7 @@ char* WINAPI ImageSearch_Multipass_PixelCount(int Color, int PercentMax, int Per
 	if (CurScreenshot->Pixels == NULL)
 	{
 		FileDebug("Skipping Image search no screenshot is available");
-		return "";
+		return ReturnBuff;
 	}
 
 	int Width = CurScreenshot->GetWidth();
@@ -1144,7 +1150,7 @@ char* WINAPI ImageSearch_Multiple_Gradient(int Color, int GradientMatchPercent, 
 	if (CurScreenshot->Pixels == NULL)
 	{
 		FileDebug("Skipping Image search no screenshot is available");
-		return "";
+		return ReturnBuff;
 	}
 	int R1 = GetRValue(Color);
 	int G1 = GetGValue(Color);

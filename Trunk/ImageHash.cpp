@@ -210,3 +210,11 @@ void compareHash(ImgHashWholeIage* hash1, ImgHashWholeIage* hash2, ImgHash8x8_Co
 		}
 	}
 }
+
+void FreeHashAllocatedData(ImgHashWholeIage* out_hashes)
+{
+	if (out_hashes->hashes) {
+		MY_FREE(out_hashes->hashes);
+		out_hashes->hashes = NULL;
+	}
+}

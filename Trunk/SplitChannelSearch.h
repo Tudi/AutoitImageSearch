@@ -29,5 +29,5 @@ public:
 void SplitChannelSearchGenCache(ScreenshotStruct *Img);
 void SplitChannelSearchGenCache(CachedPicture *cache);
 
-char* WINAPI ImageSearchOnScreenshotBest_Transparent_SAD(char *aFilespec);
+char* WINAPI ImageSearchOnScreenshotBest_Transparent_SAD(const char *aFilespec);
 char* WINAPI ImageSearchOnScreenshotBest_Transparent_SAD2(char *aFilespec);

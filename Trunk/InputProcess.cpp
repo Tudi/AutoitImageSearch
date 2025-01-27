@@ -5,6 +5,8 @@ LIBRARY_API ScreenshotStruct	*CurScreenshot = NULL, *PrevScreenshot = NULL;
 LIBRARY_API int					ScreenshotStoreIndex = 0;
 
 LIBRARY_API SearchedRegionMinMax g_SearchedRegions = { 10000, 10000, -10000, -10000 };
+#define MAX_RETURN_BUFF_SIZE		1024
+static char*					g_FuncReturnBuff = NULL;
 
 class ConstructorForStaticVars
 {
@@ -18,6 +20,7 @@ public:
 		CurScreenshot = PrevScreenshot = NULL;
 		ScreenshotStoreIndex = 0;
 		g_SearchedRegions = { 10000, 10000, -10000, -10000 };
+		g_FuncReturnBuff = (char*)MY_ALLOC(MAX_RETURN_BUFF_SIZE);
 	}
 };
 // just in case the other init fails
@@ -289,17 +292,20 @@ char* WINAPI GetImageSize( char *aImageFile )
 	if( cache == NULL )
 	{
 		FileDebug( "Skipping Image info as image could not be loaded" );
-		return "0|0";
+		strcpy_s(g_FuncReturnBuff, MAX_RETURN_BUFF_SIZE, "0|0");
+		return g_FuncReturnBuff;
 	}
 	if( cache->Pixels == NULL )
 	{
 		FileDebug( "Skipping Image info as image pixels are missing" );
-		return "0|0";
+		strcpy_s(g_FuncReturnBuff, MAX_RETURN_BUFF_SIZE, "0|0");
+		return g_FuncReturnBuff;
 	}
 	if( cache->LoadedPicture == NULL )
 	{
 		FileDebug( "Skipping Image info as image is missing" );
-		return "0|0";
+		strcpy_s(g_FuncReturnBuff, MAX_RETURN_BUFF_SIZE, "0|0");
+		return g_FuncReturnBuff;
 	}
 
 	sprintf_s( ReturnBuff, DEFAULT_STR_BUFFER_SIZE*10, "%d|%d", cache->Width, cache->Height );
@@ -315,7 +321,8 @@ char* WINAPI IsAnythingChanced( int StartX, int StartY, int EndX, int EndY )
 	if( CurScreenshot->Pixels == NULL )
 	{
 		FileDebug( "Skipping change search as no screenshot is available" );
-		return "0|0|0";
+		strcpy_s(g_FuncReturnBuff, MAX_RETURN_BUFF_SIZE, "0|0|0");
+		return g_FuncReturnBuff;
 	}
 	// probably too lazy to set cords, reuse from previous screenshot
 	if (StartX == EndX || StartY == EndY)
@@ -326,17 +333,20 @@ char* WINAPI IsAnythingChanced( int StartX, int StartY, int EndX, int EndY )
 	if (PrevScreenshot == NULL || PrevScreenshot->Pixels == NULL)
 	{
 		FileDebug( "Skipping change search as no secondary screenshot is available" );
-		return "0|0|0";
+		strcpy_s(g_FuncReturnBuff, MAX_RETURN_BUFF_SIZE, "0|0|0");
+		return g_FuncReturnBuff;
 	}
 	if( CurScreenshot->Left != PrevScreenshot->Left || CurScreenshot->Right != PrevScreenshot->Right || CurScreenshot->Top != PrevScreenshot->Top || CurScreenshot->Bottom != PrevScreenshot->Bottom )
 	{
 		FileDebug( "Screenshots were not taken from same place. Can't compare" );
-		return "0|0|0";
+		strcpy_s(g_FuncReturnBuff, MAX_RETURN_BUFF_SIZE, "0|0|0");
+		return g_FuncReturnBuff;
 	}
 	if( StartY > EndY || StartX > EndX )
 	{
 		FileDebug( "Third / Fourth parameter does not seem to be width / height" );
-		return "0|0|0";
+		strcpy_s(g_FuncReturnBuff, MAX_RETURN_BUFF_SIZE, "0|0|0");
+		return g_FuncReturnBuff;
 	}
 	int Width = CurScreenshot->Right - CurScreenshot->Left;
 //	int Height = CurScreenshot->Bottom - CurScreenshot->Top;
@@ -349,7 +359,8 @@ char* WINAPI IsAnythingChanced( int StartX, int StartY, int EndX, int EndY )
 				return ReturnBuffIAC;
 			}
 	FileDebug( "\tEnd IsAnythingChanced" );
-	return "0|0|0";
+	strcpy_s(g_FuncReturnBuff, MAX_RETURN_BUFF_SIZE, "0|0|0");
+	return g_FuncReturnBuff;
 }
 
 #if 0

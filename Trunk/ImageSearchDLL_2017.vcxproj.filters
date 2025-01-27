@@ -100,6 +100,9 @@
     <ClCompile Include="ImageHash.cpp">
       <Filter>ImageTools</Filter>
     </ClCompile>
+    <ClCompile Include="Tools\Allocator.cpp">
+      <Filter>Tools</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EdgeDetect.h">
@@ -197,6 +200,9 @@
     </ClInclude>
     <ClInclude Include="ImageHash.h">
       <Filter>ImageTools</Filter>
+    </ClInclude>
+    <ClInclude Include="Tools\Allocator.h">
+      <Filter>Tools</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -109,8 +109,8 @@ void GenerateAvailableFontFilename(char *Buf, int len, char *TheChars)
 	//generate a new valid filename
 	char NewFilename[500], OldFilename[500];
 	int FileIndex = -1;
-	if (TheChars == 0)
-		TheChars = "_";
+	if (TheChars[0] == 0)
+		TheChars[0] = '_';
 	do{
 		FileIndex++;
 		sprintf_s(NewFilename, sizeof(NewFilename), "KCM_%s_%d.bmp", TheChars, FileIndex);
@@ -294,6 +294,7 @@ int FindCharacterEnclosingBox(int *Img, int Width, int &CharStartX, int &CharSta
 }
 
 int OCR_FoundNewFont;
+static char OCRReturnBuff2[DEFAULT_STR_BUFFER_SIZE * 10];
 //start X and Y should be the upper left part of the text
 char * WINAPI OCR_ReadTextLeftToRightSaveUnknownChars(int StartX, int StartY, int EndX, int EndY)
 {
@@ -302,7 +303,8 @@ char * WINAPI OCR_ReadTextLeftToRightSaveUnknownChars(int StartX, int StartY, in
 	if (CurScreenshot->Pixels == NULL)
 	{
 		FileDebug("\tOCR has no screenshot to work on");
-		return "|0";
+		strcpy_s(OCRReturnBuff2, "|0");
+		return OCRReturnBuff2;
 	}
 	if (StartX == -1)
 	{

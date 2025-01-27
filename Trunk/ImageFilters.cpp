@@ -256,7 +256,7 @@ void WINAPI ApplyColorBitmask(int paramMask)
 	FileDebug(dbgmsg);
 }
 
-void WINAPI ApplyColorBitmaskCache(char* aFilespec, int paramMask)
+void WINAPI ApplyColorBitmaskCache(const char* aFilespec, int paramMask)
 {
 	FileDebug("ApplyColorBitmaskCache:Started ApplyColorBitmask cached image");
 	DWORD Mask = *(DWORD*)&paramMask;

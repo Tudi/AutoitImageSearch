@@ -178,7 +178,7 @@ void GetCacheScoreAtLoc( CachedPicture *cache, int AtX, int AtY, int *HitCount, 
 		}
 }
 
-char OCRReturnBuff[DEFAULT_STR_BUFFER_SIZE*10];
+static char OCRReturnBuff[DEFAULT_STR_BUFFER_SIZE*10];
 //return format : [TextRead]|[ReadTextUntilX]
 char * WINAPI ReadTextFromScreenshot( int StartX, int StartY, int EndX, int EndY )
 {
@@ -188,17 +188,20 @@ char * WINAPI ReadTextFromScreenshot( int StartX, int StartY, int EndX, int EndY
 	if( NrPicturesCached == 0 )
 	{
 		FileDebug( "\tOCR has not cached images for fonts" );
-		return "|0";
+		strcpy_s(OCRReturnBuff, "|0");
+		return OCRReturnBuff;
 	}
 	if( CurScreenshot->Pixels == NULL )
 	{
 		FileDebug( "\tOCR has no screenshot to work on" );
-		return "|0";
+		strcpy_s(OCRReturnBuff, "|0");
+		return OCRReturnBuff;
 	}
 	if( EndX < StartX || StartX > CurScreenshot->Right || EndY > CurScreenshot->Bottom )
 	{
 		FileDebug( "\tOCR coordinates are wrong. Can't search outside the screenshot" );
-		return "|0";
+		strcpy_s(OCRReturnBuff, "|0");
+		return OCRReturnBuff;
 	}
 
 	StartX = StartX - CurScreenshot->Left;
@@ -229,7 +232,8 @@ char * WINAPI ReadTextFromScreenshot( int StartX, int StartY, int EndX, int EndY
 	CachedPicture *BestMatch = &PictureCache[ 0 ];
 	if (BestMatch == NULL)
 	{
-		return "|0";
+		strcpy_s(OCRReturnBuff, "|0");
+		return OCRReturnBuff;
 	}
 	for( int x = StartX; x < EndX; x++ )
 	{
@@ -281,7 +285,8 @@ char * WINAPI ReadTextFromScreenshot( int StartX, int StartY, int EndX, int EndY
 }/**/
 		if (BestMatch == NULL || BestMatch->OCRCache == NULL)
 		{
-			return "|0";
+			strcpy_s(OCRReturnBuff, "|0");
+			return OCRReturnBuff;
 		}
 		// best search result is taken even if we are wrong
 		if( BestMatch->OCRCache->LastSearchMissCount * 100 / ( BestMatch->OCRCache->LastSearchHitCount + 1 ) < 50 )

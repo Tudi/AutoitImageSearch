@@ -6,7 +6,7 @@
 Opt("MustDeclareVars", 1)
 HotKeySet("O", "ExitBot")
 HotKeySet("P", "ForeverLoopFunc")
-HotKeySet("I", "ResetStats")
+;HotKeySet("I", "ResetStats")
 
 ;only used while developing
 HotKeySet("Q", "TakeScreenshotCyclePositions")
@@ -16,9 +16,8 @@ global $BotIsRunning = 1
 global $FuncIsRunning = 0
 Global $clickInterval = 20000
 Global $lastClickTimer = TimerInit()
-Global $GamesStarted = 0
 Global $GamesWon = 0
-Global $GamesLost = 0
+Global $GamesWonRecordedAt = 0
 Global $StopAfterXPlayedGames = 0
 global $SecondsPlayed = 0
 global $AcceptedColorTolerance = 3
@@ -29,31 +28,34 @@ Const $SCREEN_PVP_FIGHTING = 1, $SCREEN_START_PVP_FIGHT = 0, $SCREEN_UNKNOWN = 3
 global $g_VisibleScreenType = $SCREEN_UNKNOWN
 global $GamesDetected = 0
 global $GameCountAtPrevLegendary = 0
+global $WinCountAtPrevLegendary = 0
 global $LegendariesSkipped = 0
 global $GamesCounterPrev = -1
 global $InfiniLoopStampAtStart = _WinAPI_GetTickCount() / 1000
 global $InfiniLoopStampAtEnd = 0
+global $g_imageRanks[12][2]
+global $g_imageRewards[6][2]
+global $g_AppliedColorMaskToCachedImages = 0
+global $g_image1EmeryxCost = "1EmeryxCost_0833_0826_0071_0033.bmp"
+global $g_WinHistory[8]
 
 func ExitBot()
 	global $BotIsRunning = 0
 endfunc
 
-Func ResetStats()
-	Global $GamesWon = 0
-	Global $GamesLost = 0
-	Global $GamesStarted = 0
-	global $SecondsPlayed = 0
-EndFunc
+;Func ResetStats()
+;	global $SecondsPlayed = 0
+;EndFunc
 
 ; Define GUI margins and spacing
 Local $margin = 3
 Local $spacing = 3
 
 ; Create the GUI (initial size will be adjusted later)
-Local $hGUI = GUICreate("auto combat", 400, 300)
+Local $hGUI = GUICreate("auto combat", 450, 300)
 
 ; Create labels and input controls
-Local $labelWidth = 80
+Local $labelWidth = 110
 Local $inputWidth = 50
 Local $ComponentHeight = 15
 Local $ComponentsAdded = 0
@@ -78,13 +80,16 @@ $ComponentsAdded = $ComponentsAdded + 1
 Global $lblGamesPlayed2 = GUICtrlCreateLabel("", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth + $inputWidth, $ComponentHeight)
 $ComponentsAdded = $ComponentsAdded + 1
 
+Global $lblWinHistory = GUICtrlCreateLabel("", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth + $inputWidth, $ComponentHeight)
+$ComponentsAdded = $ComponentsAdded + 1
+
 Global $hCheckboxSpamCombat = GUICtrlCreateCheckbox("Spam Combat", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth + $inputWidth, $ComponentHeight)
 $ComponentsAdded = $ComponentsAdded + 1
 
 Global $hCheckboxOpenLegendary = GUICtrlCreateCheckbox("OpenLeg", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth + $inputWidth, $ComponentHeight)
 $ComponentsAdded = $ComponentsAdded + 1
 
-Global $hCheckboxPauseLegendary = GUICtrlCreateCheckbox("PauseLeg", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth + $inputWidth, $ComponentHeight)
+Global $hCheckboxPauseLegendary = GUICtrlCreateCheckbox("PauseOnLeg", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth + $inputWidth, $ComponentHeight)
 $ComponentsAdded = $ComponentsAdded + 1
 
 Global $hCheckboxSkipLegendary = GUICtrlCreateCheckbox("SkipLeg", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth + $inputWidth, $ComponentHeight)
@@ -92,15 +97,19 @@ GUICtrlSetState($hCheckboxSkipLegendary, $GUI_CHECKED)
 $ComponentsAdded = $ComponentsAdded + 1
 
 GUICtrlCreateLabel("G4L limit :", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth, $ComponentHeight)
-Global $inputGamesForLegChance = GUICtrlCreateInput("100", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
+Global $inputGamesForLegChance = GUICtrlCreateInput("70", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
 $ComponentsAdded = $ComponentsAdded + 1
 
 GUICtrlCreateLabel("Max rank :", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth, $ComponentHeight)
-Global $inputMinRankAllowed = GUICtrlCreateInput("19", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
+Global $inputMinRankAllowed = GUICtrlCreateInput("18", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
 $ComponentsAdded = $ComponentsAdded + 1
 
 GUICtrlCreateLabel("Min rank always :", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth, $ComponentHeight)
 Global $inputFixedRankUsed = GUICtrlCreateInput("0", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
+$ComponentsAdded = $ComponentsAdded + 1
+
+GUICtrlCreateLabel("1Emeryx :", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth, $ComponentHeight)
+Global $inputOpen1emeryxChests = GUICtrlCreateInput("0", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
 $ComponentsAdded = $ComponentsAdded + 1
 
 ;GUICtrlCreateLabel("Rank:", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth, $ComponentHeight)
@@ -114,22 +123,30 @@ GUICtrlSetState($hCheckboxSpamUntilLegChance, $GUI_CHECKED)
 ;avoid accidentally storing low level legendary. Has a 9 hour chest slot cooldown
 Global $hCheckboxNoChestsWhileSpamUntilLeg = GUICtrlCreateCheckbox("NoChestWhileSpam", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth + $inputWidth, $ComponentHeight)
 $ComponentsAdded = $ComponentsAdded + 1
-GUICtrlSetState($hCheckboxNoChestsWhileSpamUntilLeg, $GUI_CHECKED)
+;GUICtrlSetState($hCheckboxNoChestsWhileSpamUntilLeg, $GUI_CHECKED)
 
 GUICtrlCreateLabel("Playtime(min):", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth, $ComponentHeight)
 Global $lblTimeDiff = GUICtrlCreateLabel("", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
 $ComponentsAdded = $ComponentsAdded + 1
 
-Global $btnSpam20 = GUICtrlCreateButton("Spam 15", $margin, $margin + $ComponentsAdded * ($margin + $ComponentHeight), $labelWidth + $inputWidth + $spacing, $ComponentHeight)
+Global $btnSpam5 = GUICtrlCreateButton("Spam 5", $margin, $margin + $ComponentsAdded * ($margin + $ComponentHeight), $labelWidth + $inputWidth + $spacing, $ComponentHeight)
 $ComponentsAdded = $ComponentsAdded + 1
 
-Global $btnSpam25 = GUICtrlCreateButton("Spam 20", $margin, $margin + $ComponentsAdded * ($margin + $ComponentHeight), $labelWidth + $inputWidth + $spacing, $ComponentHeight)
+Global $btnSpam15 = GUICtrlCreateButton("Spam 15", $margin, $margin + $ComponentsAdded * ($margin + $ComponentHeight), $labelWidth + $inputWidth + $spacing, $ComponentHeight)
+$ComponentsAdded = $ComponentsAdded + 1
+
+Global $btnSpam20 = GUICtrlCreateButton("Spam 20", $margin, $margin + $ComponentsAdded * ($margin + $ComponentHeight), $labelWidth + $inputWidth + $spacing, $ComponentHeight)
+$ComponentsAdded = $ComponentsAdded + 1
+
+Global $btnSpam25 = GUICtrlCreateButton("Spam 25", $margin, $margin + $ComponentsAdded * ($margin + $ComponentHeight), $labelWidth + $inputWidth + $spacing, $ComponentHeight)
 $ComponentsAdded = $ComponentsAdded + 1
 
 Global $btnSpam30 = GUICtrlCreateButton("Spam 30", $margin, $margin + $ComponentsAdded * ($margin + $ComponentHeight), $labelWidth + $inputWidth + $spacing, $ComponentHeight)
 $ComponentsAdded = $ComponentsAdded + 1
 
 Local $lblDbgOut = GUICtrlCreateLabel("Debug", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth + $inputWidth, $ComponentHeight)
+$ComponentsAdded = $ComponentsAdded + 1
+Local $lblDbgOut2 = GUICtrlCreateLabel("", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth + $inputWidth, $ComponentHeight)
 $ComponentsAdded = $ComponentsAdded + 1
 
 ; Dynamically calculate the GUI size based on the components
@@ -151,7 +168,9 @@ WinSetOnTop($hGUI, "", 1)
 LoadVariables()
 CountIngameStates()
 UpdateUiGameCounter(True)
-CalculateAverageFromFile("legDistances.txt")
+;CalculateAverageFromFile("legDistances.txt")
+LoadWinHistoryFromFile("legDistancesWins.txt")
+InitImageSearchDLLImages()
 
 ; Event Loop
 While ( $BotIsRunning == 1)
@@ -169,10 +188,14 @@ Func HandleGUIMessages()
 	endif
 	
     ; Check if the "Spam 15" button was clicked
-    If $msg = $btnSpam20 Then
+    If $msg = $btnSpam5 Then
+        SpamButtonHandler(5)
+    ElseIf $msg = $btnSpam15 Then
         SpamButtonHandler(15)
-    ElseIf $msg = $btnSpam25 Then
+    ElseIf $msg = $btnSpam20 Then
         SpamButtonHandler(20)
+    ElseIf $msg = $btnSpam25 Then
+        SpamButtonHandler(25)
     ElseIf $msg = $btnSpam30 Then
         SpamButtonHandler(30)
     EndIf	
@@ -190,12 +213,55 @@ Func SaveVariables()
     IniWrite("variables.ini", "Variables", "GamesDetected", $GamesDetected)
     IniWrite("variables.ini", "Variables", "GameCountAtPrevLegendary", $GameCountAtPrevLegendary)
     IniWrite("variables.ini", "Variables", "LegendariesSkipped", $LegendariesSkipped)
+    IniWrite("variables.ini", "Variables", "GamesWon", $GamesWon)
+    IniWrite("variables.ini", "Variables", "WinCountAtPrevLegendary", $WinCountAtPrevLegendary)
 EndFunc
 
 Func LoadVariables()
     Global $GamesDetected = IniRead("variables.ini", "Variables", "GamesDetected", 0)
     Global $GameCountAtPrevLegendary = IniRead("variables.ini", "Variables", "GameCountAtPrevLegendary", 0)
     Global $LegendariesSkipped = IniRead("variables.ini", "Variables", "LegendariesSkipped", 0)
+    Global $GamesWon = IniRead("variables.ini", "Variables", "GamesWon", 0)
+    Global $WinCountAtPrevLegendary = IniRead("variables.ini", "Variables", "WinCountAtPrevLegendary", 0)
+EndFunc
+
+Func LoadWinHistoryFromFile($filePath)
+    ; Open the file in read mode
+    Local $fileHandle = FileOpen($filePath, 0)
+    If $fileHandle = -1 Then
+        Return -1
+    EndIf
+
+    ; Read the entire file
+    Local $fileContent = FileRead($fileHandle)
+    FileClose($fileHandle)
+
+    ; Remove line breaks and normalize the content
+    $fileContent = StringReplace($fileContent, @CRLF, ",")
+    $fileContent = StringReplace($fileContent, @LF, ",")
+    $fileContent = StringReplace($fileContent, @CR, ",")
+
+    ; Split the content by comma
+    Local $values = StringSplit($fileContent, ",", 2)
+    If @error Then
+        Return -1
+    EndIf
+
+    For $i = 0 To UBound($values) - 1
+        Local $num = Number($values[$i])
+        If $values[$i] <> "" And IsNumber($num) Then
+			CycleHistoryArray($g_WinHistory, $num)
+        EndIf
+    Next
+
+	local $labelTXT = ""
+	local $sumWins = 0
+	For $i = 0 To UBound($g_WinHistory) - 1
+		$labelTXT = $labelTXT & $g_WinHistory[$i] & ","
+		$sumWins = $sumWins + $g_WinHistory[$i]
+	Next
+	$labelTXT = $labelTXT & '=' & int($sumWins/UBound($g_WinHistory))
+	GUICtrlSetData($lblWinHistory, $labelTXT)
 EndFunc
 
 Func CalculateAverageFromFile($filePath)
@@ -302,9 +368,8 @@ Func Fight()
 	If ( $FuncIsRunning <> 1 or $BotIsRunning <> 1 ) then 
 		return
 	endif
-	Global $GamesStarted, $pos
+	Global $pos
     If IsColorAtPos(1088, 535, 0xFF4444, $ColorSearchRadius, $AcceptedColorTolerance) Then
-		$GamesStarted = $GamesStarted + 1
         MouseClick("left", $pos[0], $pos[1])
 		Sleep(2000)
         MouseClick("left", $pos[0], $pos[1]) ; same click second time because of random animations. Might be useless if first one triggered loading screen
@@ -316,9 +381,8 @@ Func Fight2()
 	If ( $FuncIsRunning <> 1 or $BotIsRunning <> 1 ) then 
 		return
 	endif
-	Global $GamesStarted, $pos
+	Global $pos
     If IsColorAtPos(1092,536,0xBF2D03,$ColorSearchRadius,$AcceptedColorTolerance) Then
-		$GamesStarted = $GamesStarted + 1
         MouseClick("left", $pos[0], $pos[1])
 		Sleep(2000)
         MouseClick("left", $pos[0], $pos[1]) ; same click second time because of random animations. Might be useless if first one triggered loading screen
@@ -327,20 +391,28 @@ Func Fight2()
 EndFunc
 
 Func AddLegendaryGameFreqStat()
-;	local $GamesBeforeAppRestart = getInputNumericValue($inputGamesBeforeRestart, 0)
-;	if $GameCountAtPrevLegendary <> 0 or $GamesBeforeAppRestart <> 0 then
-;		GUICtrlSetData($inputGamesBeforeRestart, 0)
-		local $GamesSinceLegendary = $GamesDetected - $GameCountAtPrevLegendary
-		;$GamesSinceLegendary = $GamesSinceLegendary + $GamesBeforeAppRestart
-		if $GamesSinceLegendary > 0 then
-			Local $hFile = FileOpen("legDistances.txt", 1) ; Mode 1 = Append
-			If $hFile <> -1 Then
-				FileWrite($hFile, $GamesSinceLegendary & ",")
-				FileClose($hFile)		
-			EndIf
-		Endif
-;	endif
+	local $GamesSinceLegendary = $GamesDetected - $GameCountAtPrevLegendary
+	if $GamesSinceLegendary > 0 then
+		Local $hFile = FileOpen("legDistances.txt", 1) ; Mode 1 = Append
+		If $hFile <> -1 Then
+			FileWrite($hFile, $GamesSinceLegendary & ",")
+			FileClose($hFile)		
+		EndIf
+	Endif	
 	$GameCountAtPrevLegendary = $GamesDetected
+	
+	local $WinsSinceLegendary = $GamesWon - $WinCountAtPrevLegendary
+	if $WinsSinceLegendary > 0 then
+		Local $hFile = FileOpen("legDistancesWins.txt", 1) ; Mode 1 = Append
+		If $hFile <> -1 Then
+			FileWrite($hFile, $WinsSinceLegendary & ",")
+			FileClose($hFile)		
+		EndIf
+	Endif
+	$WinCountAtPrevLegendary = $GamesWon
+	
+	CycleHistoryArray($g_WinHistory, $WinsSinceLegendary) ; push to history to be shown. Less than 70 values should skew chances toward larger spam count
+	
 	; just so that I don't freak out that the counter is not working
 	UpdateUiGameCounter(True)
 EndFunc
@@ -381,15 +453,51 @@ Func HandleLegendaryWinReward()
 	return 0
 Endfunc
 
+
+func RecordVictoryRewards()
+	Local $acceptableSADPerPixel = 4
+	local $bestSadPP = 100000
+	local $bestRewardType = -1
+	For $i = 0 To UBound($g_imageRewards) - 1
+		Local $searchRet = ImageIsAtRadius($g_imageRewards[$i][0])
+		If $searchRet[0] > 0 and $searchRet[3] < $acceptableSADPerPixel and $searchRet[3] < $bestSadPP Then
+			$bestSadPP = $searchRet[3]
+			$bestRewardType = $g_imageRewards[$i][1]
+			if $bestSadPP == 0 then
+				ExitLoop 
+			endif
+		EndIf
+	Next
+	
+	; write it to a file
+	if $bestRewardType <> -1 then
+		Local $hFile = FileOpen("GameRewards.txt", 1) ; Mode 1 = Append
+		If $hFile <> -1 Then
+			FileWrite($hFile, $bestRewardType & "," & @CRLF)
+			FileClose($hFile)		
+		EndIf
+	else
+		Sleep(1000)
+		TakeScreenshotRegionAndSaveit(846,576,846+96,576+96)
+	endif
+endfunc
+
 Func ClickFightWon()	
 	If ( $FuncIsRunning <> 1 or $BotIsRunning <> 1 ) then 
 		return
 	endif
-	Global $GamesWon, $pos
+	Global $pos, $g_LastSeenRank
     If IsColorAtPos(1129,235,0xFFEBA2,$ColorSearchRadius,$AcceptedColorTolerance) Then
-		global $g_LastSeenRank = 0 ; make sure we refresh the rank before we infinite spam "dropgames"
+		$g_LastSeenRank = 0 ; make sure we refresh the rank before we infinite spam "dropgames"
 		Sleep(750) ; seems like the chest appears slightly later than the victory letters
-		$GamesWon = $GamesWon + 1
+		
+		if $GamesWonRecordedAt <> $GamesDetected then
+			$GamesWon = $GamesWon + 1
+			$GamesWonRecordedAt = $GamesDetected
+		endif
+
+		RecordVictoryRewards()
+
 		; no need to click on yellow letter if we opened the check ?
 		if HandleLegendaryWinReward() == 1 then
 			return
@@ -404,10 +512,9 @@ Func ClickFightLost()
 	If ( $FuncIsRunning <> 1 or $BotIsRunning <> 1 ) then 
 		return
 	endif
-	Global $GamesLost, $pos
+	Global $pos, $g_LastSeenRank
     If IsColorAtPos(1106,192,0xFF4342,$ColorSearchRadius,$AcceptedColorTolerance) Then
-		global $g_LastSeenRank = 0 ; make sure we refresh the rank before we infinite spam "dropgames"
-		$GamesLost = $GamesLost + 1
+		$g_LastSeenRank = 0 ; make sure we refresh the rank before we infinite spam "dropgames"
         MouseClick("left", $pos[0], $pos[1])
 		Sleep(3000)
     EndIf
@@ -458,30 +565,91 @@ func CountIngameStates()
 endfunc
 
 func UpdateUiGameCounter($bForceUpdate = False)
-	global $GamesDetected, $GamesCounterPrev, $InfiniLoopStampAtEnd, $InfiniLoopStampAtStart
-;	if $GamesDetected <> $GamesCounterPrev or $bForceUpdate == True then
-		$GamesCounterPrev = $GamesDetected
+	global $GamesDetected, $InfiniLoopStampAtEnd, $InfiniLoopStampAtStart
 
-		; time played since reset. Shown in minutes
-		$InfiniLoopStampAtEnd = _WinAPI_GetTickCount() / 1000
-		local $TotalSecondsPassedRunning = $SecondsPlayed + ($InfiniLoopStampAtEnd-$InfiniLoopStampAtStart)
-		local $hoursPassed = int($TotalSecondsPassedRunning/(60*60))
-		local $minutesPassed = Mod(int($TotalSecondsPassedRunning/60),60)
-		GUICtrlSetData($lblTimeDiff, $hoursPassed & " : " & $minutesPassed)
+	; time played since reset. Shown in minutes
+	$InfiniLoopStampAtEnd = _WinAPI_GetTickCount() / 1000
+	local $TotalSecondsPassedRunning = $SecondsPlayed + ($InfiniLoopStampAtEnd-$InfiniLoopStampAtStart)
+	local $hoursPassed = int($TotalSecondsPassedRunning/(60*60))
+	local $minutesPassed = Mod(int($TotalSecondsPassedRunning/60),60)
+	GUICtrlSetData($lblTimeDiff, $hoursPassed & " : " & $minutesPassed)
 
-		; Total games played so far
-		;local $playedString = "GP " & $GamesCounter & " : " & $GamesStarted & " /(" & $GamesWon & "+" & $GamesLost  & ")"
-		;local $playedString = $GamesStarted & "=" & ($GamesWon + $GamesLost)
-		;GUICtrlSetData($lblGamesPlayed, $playedString)
-		local $GamesSinceLegendary = $GamesDetected - $GameCountAtPrevLegendary
-		;$GamesSinceLegendary = $GamesSinceLegendary + getInputNumericValue($inputGamesBeforeRestart, 0)
-		local $playedString2 = "G " & $GamesDetected & " GSL " & $GamesSinceLegendary & " LS " & $LegendariesSkipped
-		GUICtrlSetData($lblGamesPlayed2, $playedString2)
-;	endif
+	; Total games played so far
+	;GUICtrlSetData($lblGamesPlayed, $playedString)
+	local $GamesSinceLegendary = $GamesDetected - $GameCountAtPrevLegendary
+	local $WinsSinceLegendary = $GamesWon - $WinCountAtPrevLegendary
+	local $playedString2 = "G " & $GamesDetected & " GSL " & $GamesSinceLegendary & " WSL " & $WinsSinceLegendary & " LS " & $LegendariesSkipped
+	GUICtrlSetData($lblGamesPlayed2, $playedString2)
+	
+	local $labelTXT = ""
+	For $i = 0 To UBound($g_WinHistory) - 1
+		$labelTXT = $labelTXT & $g_WinHistory[$i] & ","
+	Next
+	GUICtrlSetData($lblWinHistory, $labelTXT)	
+endfunc
+
+func InitImageSearchDLLImages()
+	global $g_AppliedColorMaskToCachedImages, $g_image1EmeryxCost
+
+	if $g_AppliedColorMaskToCachedImages == 1 then
+		return
+	endif
+	$g_AppliedColorMaskToCachedImages = 1
+
+	$g_imageRanks[0][0] = "L10_0826_0181_0283_0109.bmp"
+	$g_imageRanks[0][1] = 10
+	$g_imageRanks[1][0] = "L11_0822_0167_0266_0122.bmp"
+	$g_imageRanks[1][1] = 11
+	$g_imageRanks[2][0] = "L12_0822_0171_0267_0117.bmp"
+	$g_imageRanks[2][1] = 12
+	$g_imageRanks[3][0] = "L13_0823_0171_0265_0120.bmp"
+	$g_imageRanks[3][1] = 13
+	$g_imageRanks[4][0] = "L14_0821_0174_0266_0115.bmp"
+	$g_imageRanks[4][1] = 14
+	$g_imageRanks[5][0] = "L15_0829_0169_0260_0122.bmp"
+	$g_imageRanks[5][1] = 15
+	$g_imageRanks[6][0] = "L16_0825_0162_0250_0133.bmp"
+	$g_imageRanks[6][1] = 16
+	$g_imageRanks[7][0] = "L17_0825_0162_0250_0133.bmp"
+	$g_imageRanks[7][1] = 17
+	$g_imageRanks[8][0] = "L18_0825_0162_0250_0133.bmp"
+	$g_imageRanks[8][1] = 18
+	$g_imageRanks[9][0] = "L19_0825_0162_0250_0133.bmp"
+	$g_imageRanks[9][1] = 19
+	$g_imageRanks[10][0] = "L20_0825_0162_0250_0133.bmp"
+	$g_imageRanks[10][1] = 20
+	$g_imageRanks[11][0] = "L21_0825_0162_0250_0133.bmp"
+	$g_imageRanks[11][1] = 21
+
+
+	$g_imageRewards[0][0] = "Victory_BlueChest_0846_0576_0096_0096.bmp"
+	$g_imageRewards[0][1] = 1
+	$g_imageRewards[1][0] = "Victory_BlueNoStoreChest_0846_0576_0096_0096.bmp"
+	$g_imageRewards[1][1] = 1
+	$g_imageRewards[2][0] = "Victory_PurpleChest_0846_0576_0096_0096.bmp"
+	$g_imageRewards[2][1] = 2
+	$g_imageRewards[3][0] = "Victory_PurpleNoStoreChest_0846_0576_0096_0096.bmp"
+	$g_imageRewards[3][1] = 2
+	$g_imageRewards[4][0] = "Victory_GoldChest_0846_0576_0096_0096.bmp"
+	$g_imageRewards[4][1] = 3
+	$g_imageRewards[5][0] = "Victory_GoldNoStoreChest_0846_0576_0096_0096.bmp"
+	$g_imageRewards[5][1] = 3
+	
+	SetScreenshotMaxFPS(2)
+	For $i = 0 To UBound($g_imageRanks) - 1
+		ApplyColorMaskOnCachedImage($g_imageRanks[$i][0])
+		ImageIsAtRadius($g_imageRanks[$i][0])
+	Next
+	For $i = 0 To UBound($g_imageRewards) - 1
+		ApplyColorMaskOnCachedImage($g_imageRewards[$i][0])
+		ImageIsAtRadius($g_imageRewards[$i][0])
+	Next
+
+	ApplyColorMaskOnCachedImage($g_image1EmeryxCost)
+	ImageIsAtRegion($g_image1EmeryxCost, 249, 820, 249+1405, 820+20) ; so that screenshot will contain this region also
 endfunc
 
 global $g_LastSeenRank = 0
-global $g_AppliedColorMaskToCachedImages = 0
 func GuessCurrentPVPRank()
 	; if script got interrupted, skip executing this function. Happens due to sleeps
 	If ( $FuncIsRunning <> 1 or $BotIsRunning <> 1 ) then 
@@ -491,53 +659,19 @@ func GuessCurrentPVPRank()
 	if $g_LastSeenRank <> 0 then
 		return
 	endif
+	
 	if $g_VisibleScreenType == $SCREEN_START_PVP_FIGHT and IsColorAtPos(1707, 277, 0x28283F, 2, 4) == 1 then
 		Local $acceptableDiffPCT = 15
 		Local $acceptableSADPerPixel = 8
-		Local $imageRanks[12][2]
-		$imageRanks[0][0] = "L10_0826_0181_0283_0109.bmp"
-		$imageRanks[0][1] = 10
-		$imageRanks[1][0] = "L11_0822_0167_0266_0122.bmp"
-		$imageRanks[1][1] = 11
-		$imageRanks[2][0] = "L12_0822_0171_0267_0117.bmp"
-		$imageRanks[2][1] = 12
-		$imageRanks[3][0] = "L13_0823_0171_0265_0120.bmp"
-		$imageRanks[3][1] = 13
-		$imageRanks[4][0] = "L14_0821_0174_0266_0115.bmp"
-		$imageRanks[4][1] = 14
-		$imageRanks[5][0] = "L15_0829_0169_0260_0122.bmp"
-		$imageRanks[5][1] = 15
-		$imageRanks[6][0] = "L16_0825_0162_0250_0133.bmp"
-		$imageRanks[6][1] = 16
-		$imageRanks[7][0] = "L17_0825_0162_0250_0133.bmp"
-		$imageRanks[7][1] = 17
-		$imageRanks[8][0] = "L18_0825_0162_0250_0133.bmp"
-		$imageRanks[8][1] = 18
-		$imageRanks[9][0] = "L19_0825_0162_0250_0133.bmp"
-		$imageRanks[9][1] = 19
-		$imageRanks[10][0] = "L20_0825_0162_0250_0133.bmp"
-		$imageRanks[10][1] = 20
-		$imageRanks[11][0] = "L21_0825_0162_0250_0133.bmp"
-		$imageRanks[11][1] = 21
-		
-		if $g_AppliedColorMaskToCachedImages == 0 then
-			$g_AppliedColorMaskToCachedImages = 1
-			SetScreenshotMaxFPS(2)
-			For $i = 0 To UBound($imageRanks) - 1
-				ApplyColorMaskOnCachedImage($imageRanks[$i][0])
-			Next
-		endif
 
 		;Local $hTimer = TimerInit()
 		$g_LastSeenRank = 0
-		local $bestSadPP = 100000
-		For $i = 0 To UBound($imageRanks) - 1
-			Local $searchRet = ImageIsAt($imageRanks[$i][0])
-;			If $searchRet[0] > 0 and $searchRet[5] < $acceptableDiffPCT Then
+		local $bestSadPP = $acceptableSADPerPixel
+		For $i = 0 To UBound($g_imageRanks) - 1
+			Local $searchRet = ImageIsAtRadius($g_imageRanks[$i][0])
 			If $searchRet[0] > 0 and $searchRet[3] < $acceptableSADPerPixel Then
-;				$acceptableDiffPCT = $searchRet[5]
 				$acceptableSADPerPixel = $searchRet[3]
-				$g_LastSeenRank = $imageRanks[$i][1]
+				$g_LastSeenRank = $g_imageRanks[$i][1]
 			EndIf
 			If $searchRet[0] > 0 and $searchRet[3] < $bestSadPP Then
 				$bestSadPP = $searchRet[3]
@@ -549,7 +683,7 @@ func GuessCurrentPVPRank()
 		;GUICtrlSetData($lblDbgOut, $g_LastSeenRank & '!' & $searchRet[2] & '!' & $searchRet[3] & '!' & $searchRet[4] & '!' & $searchRet[5])
 		;GUICtrlSetData($lblDbgOut, $g_LastSeenRank & "ETA " & $fDiff & " ms")
 		;GUICtrlSetData($lblDbgOut, $g_LastSeenRank)
-		GUICtrlSetData($lblDbgOut, $g_LastSeenRank & " SADPP=" & $acceptableSADPerPixel & " best " & $bestSadPP)
+		GUICtrlSetData($lblDbgOut, $g_LastSeenRank & " SADPP=" & $acceptableSADPerPixel & " best " & $bestSadPP & " ")
 	else 
 		GUICtrlSetData($lblDbgOut, $g_VisibleScreenType & " seepvp = " & IsColorAtPos(1707, 277, 0x28283F, 2, 4))
 	endif
@@ -574,15 +708,17 @@ func CheckDropGameASP()
 	; are we ingame ?
 	global $g_LastSeenRank, $g_VisibleScreenType
 	if $g_VisibleScreenType == $SCREEN_PVP_FIGHTING and $g_LastSeenRank <> 0 then
-			local $GamesSinceLegendary = $GamesDetected - $GameCountAtPrevLegendary
+			;local $GamesSinceLegendary = $GamesDetected - $GameCountAtPrevLegendary
+			local $WinsSinceLegendary = $GamesWon - $WinCountAtPrevLegendary
 			local $OptimalGameCount = getInputNumericValue($inputGamesForLegChance, 100)
-			if $GamesSinceLegendary < $OptimalGameCount Then
+			;if $GamesSinceLegendary < $OptimalGameCount Then
+			if $WinsSinceLegendary < $OptimalGameCount Then
 				; are we ingame ? check if we are allowed to drop a game
-				local $CurrentProgressInSpam = $GamesSinceLegendary / $OptimalGameCount
+				local $CurrentProgressInSpam = $WinsSinceLegendary / $OptimalGameCount
 				GUICtrlSetData($lblDbgOut, $g_LastSeenRank & ' spampct ' & $CurrentProgressInSpam)
 				; 0.3 is probably 30->50 games. After that we try to climb the ladder with 30% winrate until best rank
 				; ! need to measure how many games we need to climb back to best rank. Probably a lot
-				if $g_LastSeenRank < getInputNumericValue($inputMinRankAllowed, 20) and $CurrentProgressInSpam < 0.66 then
+				if $g_LastSeenRank < getInputNumericValue($inputMinRankAllowed, 20) and $CurrentProgressInSpam < 0.7 then
 					DropGame()
 				endif
 			endif
@@ -612,9 +748,11 @@ endfunc
 
 func ShouldSpamFightsForLegendary()
 	If GUICtrlRead($hCheckboxSpamUntilLegChance) = $GUI_CHECKED then
-		local $GamesSinceLegendary = $GamesDetected - $GameCountAtPrevLegendary
+		;local $GamesSinceLegendary = $GamesDetected - $GameCountAtPrevLegendary
+		local $WinsSinceLegendary = $GamesWon - $WinCountAtPrevLegendary
 		local $OptimalGameCount = getInputNumericValue($inputGamesForLegChance, 100)
-		if $GamesSinceLegendary < $OptimalGameCount Then
+		;if $GamesSinceLegendary < $OptimalGameCount Then
+		if $WinsSinceLegendary < $OptimalGameCount Then
 			; if we can start a fight, fight.
 			return 1
 		endif
@@ -622,16 +760,45 @@ func ShouldSpamFightsForLegendary()
 	return 0
 endfunc
 
-func ForeverLoopFunc()
-	$FuncIsRunning = 1 - $FuncIsRunning
-
-	if $FuncIsRunning == 1 then
-		GUICtrlSetBkColor($lblTimeDiff, 0x00FF00)
+func OpenChestsWith1Emeryx()
+	If ( $FuncIsRunning <> 1 or $BotIsRunning <> 1 ) then 
+		return
+	endif
+	; are we ingame ?
+	global $g_VisibleScreenType
+	if $g_VisibleScreenType <> $SCREEN_START_PVP_FIGHT then
+		return
+	endif
+	local $ChestsRemainingToOpen = getInputNumericValue($inputOpen1emeryxChests, 0)
+	if $ChestsRemainingToOpen <= 0 then
+		return
 	endif
 	
-	global $InfiniLoopStampAtStart = _WinAPI_GetTickCount() / 1000
-	local $Cycles = 0
-	global $g_VisibleScreenType, $FuncIsRunning, $BotIsRunning
+	Local $searchRet = ImageIsAtRegion($g_image1EmeryxCost, 249, 820, 249+1405, 820+20, 1 + 2)
+	If $searchRet[0] > 0 and $searchRet[3] <= 10 and $searchRet[4] <= 30 and $searchRet[7] >= 8 then
+		GUICtrlSetData($inputOpen1emeryxChests, $ChestsRemainingToOpen - 1)
+		MouseClick("left", $searchRet[0], $searchRet[1] - 20)
+		Sleep(1000)
+		MouseClick("left", 958, 767) ; open by spending emeryx
+		Sleep(3000) ; waiting for chest open animation
+		MouseClick("left", 1634, 203) ; close the opened "chest"
+		Sleep(1000)
+		GUICtrlSetData($lblDbgOut2, "O: " & $searchRet[0] & "," & $searchRet[1] & " " & $searchRet[3] & " " & $searchRet[4] & " " & $searchRet[5] & " " & $searchRet[3]  & " " & $searchRet[7])
+	else
+		GUICtrlSetData($lblDbgOut2, $searchRet[0] & " , " & $searchRet[1] & " spp " & $searchRet[3] & " " & $searchRet[4] & " " & $searchRet[5] & " " & $searchRet[3]  & " " & $searchRet[7])
+	endif
+endfunc
+
+func ForeverLoopFunc()
+	global $g_VisibleScreenType, $FuncIsRunning, $BotIsRunning, $InfiniLoopStampAtStart, $InfiniLoopStampAtEnd, $SecondsPlayed
+
+	$FuncIsRunning = 1 - $FuncIsRunning
+
+	local $UpdateSecondsAtTheEnd = $FuncIsRunning
+	if $FuncIsRunning == 1 then
+		GUICtrlSetBkColor($lblTimeDiff, 0x00FF00)
+		$InfiniLoopStampAtStart = _WinAPI_GetTickCount() / 1000
+	endif	
 	while( $FuncIsRunning == 1 and $BotIsRunning == 1 )	
 		;GUICtrlSetData($lblDbgOut, Hex( PixelGetColor(1707, 277), 6 ) & " -- " & $g_VisibleScreenType)
 
@@ -641,6 +808,8 @@ func ForeverLoopFunc()
 		; things to do while out of fight screen
 		if $g_VisibleScreenType == $SCREEN_START_PVP_FIGHT then
 			GuessCurrentPVPRank() ; internally will handle states based on ingame or outofgame screens
+			
+			OpenChestsWith1Emeryx() ; probably just for some quests
 			
 			; do not open chests until we are in a very low rank ?
 			if ShouldSpamFightsForLegendary() == 0 or GUICtrlRead($hCheckboxNoChestsWhileSpamUntilLeg) = $GUI_UNCHECKED then
@@ -673,9 +842,11 @@ func ForeverLoopFunc()
 		if $g_VisibleScreenType == $SCREEN_PVP_FIGHTING then
 			; drop games if too high league
 			If GUICtrlRead($hCheckboxSpamUntilLegChance) = $GUI_CHECKED then
-				local $GamesSinceLegendary = $GamesDetected - $GameCountAtPrevLegendary
+				;local $GamesSinceLegendary = $GamesDetected - $GameCountAtPrevLegendary
+				local $WinsSinceLegendary = $GamesWon - $WinCountAtPrevLegendary
 				local $OptimalGameCount = getInputNumericValue($inputGamesForLegChance, 100)
-				if $GamesSinceLegendary < $OptimalGameCount Then
+				;if $GamesSinceLegendary < $OptimalGameCount Then
+				if $WinsSinceLegendary < $OptimalGameCount Then
 					; are we ingame ? check if we are allowed to drop a game
 					CheckDropGameASP()
 				endif
@@ -691,8 +862,6 @@ func ForeverLoopFunc()
 		ClearRandomClickContent()
 
 		UpdateUiGameCounter()
-		
-		$Cycles = $Cycles + 1
 
 		; Small delay to prevent high CPU usage
 		If ( $FuncIsRunning == 1 and $BotIsRunning == 1 ) then 
@@ -700,8 +869,10 @@ func ForeverLoopFunc()
 		endif
 	wend
 
-	global $InfiniLoopStampAtEnd = _WinAPI_GetTickCount() / 1000
-	global $SecondsPlayed = $SecondsPlayed + ($InfiniLoopStampAtEnd-$InfiniLoopStampAtStart)
+	if $UpdateSecondsAtTheEnd == 1 then
+		$InfiniLoopStampAtEnd = _WinAPI_GetTickCount() / 1000
+		$SecondsPlayed = $SecondsPlayed + ($InfiniLoopStampAtEnd-$InfiniLoopStampAtStart)
+	endif
 
 	GUICtrlSetBkColor($lblTimeDiff, 0xFF0000)
 	
@@ -710,10 +881,11 @@ endfunc
 ; Why it actually works : becase short game duration ( relative to long game) skews the probablity curve.
 ; Counting starts after getting a legendary. Count every game, both wins and losses. If at any point you get a legendary, you can restart the process.
 ; This process highly depends on 'time loop', number of chest slots, computer speed, fastest way to end a game.
-; There is about 25% chance you can get 1 legendary chests in X hours with this method. But high chance to get at least 1 leg
+; If you push for 150 games, there is about 25% chance you can get 1 legendary chests in 2+X hours with this method ( worst case 1 / day).
 ; Method 1:
 ;	- drop games until you drop to a rank where you can oneshot enemy comander. For me this is League 19 as comanders tend to have 170 health and my ghost does 200 dmg )
-;	- win 2 games, drop one game
-;	- repeat the process until you done 100 games. If I do this right, I can reach 100 games in 100*42/60=70 minutes
-;	- the next 50 games do not drop games. Keep lowering your rank as much as possible. For me, this takes about 50*120/60=100 minutes
+;	- win 2 games, drop one game = stay on L19
+;	- repeat the process until you done aroud 66 games. If I do this right, I can reach 66 games in 66*38/60=42 minutes
+;	- the next 44 games do not drop games. Keep lowering your rank as much as possible. For me, this takes about 44*120/60=88 minutes
+;   - based on luck you can keep chests slots with unopened chests and only open them now. This pushes me another 8 games. At this point I'm at 118 games. Worst case will get a legendary in the next day
 ;	- if arrived here and still did not get a LEGO, keep playing game only when you can store the reward chest

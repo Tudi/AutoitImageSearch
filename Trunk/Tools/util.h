@@ -27,7 +27,7 @@ GNU General Public License for more details.
 #define CLR_NONE 0xFFFFFFFF
 #define IS_SPACE_OR_TAB(c) (c == ' ' || c == '\t')
 
-HBITMAP LoadPicture(char *aFilespec, int aWidth, int aHeight, int &aImageType, int aIconNumber, bool aUseGDIPlusIfAvailable);
+HBITMAP LoadPicture(const char *aFilespec, int aWidth, int aHeight, int &aImageType, int aIconNumber, bool aUseGDIPlusIfAvailable);
 LPCOLORREF getbits(HBITMAP ahImage, HDC hdc, LONG &aWidth, LONG &aHeight, bool &aIs16Bit, int aMinColorDepth = 8, LPCOLORREF pReusePrevStore = NULL);
 char* WINAPI ImageSearch(int aLeft, int aTop, int aRight, int aBottom, char *aImageFile);
 void WINAPI RemoveCharFromNumberString(char *str, char c);

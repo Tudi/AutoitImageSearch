@@ -36,7 +36,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 #endif
 
 
-void main(int argc, char **arg)
+int main(int argc, char **arg)
 {
 	StartCounter();
 
@@ -73,7 +73,9 @@ void main(int argc, char **arg)
 
 #if defined(_DEBUG) || defined(_CONSOLE)
  {
-		TakeScreenshot(0, 0, 1920, 1080);
+		for (size_t i = 0; i < 4; i++) { // testing leak detector
+			TakeScreenshot(0, 0, 1920, 1080);
+		}
 		ApplyColorBitmask(0x00F0F0F0);
 		ApplyColorBitmaskCache("visual_studio_text.bmp", 0x00F0F0F0);
 //		SaveScreenshot();
@@ -85,7 +87,7 @@ void main(int argc, char **arg)
 	#define IMG_HASH_REPEAT_TEST_COUNT 10
 #endif
 		// ignore first run from benchmark
-		char* ret = ImageSearch_SAD_Region("visual_studio_text.bmp", 0, 0, 1920, 1080, SADSearchRegionFlags::SSRF_ST_ENFORCE_SAD_WITH_HASH);
+		const char* ret = ImageSearch_SAD_Region("visual_studio_text.bmp", 0, 0, 1920, 1080, SADSearchRegionFlags::SSRF_ST_ENFORCE_SAD_WITH_HASH);
 		printf("New method Returned : %s\n", ret);
 		ret = ImageSearch_SAD_Region("visual_studio_text.bmp", 0, 0, 1920, 1080, SADSearchRegionFlags::SSRF_ST_PROCESS_INLCUDE_DIFF_INFO);
 		printf("Old method Returned : %s\n", ret);
@@ -94,7 +96,7 @@ void main(int argc, char **arg)
 		Start = GetTimeTickI();
 		for (size_t i = 0; i < IMG_HASH_REPEAT_TEST_COUNT; i++)
 		{
-			ret = ImageSearch_SAD_Region("visual_studio_text.bmp", 0, 0, 1920, 1080, SADSearchRegionFlags::SSRF_ST_ENFORCE_SAD_WITH_HASH);
+			ret = ImageSearch_SAD_Region("visual_studio_text.bmp", 0, 0, 1920, 1080, (SADSearchRegionFlags)(SADSearchRegionFlags::SSRF_ST_ENFORCE_SAD_WITH_HASH | SADSearchRegionFlags::SSRF_ST_PROCESS_INLCUDE_DIFF_INFO));
 		}
 		End = GetTimeTickI();
 		printf("result of HASH enforced SAD prepare : %d ms duration, %f FPS\n", (End - Start)/ IMG_HASH_REPEAT_TEST_COUNT, 1000.0 / (float)(End - Start + 1) * IMG_HASH_REPEAT_TEST_COUNT);
@@ -106,6 +108,8 @@ void main(int argc, char **arg)
 		}
 		End = GetTimeTickI();
 		printf("result of SAD search : %d ms duration, %f FPS\n", (End - Start) / IMG_HASH_REPEAT_TEST_COUNT, 1000.0 / (float)(End - Start + 1) * IMG_HASH_REPEAT_TEST_COUNT);
+
+		DumpAllocationsToLogger();
 	}/**/
 /* {
 		char* res;
@@ -190,7 +194,7 @@ void main(int argc, char **arg)
 		}/**/
  {
 		_getch();
-		char *res;
+		const char *res;
 		TakeScreenshot(0, 0, 1920, 1080);
 		int Start = GetTimeTickI();
 		res = ImageSearch_SAD("bobber_try2.bmp");
@@ -204,7 +208,7 @@ void main(int argc, char **arg)
 			res = IsAnythingChanced(0, 0, 7, 23);
 			if (res[0] != '0')
 			{
-				res[0] = '1';
+//				res[0] = '1';
 			}
 		}
 		End = GetTimeTickI();
@@ -250,4 +254,5 @@ void main(int argc, char **arg)
 		//		_getch();
 		}/**/
 #endif
+	return 0;
 }

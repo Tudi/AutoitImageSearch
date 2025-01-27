@@ -720,8 +720,8 @@ int GetNextBestMatch( SimilarSearch *SearchIn, SimilarSearch *SearchFor, int &re
 	return 0;
 }
 
-char SSReturnBuff[DEFAULT_STR_BUFFER_SIZE*10];
-char * WINAPI SearchSimilarOnScreenshot( char *aImageFile )
+static char SSReturnBuff[DEFAULT_STR_BUFFER_SIZE*10];
+char * WINAPI SearchSimilarOnScreenshot(const char *aImageFile )
 {
 //	int MatchesFound = 0;
 	SSReturnBuff[0]=0;
@@ -731,18 +731,18 @@ char * WINAPI SearchSimilarOnScreenshot( char *aImageFile )
 	if( cache == NULL )
 	{
 		FileDebug( "Skipping Image search as image could not be loaded" );
-		return "";
+		return SSReturnBuff;
 	}
 	if( cache->Pixels == NULL )
 	{
 		FileDebug( "Skipping Image search as image pixels are missing" );
-		return "";
+		return SSReturnBuff;
 	}
 
 	if( CurScreenshot->Pixels == NULL )
 	{
 		FileDebug( "Skipping Image search no screenshot is available" );
-		return "";
+		return SSReturnBuff;
 	}
 
 	if( cache->SSCache == NULL )
@@ -766,7 +766,7 @@ char * WINAPI SearchSimilarOnScreenshot( char *aImageFile )
 	if( cache->SSCache->BlockHeight != CurScreenshot->SSCache->BlockHeight || cache->SSCache->BlockWidth != CurScreenshot->SSCache->BlockWidth )
 	{
 		FileDebug( "Skipping Image search as block size does not match in cache. This is a bug" );
-		return "";
+		return SSReturnBuff;
 	}
 
 	int tretx,trety;
