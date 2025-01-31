@@ -6,12 +6,15 @@
 
 global $dllhandle = null
 
-Func ResetDebugLog($sFileName)
+Func ResetDebugLog($sFileName = "")
+	if( $sFileName == "") then 
+		$sFileName = "DebugLog.txt"
+	endif
    Local $hFilehandle = FileOpen($sFileName, $FO_OVERWRITE)
    FileClose($hFilehandle)
 endfunc
 
-Func _WriteDebugLog($TextToLog, $sFileName = "")
+Func _WriteDebugLog($TextToLog, $AddNewLine = 1, $sFileName = "")
 	if( $sFileName == "") then 
 		$sFileName = "DebugLog.txt"
 	endif
@@ -23,7 +26,12 @@ Func _WriteDebugLog($TextToLog, $sFileName = "")
    EndIf
 
    Local $hFilehandle = FileOpen($sFileName, $sWriteOption)
-   Local $sLogEntry = _Now() & " " & $TextToLog & @CRLF
+   Local $sLogEntry = ""
+   if $AddNewLine == 1 then
+		$sLogEntry = _Now() & " " & $TextToLog & @CRLF
+   Else
+		$sLogEntry = " " & $TextToLog
+   EndIf
    FileWrite($hFilehandle, $sLogEntry)
    FileClose($hFilehandle)
 	;MsgBox( 64, "", "found at " & $Pos[0] & " " & $Pos[1] & " SAD " & $Pos[2])
