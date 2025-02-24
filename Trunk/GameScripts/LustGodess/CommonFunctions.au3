@@ -5,6 +5,9 @@
 ; Opt("MustDeclareVars", 1)
 
 global $dllhandle = null
+; due blending of background into the actual image, the insignificant digits might morph all the time
+; removing too many image details might make the image loose details and yield false positive matches
+global $g_SameColorMaskAllTheTime = 0x00C0C0C0 ; other values : 0x00F0F0F0 0x00E0E0E0 0x00C0C0C0
 
 Func ResetDebugLog($sFileName = "")
 	if( $sFileName == "") then 
@@ -56,7 +59,7 @@ func GetWindowRelativPos()
 	return $ret
 endfunc
 
-func TakeScreenshotAtMousePos($width, $height, $ColorMask = 0x00F0F0F0)
+func TakeScreenshotAtMousePos($width, $height, $ColorMask = $g_SameColorMaskAllTheTime)
 	local $mpos = MouseGetPos()
 	TakeScreenshotRegionAndSaveit($mpos[0],$mpos[1],$mpos[0] + $width,$mpos[1] + $height)
 endfunc
@@ -88,19 +91,19 @@ endfunc
 func TakeScreenshotAtMousePosPreRecorded()
 	TakeScreenshotRegionAndSaveit($PrevPrevMousePos[0],$PrevPrevMousePos[1],$PrevMousePos[0],$PrevMousePos[1])
 endfunc
-func TakeScreenshotRegionAndSaveit($start_x, $start_y, $end_x, $end_y, $ColorMask = 0x00F0F0F0)
+func TakeScreenshotRegionAndSaveit($start_x, $start_y, $end_x, $end_y, $ColorMask = $g_SameColorMaskAllTheTime)
 	InitScreenshotDllIfRequired()
 	local $mpos = MouseGetPos()
 	Local $result = DllCall( $dllhandle,"NONE","TakeScreenshot","int",$start_x,"int",$start_y,"int",$end_x,"int",$end_y)
 	if $ColorMask <> 0 then 
-		$result = DllCall( $dllhandle,"NONE", "ApplyColorBitmask", "int", 0x00F0F0F0)
+		$result = DllCall( $dllhandle,"NONE", "ApplyColorBitmask", "int", $g_SameColorMaskAllTheTime)
 	endif
 	$result = DllCall( $dllhandle,"NONE","SaveScreenshot")
 endfunc
 
 func ReduceColorPrecision( $color, $Mask = 0 )
 	if( $Mask == 0 ) then
-		$Mask = 0x00F0F0F0
+		$Mask = $g_SameColorMaskAllTheTime
 	endif
 	return BitAND( $color, $Mask )
 endfunc
@@ -111,7 +114,7 @@ func IsPixelAroundPos( $x, $y, $Color, $Mask = 0, $Radius = 0, $RelativeCords = 
 		$Radius = 2
 	endif
 	if( $Mask == 0 ) then
-		$Mask = 0x00F0F0F0
+		$Mask = $g_SameColorMaskAllTheTime
 	endif
 	if( $RelativeCords <> 0) then
 		Local $aPos = GetWindowRelativPos()
@@ -283,7 +286,7 @@ Func GetCoordFromImageFileName( $ImgName, ByRef $x, ByRef $y, ByRef $width, ByRe
 	endif
 endfunc
 
-func ApplyColorMaskOnCachedImage($ImgName, $Mask = 0x00F0F0F0)
+func ApplyColorMaskOnCachedImage($ImgName, $Mask = $g_SameColorMaskAllTheTime)
 	InitScreenshotDllIfRequired()
 	local $result = DllCall( $dllhandle, "NONE", "ApplyColorBitmaskCache", "str", $ImgName, "int", $Mask) ; remove small aberations due to color merge
 endfunc
@@ -326,7 +329,7 @@ Func ImageIsAtRegion( $ImgName, $start_x = -1, $start_y = -1, $end_x = -1, $end_
 
 	; take screenshot rate will be limited to what we set at the start of the script. 2 FPS ?
 	local $result = DllCall( $dllhandle, "NONE", "TakeScreenshot", "int", -1, "int", -1, "int", -1, "int", -1)
-	$result = DllCall( $dllhandle, "NONE", "ApplyColorBitmask", "int", 0x00F0F0F0) ; remove small aberations due to color merge
+	$result = DllCall( $dllhandle, "NONE", "ApplyColorBitmask", "int", $g_SameColorMaskAllTheTime) ; remove small aberations due to color merge
 	$result = DllCall( $dllhandle, "str", "ImageSearch_SAD_Region", "str", $ImgName, "int", $start_x, "int", $start_y, "int", $end_x, "int", $end_y, "int", int($SearchFlags))
 	local $res = SearchResultToVectSingleRes( $result )
 	return $res
@@ -447,13 +450,13 @@ func WaitScreenFinishLoading()
 	local $x2 = 11 + $aPos[0]
 	local $y2 = 12 + $aPos[1]
 	local $result = DllCall( $dllhandle, "NONE", "TakeScreenshot", "int", $x2 - $Radius, "int", $y2 - $Radius, "int", $x2 + $Radius, "int", $y2 + $Radius)
-	DllCall( $dllhandle, "NONE", "ApplyColorBitmask", "int", 0x00F0F0F0)
+	DllCall( $dllhandle, "NONE", "ApplyColorBitmask", "int", $g_SameColorMaskAllTheTime)
 	$result[ = "1|0|0"
 	while ( $result[0] == '1' and $AntiInfiniteLoop > 0 )
 		Sleep( 100 ) ; 10 FPS. Screenshot taking default max FPS is 5 !
 		$AntiInfiniteLoop = $AntiInfiniteLoop - 100
 		DllCall( $dllhandle, "NONE", "TakeScreenshot", "int", $x2 - $Radius, "int", $y2 - $Radius, "int", $x2 + $Radius, "int", $y2 + $Radius)
-		DllCall( $dllhandle, "NONE", "ApplyColorBitmask", "int", 0x00F0F0F0)
+		DllCall( $dllhandle, "NONE", "ApplyColorBitmask", "int", $g_SameColorMaskAllTheTime)
 		$result = DllCall( $dllhandle, "NONE", "IsAnythingChanced", "int", 0, "int", 0, "int", 0, "int", 0)
 	wend
 endfunc
