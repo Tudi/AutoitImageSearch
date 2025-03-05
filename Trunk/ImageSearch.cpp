@@ -597,7 +597,7 @@ char* WINAPI ImageSearch_SAD_Region(const char* aFilespec, int aLeft, int aTop, 
 				MatchesFound++;
 #endif
 				BestSAD = sad;
-				if (uSearchFlags & SSRF_ST_ENFORCE_SAD_WITH_HASH)
+				if ((uSearchFlags & SSRF_ST_ENFORCE_SAD_WITH_HASH) && cache->Width >= 16)
 				{
 					ImgHashWholeIage *cacheHash = GetCreateCacheHash(cache);
 					GenHashesOnScreenshotForCachedImage(cache, CurScreenshot, (int)x, (int)y, &imgHash);

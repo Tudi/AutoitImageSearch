@@ -8,6 +8,13 @@ global $dllhandle = null
 ; due blending of background into the actual image, the insignificant digits might morph all the time
 ; removing too many image details might make the image loose details and yield false positive matches
 global $g_SameColorMaskAllTheTime = 0x00C0C0C0 ; other values : 0x00F0F0F0 0x00E0E0E0 0x00C0C0C0
+global $g_checkImageFileExists = True
+
+InitScreenshotDllIfRequired()
+
+Func DisableFileExistsChecks()
+	$g_checkImageFileExists = False
+EndFunc
 
 Func ResetDebugLog($sFileName = "")
 	if( $sFileName == "") then 
@@ -48,7 +55,6 @@ endfunc
 
 ; limit how many frames we can capture per second. Because we do not want to spend 99% of the time of the script capturing frames ;)
 func SetScreenshotMaxFPS($MaxFPS)
-	InitScreenshotDllIfRequired()
 	local $result = DllCall( $dllhandle,"NONE","SetScreehotFPSLimit","int",int($MaxFPS))
 endfunc
 
@@ -92,7 +98,6 @@ func TakeScreenshotAtMousePosPreRecorded()
 	TakeScreenshotRegionAndSaveit($PrevPrevMousePos[0],$PrevPrevMousePos[1],$PrevMousePos[0],$PrevMousePos[1])
 endfunc
 func TakeScreenshotRegionAndSaveit($start_x, $start_y, $end_x, $end_y, $ColorMask = $g_SameColorMaskAllTheTime)
-	InitScreenshotDllIfRequired()
 	local $mpos = MouseGetPos()
 	Local $result = DllCall( $dllhandle,"NONE","TakeScreenshot","int",$start_x,"int",$start_y,"int",$end_x,"int",$end_y)
 	if $ColorMask <> 0 then 
@@ -152,7 +157,6 @@ Endfunc
 
 ; used for loading screens
 func WaitImageAppear( $ImageName, $X = -1, $Y = -1, $Sleep = 500, $Timout = 3000 )
-	InitScreenshotDllIfRequired()
 	if( $x == -1 ) then
 		GetCoordFromImageFileName( $ImageName, $x, $y, 0 )
 	endif
@@ -167,7 +171,6 @@ endfunc
 
 ; used for loading screens
 func WaitImageDisappear( $ImageName, $X = -1, $Y = -1, $Sleep = 500, $Timout = 3000 )
-	InitScreenshotDllIfRequired()
 	if( $x == -1 ) then
 		GetCoordFromImageFileName( $ImageName, $x, $y, 0 )
 	endif
@@ -181,7 +184,6 @@ func WaitImageDisappear( $ImageName, $X = -1, $Y = -1, $Sleep = 500, $Timout = 3
 endfunc
 
 func ClickButtonIfAvailable( $ImageName, $X = -1, $Y = -1, $SearchRadius = 0, $SleepBetweenRetrys = 500, $retryCount = 1000, $AcceptableDiffPCT = 0)
-	InitScreenshotDllIfRequired()
 	if( $x == -1 ) then
 		GetCoordFromImageFileName( $ImageName, $x, $y )
 	endif
@@ -287,7 +289,6 @@ Func GetCoordFromImageFileName( $ImgName, ByRef $x, ByRef $y, ByRef $width, ByRe
 endfunc
 
 func ApplyColorMaskOnCachedImage($ImgName, $Mask = $g_SameColorMaskAllTheTime)
-	InitScreenshotDllIfRequired()
 	local $result = DllCall( $dllhandle, "NONE", "ApplyColorBitmaskCache", "str", $ImgName, "int", $Mask) ; remove small aberations due to color merge
 endfunc
 
@@ -310,7 +311,9 @@ endfunc
 
 Func ImageIsAtRegion( $ImgName, $start_x = -1, $start_y = -1, $end_x = -1, $end_y = -1, $SearchFlags = 0)
 	global $dllhandle
-	InitScreenshotDllIfRequired()
+	If $g_checkImageFileExists == True and FileExists($ImgName) == False Then
+		 MsgBox($MB_SYSTEMMODAL, "", "The file " & $ImgName & "doesn't exist.")
+	EndIf
 	; in case the image file name in a common sense format we can extract the coordinate of it
 	if( $start_x < 0 ) then
 		local $x, $y, $width, $height
@@ -460,6 +463,17 @@ func WaitScreenFinishLoading()
 		$result = DllCall( $dllhandle, "NONE", "IsAnythingChanced", "int", 0, "int", 0, "int", 0, "int", 0)
 	wend
 endfunc
+
+Func Intf($floatNum, $precision)
+	For $i = 0 to $precision - 1
+		$floatNum = $floatNum * 10
+	Next
+	$floatNum = int($floatNum)
+	For $i = 0 to $precision - 1
+		$floatNum = $floatNum / 10
+	Next
+	return $floatNum
+EndFunc
 
 ;Func OnAutoItExit()     
 ;	DllClose($dllhandle)

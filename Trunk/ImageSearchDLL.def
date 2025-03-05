@@ -8,12 +8,16 @@ EXPORTS
 	SaveScreenshot
 	ImageSearch_SAD
 	ImageSearch_SAD_Region
-	ImageSearch_SAD_Region
 	ImageSearch_Similar
 	ImageSearch_Multiple_ExactMatch
 	ImageSearch_Multiple_Transparent
 	ImageSearch_Multiple_PixelCount
 	ImageSearch_Multipass_PixelCount
+
+	; because calling an API might take 150 ms while searching the image might take 15ms
+	; if we intend to run searches for all these images all the time, it's worth calling the API only once
+	; local caching will be required to make sure values will be grabbed from cache instead calling API again
+	;ImageSearch_SAD_Region_Multiple
 
 	ApplyColorBitmask
 	ApplyColorBitmaskCache
