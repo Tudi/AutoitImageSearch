@@ -592,12 +592,11 @@ char* WINAPI ImageSearch_SAD_Region(const char* aFilespec, int aLeft, int aTop, 
 		for (size_t x = search_start_x; x < search_end_x; x++)
 		{
 			uint64_t sad = ImageSad(&AddrBig[x], stride1, AddrSmall, stride2, width_SAD, height_SAD);
-			if (BestSAD > sad)
+			if (BestSAD >= sad)
 			{
 #ifdef _DEBUG
 				MatchesFound++;
 #endif
-				BestSAD = sad;
 				int HashingWasPossible = 0;
 				// this code needs more testing. Seen it crash. Did not had the time to debug
 				if ((uSearchFlags & SSRF_ST_ENFORCE_SAD_WITH_HASH))
@@ -608,24 +607,28 @@ char* WINAPI ImageSearch_SAD_Region(const char* aFilespec, int aLeft, int aTop, 
 					{
 						ImgHash8x8_CompareResult compareRes;
 						int CompareErr = compareHash(cacheHash, &imgHash, &compareRes);
-//					printf("New best sad at x=%llu y=%llu. Hash old %f, hash new %f\n", x, y, HashSmallestDiffPCT, compareRes.pctMatchAvg);
+//						printf("New best sad at x=%llu y=%llu. Hash old %f, hash new %f\n", x, y, HashSmallestDiffPCT, compareRes.pctMatchAvg);
 						if (CompareErr == 0 && compareRes.pctMatchAvg < HashSmallestDiffPCT)
 						{
 							HashSmallestDiffPCT = compareRes.pctMatchAvg;
 							retx = (int)x;
 							rety = (int)y;
 							HashingWasPossible = 1;
+							BestSAD = sad;
 							//exact match ? I doubt it will ever happen...
 							if (HashSmallestDiffPCT == 100)
 								goto docleanupandreturn;
 						}
 					}
 				}
+				// there are cases when SAD(loc2) < SAD(loc1) BUT SATD(loc2) > SATD(loc1)
+				// SATD is about 10 times slower than SAD
 				if ((uSearchFlags & SSRF_ST_ENFORCE_SAD_WITH_SATD))
 				{
 					size_t satd = satd_nxm(&AddrBig[x], AddrSmall, width_SAD, height_SAD, stride1, stride2);
 					if (satd < BestSATD)
 					{
+						BestSAD = sad;
 						BestSATD = satd;
 						retx = (int)x;
 						rety = (int)y;
@@ -635,6 +638,7 @@ char* WINAPI ImageSearch_SAD_Region(const char* aFilespec, int aLeft, int aTop, 
 					HashingWasPossible = 1;
 				}
 				if(HashingWasPossible == 0) {
+					BestSAD = sad;
 					retx = (int)x;
 					rety = (int)y;
 					//exact match ? I doubt it will ever happen...

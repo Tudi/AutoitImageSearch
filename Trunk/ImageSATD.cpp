@@ -96,24 +96,17 @@ size_t satd_8x8_channel_scalar(const uint8_t* src, const uint8_t* ref, size_t st
 }
 
 size_t satd_8x8_channel_(const uint8_t* src, const uint8_t* ref, size_t stride_src, size_t stride_dst, size_t channel) {
-#define _USE_CPU_
-//#define _USE_AVX2_ // I think the hadamard transform on 8x8 does not give the expected output registers will have 16 values instead of 8 expected ?
-#ifdef _USE_CPU_
-    int16_t diff[8+1][8]; // extra storage to allow store to not cause stack corruption
-#endif
-#ifdef _USE_AVX2_
     __m256i v[8];
-#endif
 
     const __m256i shuf_mask = _mm256_setr_epi8(
-        0, 0x80, 4, 0x80,
-        8, 0x80, 12, 0x80,
-        0x80, 0x80, 0x80, 0x80,
-        0x80, 0x80, 0x80, 0x80,
-        0, 0x80, 4, 0x80,
-        8, 0x80, 12, 0x80,
-        0x80, 0x80, 0x80, 0x80,
-        0x80, 0x80, 0x80, 0x80
+        0, -1, 4, -1,
+        8, -1, 12, -1,
+        -1, -1, -1, -1,
+        -1, -1, -1, -1,
+        0, -1, 4, -1,
+        8, -1, 12, -1,
+        -1, -1, -1, -1,
+        -1, -1, -1, -1
     );
 
     // Step 1: Compute difference block for the selected channel
@@ -129,131 +122,23 @@ size_t satd_8x8_channel_(const uint8_t* src, const uint8_t* ref, size_t stride_s
         __m256i src_shuf = _mm256_shuffle_epi8(src_row, shuf_mask);
         __m256i ref_shuf = _mm256_shuffle_epi8(ref_row, shuf_mask);
 
-#ifdef _USE_CPU_
-        // Subtract src - ref
-        __m256i diff_s16 = _mm256_sub_epi16(src_shuf, ref_shuf);
+        __m256i diff16 = _mm256_sub_epi16(src_shuf, ref_shuf);
 
-        // Store diff[y][x]
-        __m128i diff_lo = _mm256_castsi256_si128(diff_s16);
-        __m128i diff_hi = _mm256_extracti128_si256(diff_s16, 1);
+        uint64_t val0 = _mm256_extract_epi64(diff16, 0); 
+        uint64_t val2 = _mm256_extract_epi64(diff16, 2); 
 
-        _mm_storeu_si128((__m128i*) & diff[y][0], diff_lo);
-        _mm_storeu_si128((__m128i*) & diff[y][4], diff_hi);
-#endif
-#ifdef _USE_AVX2_
-        v[y] = _mm256_sub_epi16(src_shuf, ref_shuf);
-#endif
+        // Now create newr
+        v[y] = _mm256_set_epi64x(0, 0, val2, val0);
+
         // Advance to next row
         src += stride_src;
         ref += stride_dst;
     }
 
-#ifdef _USE_CPU_
-    // Step 2: Horizontal Hadamard Transform (per row)
-    int16_t m[8][8];
-    for (size_t y = 0; y < 8; ++y) {
-        int16_t* d = diff[y];
-        int16_t s07 = d[0] + d[7];
-        int16_t s16 = d[1] + d[6];
-        int16_t s25 = d[2] + d[5];
-        int16_t s34 = d[3] + d[4];
-        int16_t d07 = d[0] - d[7];
-        int16_t d16 = d[1] - d[6];
-        int16_t d25 = d[2] - d[5];
-        int16_t d34 = d[3] - d[4];
-
-        int16_t a0 = s07 + s34;
-        int16_t a1 = s16 + s25;
-        int16_t a2 = s16 - s25;
-        int16_t a3 = s07 - s34;
-        int16_t a4 = d34 + d07;
-        int16_t a5 = d25 + d16;
-        int16_t a6 = d25 - d16;
-        int16_t a7 = d34 - d07;
-
-        m[y][0] = a0 + a1;
-        m[y][1] = a3 + a2;
-        m[y][2] = a3 - a2;
-        m[y][3] = a0 - a1;
-        m[y][4] = a4 + a5;
-        m[y][5] = a7 + a6;
-        m[y][6] = a7 - a6;
-        m[y][7] = a4 - a5;
-    }
-
-    // Step 3: Vertical Hadamard Transform (per column)
-    int16_t t[8][8];
-    for (size_t x = 0; x < 8; ++x) {
-        int16_t* m_col = (int16_t*)&m[0][x];
-        int16_t s07 = m_col[0 * 8] + m_col[7 * 8];
-        int16_t s16 = m_col[1 * 8] + m_col[6 * 8];
-        int16_t s25 = m_col[2 * 8] + m_col[5 * 8];
-        int16_t s34 = m_col[3 * 8] + m_col[4 * 8];
-        int16_t d07 = m_col[0 * 8] - m_col[7 * 8];
-        int16_t d16 = m_col[1 * 8] - m_col[6 * 8];
-        int16_t d25 = m_col[2 * 8] - m_col[5 * 8];
-        int16_t d34 = m_col[3 * 8] - m_col[4 * 8];
-
-        int16_t a0 = s07 + s34;
-        int16_t a1 = s16 + s25;
-        int16_t a2 = s16 - s25;
-        int16_t a3 = s07 - s34;
-        int16_t a4 = d34 + d07;
-        int16_t a5 = d25 + d16;
-        int16_t a6 = d25 - d16;
-        int16_t a7 = d34 - d07;
-
-        t[0][x] = a0 + a1;
-        t[1][x] = a3 + a2;
-        t[2][x] = a3 - a2;
-        t[3][x] = a0 - a1;
-        t[4][x] = a4 + a5;
-        t[5][x] = a7 + a6;
-        t[6][x] = a7 - a6;
-        t[7][x] = a4 - a5;
-    }
-#endif
-#ifdef _USE_AVX2_
-    // Horizontal Hadamard
     hadamard_1d_8_avx2(v);
     transpose_8x8_epi16_avx2(v);
-    // Vertical Hadamard
     hadamard_1d_8_avx2(v);
-#endif
 
-#ifdef _USE_CPU_
-    // Step 4: Sum absolute transform coefficients
-    size_t satd = 0;
-    __m128i sum = _mm_setzero_si128();
-
-    for (size_t y = 0; y < 8; ++y) {
-        // Load 8 int16_t values into 128-bit vector
-        __m128i row = _mm_loadu_si128((__m128i*)t[y]);
-
-        // Absolute values
-        __m128i abs_row = _mm_abs_epi16(row);
-
-        // Accumulate
-        sum = _mm_add_epi16(sum, abs_row);
-    }
-
-    // Now we have 8 16-bit sums in `sum`.
-    // We need to horizontally add them.
-
-    __m128i zero = _mm_setzero_si128();
-    // Unpack to 32-bit ints to avoid overflow
-    __m128i sum_lo = _mm_unpacklo_epi16(sum, zero);
-    __m128i sum_hi = _mm_unpackhi_epi16(sum, zero);
-
-    // Add low and high parts
-    __m128i sum32 = _mm_add_epi32(sum_lo, sum_hi);
-
-    // Horizontal add remaining elements
-    sum32 = _mm_hadd_epi32(sum32, sum32);
-    sum32 = _mm_hadd_epi32(sum32, sum32);
-
-    satd = _mm_cvtsi128_si32(sum32);
-#else
     // Sum absolute values
     __m256i sum_lo = _mm256_setzero_si256();
     __m256i sum_hi = _mm256_setzero_si256();
@@ -269,17 +154,10 @@ size_t satd_8x8_channel_(const uint8_t* src, const uint8_t* ref, size_t stride_s
     }
 
     __m256i total = _mm256_add_epi32(sum_lo, sum_hi);
+    total = _mm256_hadd_epi32(total, total);
+    total = _mm256_hadd_epi32(total, total);
 
-    // Horizontal sum across lanes
-    __m128i total_lo = _mm256_castsi256_si128(total);
-    __m128i total_hi = _mm256_extracti128_si256(total, 1);
-    __m128i sum128 = _mm_add_epi32(total_lo, total_hi);
-
-    sum128 = _mm_hadd_epi32(sum128, sum128);
-    sum128 = _mm_hadd_epi32(sum128, sum128);
-
-    size_t satd = _mm_cvtsi128_si32(sum128);
-#endif
+    size_t satd = _mm256_extract_epi32(total, 0);
 
     // Step 5: Normalize (divide by 4)
     return (satd + 2) >> 2;
