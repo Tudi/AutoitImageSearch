@@ -311,7 +311,7 @@ endfunc
 
 Func ImageIsAtRegion( $ImgName, $start_x = -1, $start_y = -1, $end_x = -1, $end_y = -1, $SearchFlags = 0)
 	global $dllhandle
-	If $g_checkImageFileExists == True and FileExists($ImgName) == False Then
+	If $g_checkImageFileExists == True and FileExists($ImgName) == 0 Then
 		 MsgBox($MB_SYSTEMMODAL, "", "The file " & $ImgName & "doesn't exist.")
 	EndIf
 	; in case the image file name in a common sense format we can extract the coordinate of it

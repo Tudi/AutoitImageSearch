@@ -6,7 +6,7 @@
 	void WINAPI DumpAllocationsToLogger();
 #else
 	//	#define FileDebug( what )
-	inline void FileDebug(const char* what) {}
+	inline void FileDebug(const char* what) { (void)what; }
 	inline void WINAPI DumpAllocationsToLogger() {}
 #endif
 

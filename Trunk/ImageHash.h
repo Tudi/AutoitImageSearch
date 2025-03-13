@@ -39,7 +39,7 @@ struct ImgHashWholeIage
 
 // a simple cache is probably not enough. Perform multiple steps so that it becomes easy
 void GenHashesForCachedImage(CachedPicture *pic, ImgHashWholeIage* out_hashes);
-void GenHashesOnScreenshotForCachedImage(CachedPicture* pic, ScreenshotStruct* ss, int atX, int atY, ImgHashWholeIage* out_hashes);
+int GenHashesOnScreenshotForCachedImage(CachedPicture* pic, ScreenshotStruct* ss, int atX, int atY, ImgHashWholeIage* out_hashes);
 void FreeHashAllocatedData(ImgHashWholeIage* out_hashes);
 
 // get the average luminosity of the image, compare each pixel of the image to the avg. If lower than avg produce a 0, else 1 bit
@@ -55,4 +55,4 @@ void genBHash_8x8(const LPCOLORREF pixels, const size_t stride, ImgHash8x8* out_
 // cons : only retains row related locations + single extra row added might produce a 100% different hash
 void genCHash_8x8(const LPCOLORREF pixels, const size_t stride, ImgHash8x8* out_hash);
 void compareHash_8x8(ImgHash8x8* h1, ImgHash8x8* h2, ImgHash8x8_CompareResult* out, bool bIsAcumulate);
-void compareHash(ImgHashWholeIage* hash1, ImgHashWholeIage* hash2, ImgHash8x8_CompareResult* out);
+int compareHash(ImgHashWholeIage* hash1, ImgHashWholeIage* hash2, ImgHash8x8_CompareResult* out);

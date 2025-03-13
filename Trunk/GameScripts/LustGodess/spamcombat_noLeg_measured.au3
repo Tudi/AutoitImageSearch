@@ -32,7 +32,7 @@ Global $g_WinCountAtPrevLegendary = 0
 Global $g_LegendariesSkipped = 0
 Global $g_LegendariesOpened = 0
 Global $g_GamesCounterPrev = -1
-Global $g_imageRanks[15][2]
+Global $g_imageRanks[16][2]
 Global $g_imageRewards[6][2]
 Global $g_imageBlueCrate[2][2]
 Global $g_AppliedColorMaskToCachedImages = 0
@@ -52,6 +52,7 @@ Global $g_MouseSpeed = 10
 Global $g_FightIsForChest = 0
 Global $g_LastSeenRank = 0
 global $g_StampLastLegObtained = 0
+global $g_StampLastLegObtainedAndStored = 0
 
 Global $g_LeagueAdvanceInfo[30][2]
 $g_LeagueAdvanceInfo[0][0] = 95000 ; points min to reach this rank
@@ -161,7 +162,7 @@ GUICtrlSetTip($lblCrateCycleCrates, "Remaining crates this cycle and your crate 
 $ComponentsAdded = $ComponentsAdded + 1
 
 Global $lblTempForTooltip = GUICtrlCreateLabel("OpenLegIfLowerLegue :", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth, $ComponentHeight)
-Global $inputOpenLegendaryIfLower = GUICtrlCreateInput("8", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
+Global $inputOpenLegendaryIfLower = GUICtrlCreateInput("7", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
 GUICtrlSetTip($lblTempForTooltip, "If a legendary can't be stored, should we open it. Probably happens while spamming games")
 GUICtrlSetTip($inputOpenLegendaryIfLower, "If a legendary can't be stored, should we open it. Probably happens while spamming games")
 ;Global $hCheckboxOpenLegendary = GUICtrlCreateCheckbox("OpenLegIfLowerLegue", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth + $inputWidth, $ComponentHeight)
@@ -178,13 +179,13 @@ GUICtrlSetState($hCheckboxSkipLegendary, $GUI_CHECKED)
 $ComponentsAdded = $ComponentsAdded + 1
 
 Global $lblTempForTooltip = GUICtrlCreateLabel("MaxRankToDrop:", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth, $ComponentHeight)
-Global $inputMinRankAllowed = GUICtrlCreateInput("7", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
+Global $inputMinRankAllowed = GUICtrlCreateInput("6", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
 GUICtrlSetTip($inputMinRankAllowed, "For fast game spam, we will drop games until we reach this rank(worst case). Helps us do games faster")
 GUICtrlSetTip($lblTempForTooltip, "For fast game spam, we will drop games until we reach this rank(worst case). Helps us do games faster")
 $ComponentsAdded = $ComponentsAdded + 1
 
 Global $lblTempForTooltip = GUICtrlCreateLabel("ClimbToRank :", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth, $ComponentHeight)
-Global $inputTargetRankForCCI = GUICtrlCreateInput("7", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
+Global $inputTargetRankForCCI = GUICtrlCreateInput("6", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
 GUICtrlSetTip($lblTempForTooltip, "Climb ranks and try to reach this rank before we pause spamming games. Assumes we do not loose any games")
 GUICtrlSetTip($inputTargetRankForCCI, "Climb ranks and try to reach this rank before we pause spamming games. Assumes we do not loose any games")
 $ComponentsAdded = $ComponentsAdded + 1
@@ -223,7 +224,7 @@ GUICtrlSetTip($hCheckboxNoChestOpens, "Do not open chests. Ever. Used while wait
 $ComponentsAdded = $ComponentsAdded + 1
 
 Global $lblTempForTooltip = GUICtrlCreateLabel("Seconds/Game :", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth, $ComponentHeight)
-Global $inputSingleGameDurationSec = GUICtrlCreateInput("180", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
+Global $inputSingleGameDurationSec = GUICtrlCreateInput("140", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
 GUICtrlSetTip($lblTempForTooltip, "How many minutes does a game take ? Highly depends on your rank, team. Used to estimate time remaining until CCI target")
 GUICtrlSetTip($inputSingleGameDurationSec, "How many minutes does a game take ? Highly depends on your rank, team. Used to estimate time remaining until CCI target")
 $ComponentsAdded = $ComponentsAdded + 1
@@ -236,6 +237,12 @@ $ComponentsAdded = $ComponentsAdded + 1
 
 Local $lblTimeEstimates = GUICtrlCreateLabel("TimeEstimates", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth + $inputWidth, $ComponentHeight)
 GUICtrlSetTip($lblTimeEstimates, "ETA for : time spam avg case / time spam remaining currently + max chest open time / max chest open time remaining currently")
+$ComponentsAdded = $ComponentsAdded + 1
+
+Global $lblTempForTooltip = GUICtrlCreateLabel("MaintainRank :", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth, $ComponentHeight)
+Global $inputFixedRankUsed = GUICtrlCreateInput("0", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
+GUICtrlSetTip($lblTempForTooltip, "Try to reach this specific Rank. Used for CAM")
+GUICtrlSetTip($inputFixedRankUsed, "Try to reach this specific Rank. Used for CAM")
 $ComponentsAdded = $ComponentsAdded + 1
 
 Local $lblDbgOut = GUICtrlCreateLabel("Debug", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth + $inputWidth, $ComponentHeight)
@@ -432,6 +439,14 @@ EndFunc
 ; updates UI if you already got a LEG this cycle and your index. If you already got a crate this cycle, spam until next cycle
 Func CalculateCrateCycleIdex()
 	Local $AcceptableHistoryErrorCount = 3
+	Local $CheckIndices[7]
+	$CheckIndices[0] = 0
+	$CheckIndices[1] = 1
+	$CheckIndices[2] = -1
+	$CheckIndices[3] = 2
+	$CheckIndices[4] = -2
+	$CheckIndices[5] = 3
+	$CheckIndices[6] = -3
 	Local $HistoryValuesFound = 0
 	For $i = 0 to UBound($g_CrateHistory) - 1
 		If $g_CrateHistory[$i] == 0 Then
@@ -460,20 +475,22 @@ Func CalculateCrateCycleIdex()
 			Local $CorrectedNextCycleStart = $NextCycleStart
 			; there are times when a reward crate does not get recorded, or badly recorded
 			; do a best of X searches and pick the best one
-			if $NextCycleStart == $CycleStart then
-				Local $isGood = IsGoodIndexForCycleStart($NextCycleStart, $NextCycleStart + $gc_CrateCycleLen, $BestCycleMatchDeviation, $AcceptableHistoryErrorCount)
-			Else
-				for $MiniCycleStart = $NextCycleStart - $AcceptableHistoryErrorCount to $NextCycleStart + $AcceptableHistoryErrorCount
-					Local $CycleMatchDeviation = 0
-					Local $isGood = IsGoodIndexForCycleStart($MiniCycleStart, $MiniCycleStart + $gc_CrateCycleLen, $CycleMatchDeviation, $AcceptableHistoryErrorCount)
-					if $CycleMatchDeviation < $BestCycleMatchDeviation then 
-						$CorrectedNextCycleStart = $MiniCycleStart
-						$BestCycleMatchDeviation = $CycleMatchDeviation
-					EndIf
-				Next
-			Endif
+			;for $MiniCycleStart = $NextCycleStart - $AcceptableHistoryErrorCount to $NextCycleStart + $AcceptableHistoryErrorCount
+			; maybe we added extra crates or forgot to note down crates
+			for $i = 0 to $AcceptableHistoryErrorCount * 2 + 1 - 1
+				Local $MiniCycleStart = $NextCycleStart + $CheckIndices[$i]
+				Local $CycleMatchDeviation = 0
+				Local $isGood = IsGoodIndexForCycleStart($MiniCycleStart, $MiniCycleStart + $gc_CrateCycleLen, $CycleMatchDeviation, $AcceptableHistoryErrorCount)
+				if $CycleMatchDeviation < $BestCycleMatchDeviation then 
+					$CorrectedNextCycleStart = $MiniCycleStart
+					$BestCycleMatchDeviation = $CycleMatchDeviation
+				EndIf
+				If $BestCycleMatchDeviation == 0 or $NextCycleStart == $CycleStart Then
+					ExitLoop
+				EndIf
+			Next
 			IF $BestCycleMatchDeviation <= $AcceptableHistoryErrorCount then
-				$NextCycleStart = $CorrectedNextCycleStart
+				$NextCycleStart = $CorrectedNextCycleStart ; maybe we added extra crates or forgot to note down crates
 				$CyclesGood = $CyclesGood + 1
 				_WriteDebugLog($NextCycleStart & '=1' & '(' & $BestCycleMatchDeviation & ')', 0)
 			Else
@@ -704,7 +721,7 @@ Func RecordVictoryRewards()
 		; click the crate to show details
 		Sleep(500) ; wait for crate details animation. This seems to bug out from time to time and not open crate details ?
         MyMouseClick("left", 846 + 96/2, 576 + 96/2)
-		Sleep(1000) ; wait for crate details animation. This seems to bug out from time to time and not open crate details ?
+		Sleep(1500) ; wait for crate details animation. This seems to bug out from time to time and not open crate details ?
 		Local $acceptableSADPerPixel = 8
 		Local $bestRewardType2 = -1
 		Local $bestSadPP = 100000
@@ -726,7 +743,7 @@ Func RecordVictoryRewards()
 			if $bestRewardType2 <> -1 then
 				ExitLoop
 			EndIf
-			Sleep(1000) ; sometimes there seems to be latency here and chest type is a black image ?
+			Sleep(1500) ; sometimes there seems to be latency here and chest type is a black image ?
 		Next
 		if $bestRewardType2 == -1 then
 			GUICtrlSetData($lblDbgOut2, "blue crate bspp: " & $bestSadPPDebug)
@@ -765,6 +782,7 @@ Func RecordVictoryRewards()
 	if $bestRewardType == $CRATE_GOLD or $g_CrateCycleIndex == 0 then
 		CalculateCrateCycleIdex()
 	EndIf
+	UpdateUICrateCycleIndex()
 	
 	; have a feeling some days are better than others
 	if $bestRewardType == $CRATE_GOLD then
@@ -773,15 +791,26 @@ Func RecordVictoryRewards()
 			FileWrite($hFile, $g_CrateCycleIndex & ",")
 			FileClose($hFile)		
 		EndIf
+
 		Local $MinuesSpentSinceLastLeg = int((_WinAPI_GetTickCount() - $g_StampLastLegObtained)/1000/60)
 		if $g_StampLastLegObtained == 0 then
 			$MinuesSpentSinceLastLeg = 0
 		EndIf
 		$g_StampLastLegObtained = _WinAPI_GetTickCount()
+
+		Local $MinuesSpentSinceLastStoredLeg = int((_WinAPI_GetTickCount() - $g_StampLastLegObtainedAndStored)/1000/60)		
+		if $g_StampLastLegObtainedAndStored == 0 then
+			$MinuesSpentSinceLastStoredLeg = 0
+		EndIf
+		if $g_LastSeenGoldCrateCanBeStored then
+			$g_StampLastLegObtainedAndStored = _WinAPI_GetTickCount()
+		EndIf
+
 		Local $hFile = FileOpen("legCCIs2.txt", 1) ; Mode 1 = Append
 		If $hFile <> -1 Then
 			Local $WinsSinceLegendary = $g_GamesWon - $g_WinCountAtPrevLegendary
-			FileWrite($hFile, (@WDAY - 1) & "," & @HOUR & ":" & @MIN & ",CCI=" & $g_CrateCycleIndex & ",CCITarget=" & getInputNumericValue($inputSpamCombatUntilCCINoLeg, 100) & ",Minutes=" & $MinuesSpentSinceLastLeg & ",CanStore=" & $g_LastSeenGoldCrateCanBeStored & ",League=" & $g_LastSeenRank & ",Wins=" & $WinsSinceLegendary  & "," & @CRLF)
+			Local $RemainingCrates = GUICtrlRead($lblCrateCycleCrates)
+			FileWrite($hFile, (@WDAY - 1) & "," & @HOUR & ":" & @MIN & ",CCI=" & $g_CrateCycleIndex & ",CCITarget=" & getInputNumericValue($inputSpamCombatUntilCCINoLeg, 100) & ",Minutes=" & $MinuesSpentSinceLastLeg & ",CanStore=" & $g_LastSeenGoldCrateCanBeStored & ",League=" & $g_LastSeenRank & ",Wins=" & $WinsSinceLegendary & "," & $RemainingCrates & ",MinutesSinceStored=" & $MinuesSpentSinceLastStoredLeg & "," & @CRLF)
 			FileClose($hFile)		
 		EndIf
 		;Local $hFile = FileOpen(GetStringWithDayOfWeek(), 1) ; Mode 1 = Append
@@ -790,7 +819,6 @@ Func RecordVictoryRewards()
 		;	FileClose($hFile)		
 		;EndIf	
 	Endif	
-	UpdateUICrateCycleIndex()
 	
 	; write it to a file
 	if $bestRewardType <> -1 then
@@ -1012,6 +1040,8 @@ Func InitImageSearchDLLImages()
 	$g_imageRanks[13][1] = 8
 	$g_imageRanks[14][0] = "L07_0822_0172_0276_0152.bmp"
 	$g_imageRanks[14][1] = 7
+	$g_imageRanks[15][0] = "L06_0820_0182_0278_0108.bmp"
+	$g_imageRanks[15][1] = 6
 
 	$g_imageRewards[0][0] = "Victory_BlueChest_0846_0576_0096_0096.bmp"
 	$g_imageRewards[0][1] = $CRATE_BLUE
@@ -1337,6 +1367,23 @@ Func UpdateUITimeEstimates()
 	GUICtrlSetData($lblTimeEstimates, "ST " & Intf($ChanceCompensatedTimeForSpam/60/60,1) & "/" & Intf($SpamTimeRemain/60/60,1) & " PT " & Intf($AvgChestsToOpenTime/60,1) & "/" & Intf($RemainingChestsToOpenTime/60,1))
 EndFunc
 
+func CheckDropGameAlwaysToMaintainRank()
+	If ( $g_FuncIsRunning <> 1 or $g_BotIsRunning <> 1 ) then 
+		return
+	endif
+	if $g_LastSeenRank <> 0 then
+			local $MaintainSpecificRank = getInputNumericValue($inputFixedRankUsed, 0)
+			if $MaintainSpecificRank > 0 and $MaintainSpecificRank > $g_LastSeenRank then
+				GUICtrlSetData($lblDbgOut, "should drop: " & $g_LastSeenRank & ' < ' & $MaintainSpecificRank)
+				if $g_VisibleScreenType == $SCREEN_PVP_FIGHTING then
+					DropGame()
+				else
+					Fight()
+				endif
+			endif
+	endif
+endfunc
+
 Func ForeverLoopFunc()
 	Global $g_VisibleScreenType, $g_FuncIsRunning, $g_BotIsRunning
 
@@ -1353,7 +1400,7 @@ Func ForeverLoopFunc()
 
 		ExitAccidentalLegueScreen()
 		GuessIngameVisibleScreen()
-		;CheckDropGameAlwaysToMaintainRank()
+		CheckDropGameAlwaysToMaintainRank()
 		
 		; things to do while out of fight screen
 		if $g_VisibleScreenType == $SCREEN_START_PVP_FIGHT then

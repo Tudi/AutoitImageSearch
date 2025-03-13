@@ -329,6 +329,7 @@
     <ClCompile Include="ImageFilters.cpp" />
     <ClCompile Include="ImageHash.cpp" />
     <ClCompile Include="ImageSAD.cpp" />
+    <ClCompile Include="ImageSATD.cpp" />
     <ClCompile Include="ImageSearch.cpp" />
     <ClCompile Include="ImageSearchDLL.cpp" />
     <ClCompile Include="ImageSearchPreSAD.cpp" />
@@ -356,6 +357,7 @@
     </ClCompile>
     <ClCompile Include="Testing\EdgeFilterTest.cpp" />
     <ClCompile Include="Testing\Lords.cpp" />
+    <ClCompile Include="Testing\SATDTest.cpp" />
     <ClCompile Include="Tools\Allocator.cpp" />
     <ClCompile Include="Tools\CommandProcessor.cpp" />
     <ClCompile Include="Tools\Tools.cpp" />
@@ -379,6 +381,7 @@
     <ClInclude Include="ImageFilters.h" />
     <ClInclude Include="ImageHash.h" />
     <ClInclude Include="ImageSAD.h" />
+    <ClInclude Include="ImageSATD.h" />
     <ClInclude Include="ImageSearch.h" />
     <ClInclude Include="ImageSearchPreSAD.h" />
     <ClInclude Include="InputProcess.h" />
@@ -396,6 +399,7 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Testing\EdgeFilterTest.h" />
     <ClInclude Include="Testing\Lords.h" />
+    <ClInclude Include="Testing\SATDTest.h" />
     <ClInclude Include="Tools\Allocator.h" />
     <ClInclude Include="Tools\CommandProcessor.h" />
     <ClInclude Include="Tools\stdafx.h" />

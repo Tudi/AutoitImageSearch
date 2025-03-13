@@ -6,6 +6,7 @@ enum SADSearchRegionFlags : int
 	SSRF_ST_NO_FLAGS = 0,
 	SSRF_ST_PROCESS_INLCUDE_DIFF_INFO = 1 << 0,
 	SSRF_ST_ENFORCE_SAD_WITH_HASH = 1 << 1,
+	SSRF_ST_ENFORCE_SAD_WITH_SATD = 1 << 2,
 };
 
 char* WINAPI ImageSearchOnScreenshot(const char *aImageFile, int TransparentColor, int AcceptedColorDiff, int AcceptedErrorCount, int StopAfterNFullMatches);

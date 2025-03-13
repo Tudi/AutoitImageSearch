@@ -103,6 +103,12 @@
     <ClCompile Include="Tools\Allocator.cpp">
       <Filter>Tools</Filter>
     </ClCompile>
+    <ClCompile Include="ImageSATD.cpp">
+      <Filter>ImageTools</Filter>
+    </ClCompile>
+    <ClCompile Include="Testing\SATDTest.cpp">
+      <Filter>Testing</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EdgeDetect.h">
@@ -203,6 +209,12 @@
     </ClInclude>
     <ClInclude Include="Tools\Allocator.h">
       <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="ImageSATD.h">
+      <Filter>ImageTools</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\SATDTest.h">
+      <Filter>Testing</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

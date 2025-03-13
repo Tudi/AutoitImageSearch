@@ -72,6 +72,7 @@ int main(int argc, char **arg)
 #endif
 
 #if defined(_DEBUG) || defined(_CONSOLE)
+	TestSATDCorrectness(); return 0;
  {
 		for (size_t i = 0; i < 4; i++) { // testing leak detector
 			TakeScreenshot(0, 0, 1920, 1080);

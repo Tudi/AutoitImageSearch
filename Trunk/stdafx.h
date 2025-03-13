@@ -76,11 +76,13 @@
 #include "ImageSearchPreSAD.h"
 #include "ImageSAD.h"
 #include "ImageHash.h"
+#include "ImageSATD.h"
 
 #ifdef _CONSOLE
     #include "Tools\CommandProcessor.h"
 	#include "Benchmarks/Benchmarks.h"
 	#include "Testing/EdgeFilterTest.h"
+	#include "Testing/SATDTest.h"
 #endif
 
 #define RGB_GET_R(Color) ( Color & 0xFF )

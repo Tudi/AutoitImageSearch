@@ -131,14 +131,14 @@ void compareHash_8x8(ImgHash8x8* h1, ImgHash8x8* h2, ImgHash8x8_CompareResult* o
 	out->pctMatchAvg = (out->rPctMatch + out->gPctMatch + out->bPctMatch) / 3;
 }
 
-static void GenHashesForGenericImage(LPCOLORREF Pixels, int Width, int Height, int Stride, ImgHashWholeIage* out_hashes)
+static int GenHashesForGenericImage(LPCOLORREF Pixels, int Width, int Height, int Stride, ImgHashWholeIage* out_hashes)
 {
 	const size_t kernel_half_size = 1;
 	LPCOLORREF blurredImg = BlurrImage2_<kernel_half_size>(Pixels, Width, Height, Stride, 1.0);
 	if (blurredImg == NULL)
 	{
 		FileDebug("GenHashesForCachedImage: mem allocation error");
-		return;
+		return -1;
 	}
 
 	// the blurring will be unusable at the edge of the image
@@ -157,7 +157,7 @@ static void GenHashesForGenericImage(LPCOLORREF Pixels, int Width, int Height, i
 	out_hashes->cols = usable_width / 8;
 	if (out_hashes->rows <= 0 || out_hashes->cols <= 0)
 	{
-		return;
+		return -1;
 	}
 	if (out_hashes->hashes == NULL)
 	{
@@ -166,7 +166,7 @@ static void GenHashesForGenericImage(LPCOLORREF Pixels, int Width, int Height, i
 	if (out_hashes->hashes == NULL)
 	{
 		FileDebug("GenHashesForCachedImage: mem allocation error");
-		return;
+		return -1;
 	}
 
 	for (size_t row_hash = 0; row_hash < out_hashes->rows; row_hash++)
@@ -182,6 +182,8 @@ static void GenHashesForGenericImage(LPCOLORREF Pixels, int Width, int Height, i
 	}
 
 	MY_FREE(blurredImg);
+
+	return 0;
 }
 
 void GenHashesForCachedImage(CachedPicture* pic, ImgHashWholeIage* out_hashes)
@@ -189,14 +191,26 @@ void GenHashesForCachedImage(CachedPicture* pic, ImgHashWholeIage* out_hashes)
 	GenHashesForGenericImage(pic->Pixels, pic->Width, pic->Height, pic->Width, out_hashes);
 }
 
-void GenHashesOnScreenshotForCachedImage(CachedPicture* pic, ScreenshotStruct* ss, int atX, int atY, ImgHashWholeIage* out_hashes)
+int GenHashesOnScreenshotForCachedImage(CachedPicture* pic, ScreenshotStruct* ss, int atX, int atY, ImgHashWholeIage* out_hashes)
 {
+	if (atY + pic->Height >= ss->Height)
+	{
+		return -1;
+	}
+	if (atX + pic->Width >= ss->Width)
+	{
+		return -1;
+	}
 	LPCOLORREF PixelsAt = &ss->Pixels[atY * ss->Width + atX];
-	GenHashesForGenericImage(PixelsAt, pic->Width, pic->Height, ss->Width, out_hashes);
+	return GenHashesForGenericImage(PixelsAt, pic->Width, pic->Height, ss->Width, out_hashes);
 }
 
-void compareHash(ImgHashWholeIage* hash1, ImgHashWholeIage* hash2, ImgHash8x8_CompareResult* out)
+int compareHash(ImgHashWholeIage* hash1, ImgHashWholeIage* hash2, ImgHash8x8_CompareResult* out)
 {
+	if (hash1 == NULL || hash2 == NULL || out == NULL)
+	{
+		return 1;
+	}
 	memset(out, 0, sizeof(ImgHash8x8_CompareResult));
 	const size_t cols = min(hash1->cols, hash2->cols);
 	const size_t rows = min(hash1->rows, hash2->rows);
@@ -209,6 +223,7 @@ void compareHash(ImgHashWholeIage* hash1, ImgHashWholeIage* hash2, ImgHash8x8_Co
 			compareHash_8x8(&hash1->hashes[row * hash1->rows + col].CHash, &hash2->hashes[row * hash2->rows + col].CHash, out, true);
 		}
 	}
+	return 0;
 }
 
 void FreeHashAllocatedData(ImgHashWholeIage* out_hashes)

@@ -575,6 +575,7 @@ char* WINAPI ImageSearch_SAD_Region(const char* aFilespec, int aLeft, int aTop, 
 	}
 #endif
 	double HashSmallestDiffPCT = 100;
+	size_t BestSATD = 0x7FFFFFFF;
 	ImgHashWholeIage imgHash = { 0 };
 	int retx = -1;
 	int rety = -1;
@@ -597,24 +598,43 @@ char* WINAPI ImageSearch_SAD_Region(const char* aFilespec, int aLeft, int aTop, 
 				MatchesFound++;
 #endif
 				BestSAD = sad;
-				if ((uSearchFlags & SSRF_ST_ENFORCE_SAD_WITH_HASH) && cache->Width >= 16)
+				int HashingWasPossible = 0;
+				// this code needs more testing. Seen it crash. Did not had the time to debug
+				if ((uSearchFlags & SSRF_ST_ENFORCE_SAD_WITH_HASH))
 				{
 					ImgHashWholeIage *cacheHash = GetCreateCacheHash(cache);
-					GenHashesOnScreenshotForCachedImage(cache, CurScreenshot, (int)x, (int)y, &imgHash);
-					ImgHash8x8_CompareResult compareRes;
-					compareHash(cacheHash, &imgHash, &compareRes);
-//					printf("New best sad at x=%llu y=%llu. Hash old %f, hash new %f\n", x, y, HashSmallestDiffPCT, compareRes.pctMatchAvg);
-					if (compareRes.pctMatchAvg < HashSmallestDiffPCT)
+					int GenHashErr = GenHashesOnScreenshotForCachedImage(cache, CurScreenshot, (int)x, (int)y, &imgHash);
+					if (GenHashErr == 0)
 					{
-						HashSmallestDiffPCT = compareRes.pctMatchAvg;
-						retx = (int)x;
-						rety = (int)y;
-						//exact match ? I doubt it will ever happen...
-						if (HashSmallestDiffPCT == 100)
-							goto docleanupandreturn;
+						ImgHash8x8_CompareResult compareRes;
+						int CompareErr = compareHash(cacheHash, &imgHash, &compareRes);
+//					printf("New best sad at x=%llu y=%llu. Hash old %f, hash new %f\n", x, y, HashSmallestDiffPCT, compareRes.pctMatchAvg);
+						if (CompareErr == 0 && compareRes.pctMatchAvg < HashSmallestDiffPCT)
+						{
+							HashSmallestDiffPCT = compareRes.pctMatchAvg;
+							retx = (int)x;
+							rety = (int)y;
+							HashingWasPossible = 1;
+							//exact match ? I doubt it will ever happen...
+							if (HashSmallestDiffPCT == 100)
+								goto docleanupandreturn;
+						}
 					}
 				}
-				else {
+				if ((uSearchFlags & SSRF_ST_ENFORCE_SAD_WITH_SATD))
+				{
+					size_t satd = satd_nxm(&AddrBig[x], AddrSmall, width_SAD, height_SAD, stride1, stride2);
+					if (satd < BestSATD)
+					{
+						BestSATD = satd;
+						retx = (int)x;
+						rety = (int)y;
+						if (BestSATD == 0)
+							goto docleanupandreturn;
+					}
+					HashingWasPossible = 1;
+				}
+				if(HashingWasPossible == 0) {
 					retx = (int)x;
 					rety = (int)y;
 					//exact match ? I doubt it will ever happen...
@@ -687,8 +707,8 @@ docleanupandreturn:
 	size_t SADPerPixel = BestSAD / (width_SAD * height_SAD * 3);
 	retx = (int)(retx + CurScreenshot->Left);
 	rety = (int)(rety + CurScreenshot->Top);
-	sprintf_s(ReturnBuff, DEFAULT_STR_BUFFER_SIZE * 10, "1|%d|%d|%llu|%llu|%llu|%llu|%llu|%d", 
-		retx, rety, BestSAD, SADPerPixel, avgColorDiff, colorDiffCount, colorDifferentPct, int(HashSmallestDiffPCT));
+	sprintf_s(ReturnBuff, DEFAULT_STR_BUFFER_SIZE * 10, "1|%d|%d|%llu|%llu|%llu|%llu|%llu|%d|%llu", 
+		retx, rety, BestSAD, SADPerPixel, avgColorDiff, colorDiffCount, colorDifferentPct, int(HashSmallestDiffPCT), BestSATD);
 
 	// in case caller is spamming searches more than we are able to keep up the pace with
 	strcpy_s(cache->PrevSearchReturnVal, ReturnBuff);
