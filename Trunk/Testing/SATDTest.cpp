@@ -46,7 +46,7 @@ void TestSATDCorrectness()
         44, 75, 125, 198, 49, 76, 126, 197, 54, 77, 127, 196, 59, 78, 128, 195, 64, 79, 129, 194, 69, 80, 130, 193, 74, 81, 131, 192, 79, 82, 132, 191
     };
 
-    {
+/* {
         int cpuInfo[4] = { 0 };
 
         // Check AVX-512F
@@ -56,15 +56,16 @@ void TestSATDCorrectness()
 
         printf("AVX-512F : %s\n", avx512f ? "Yes" : "No");
         printf("AVX-512BW: %s\n", avx512bw ? "Yes" : "No");
-    }
+    }/**/
 
     int stride = 32;
-    size_t satd_scalar = satd_8x8_rgb_scalar(src_block_rgba_8x8, ref_block_rgba_8x8, stride, stride);
-    size_t satd_scalar2 = satd_nxm((LPCOLORREF)src_block_rgba_8x8, (LPCOLORREF)ref_block_rgba_8x8, 8, 8, stride, stride);
-    size_t sse_result = satd_8x8_rgba_sse(src_block_rgba_8x8, ref_block_rgba_8x8, stride);
-    size_t avx_result = satd_8x8_rgba_avx2(src_block_rgba_8x8, ref_block_rgba_8x8, stride);
+    size_t satd_scalar = satd_8x8_rgb_reference(src_block_rgba_8x8, ref_block_rgba_8x8, stride, stride);
+    size_t satd_SAD = 0;
+    size_t satd_nm = satd_nxm((LPCOLORREF)src_block_rgba_8x8, (LPCOLORREF)ref_block_rgba_8x8, 8, 8, stride / 4, stride / 4);
+    size_t satd_v1 = satd_8x8_rgb_avx2_v1(src_block_rgba_8x8, ref_block_rgba_8x8, stride, stride);
+    size_t satd_v2 = satd_8x8_rgb_avx2_v2(src_block_rgba_8x8, ref_block_rgba_8x8, stride, stride);
 #if !defined(_DEBUG) || 1
-    #define RETEAT_TEST_COUNT 1000000
+    #define RETEAT_TEST_COUNT 10000000
     uint8_t* ref_block_rgba_8x8_ = (uint8_t *)malloc(8 * STRIDE_8x8 + 32*4);
     uint8_t* src_block_rgba_8x8_ = (uint8_t*)malloc(8 * STRIDE_8x8 + 32*4);
     memset(ref_block_rgba_8x8_, 0, 8 * STRIDE_8x8 + 32 * 4);
@@ -77,7 +78,7 @@ void TestSATDCorrectness()
     {
         src_block_rgba_8x8_[i % sizeof(src_block_rgba_8x8)] = (uint8_t)i;
         ref_block_rgba_8x8_[i % sizeof(src_block_rgba_8x8)] = (uint8_t)i;
-        satd_scalar += satd_8x8_rgb_scalar(src_block_rgba_8x8_, ref_block_rgba_8x8_, stride, stride);
+        satd_scalar += satd_8x8_rgb_reference(src_block_rgba_8x8_, ref_block_rgba_8x8_, stride, stride);
     }
     __int64 endscalar = GetTickCount();
 
@@ -88,7 +89,7 @@ void TestSATDCorrectness()
     {
         src_block_rgba_8x8_[i % sizeof(src_block_rgba_8x8)] = (uint8_t)i;
         ref_block_rgba_8x8_[i % sizeof(src_block_rgba_8x8)] = (uint8_t)i;
-        satd_scalar2 += satd_nxm((LPCOLORREF)src_block_rgba_8x8_, (LPCOLORREF)ref_block_rgba_8x8_, 8, 8, stride / 4, stride / 4);
+        satd_nm += satd_nxm((LPCOLORREF)src_block_rgba_8x8_, (LPCOLORREF)ref_block_rgba_8x8_, 8, 8, stride / 4, stride / 4);
     }
     __int64 endscalar2 = GetTickCount();
 
@@ -99,7 +100,7 @@ void TestSATDCorrectness()
     {
         src_block_rgba_8x8_[i % sizeof(src_block_rgba_8x8)] = (uint8_t)i;
         ref_block_rgba_8x8_[i % sizeof(src_block_rgba_8x8)] = (uint8_t)i;
-        sse_result += satd_8x8_rgba_sse(src_block_rgba_8x8_, ref_block_rgba_8x8_, stride);
+        satd_v1 += satd_8x8_rgb_avx2_v1(src_block_rgba_8x8_, ref_block_rgba_8x8_, stride, stride);
     }
     __int64 endsse = GetTickCount();
 
@@ -110,7 +111,7 @@ void TestSATDCorrectness()
     {
         src_block_rgba_8x8_[i % sizeof(src_block_rgba_8x8)] = (uint8_t)i;
         ref_block_rgba_8x8_[i % sizeof(src_block_rgba_8x8)] = (uint8_t)i;
-        avx_result += satd_8x8_rgba_avx2(src_block_rgba_8x8_, ref_block_rgba_8x8_, stride);
+        satd_v2 += satd_8x8_rgb_avx2_v2(src_block_rgba_8x8_, ref_block_rgba_8x8_, stride, stride);
     }
     __int64 endavx = GetTickCount();
 
@@ -121,18 +122,25 @@ void TestSATDCorrectness()
     {
         src_block_rgba_8x8_[i % sizeof(src_block_rgba_8x8)] = (uint8_t)i;
         ref_block_rgba_8x8_[i % sizeof(src_block_rgba_8x8)] = (uint8_t)i;
-        satd_scalar += ImageSad((LPCOLORREF)src_block_rgba_8x8_, stride / 4, (LPCOLORREF)ref_block_rgba_8x8_, stride / 4, 8, 8);
+        satd_SAD += ImageSad((LPCOLORREF)src_block_rgba_8x8_, stride / 4, (LPCOLORREF)ref_block_rgba_8x8_, stride / 4, 8, 8);
     }
     __int64 endSAD = GetTickCount();
 
-    printf("SAD time %lld\n", endSAD - startSAD);
-    printf("Scalar time %lld\n", endscalar - startscalar);
-    printf("Scalar time2 %lld\n", endscalar2 - startscalar2);
-    printf("SSE time %lld\n", endsse - startsse);
-    printf("AVX time %lld\n", endavx - startavx);
+    /*
+    SAD time  16
+    Reference 4469
+    mn        1594
+    v1        1516
+    v2        1484
+    */
+    printf("SAD time  %lld\n", endSAD - startSAD);
+    printf("Reference %lld\n", endscalar - startscalar);
+    printf("mn        %lld\n", endscalar2 - startscalar2);
+    printf("v1        %lld\n", endsse - startsse);
+    printf("v2        %lld\n", endavx - startavx);
 #endif
-    printf("Expected SATD RGBA (scalar): %llu\n", satd_scalar);
-    printf("Expected SATD RGBA (scalar): %llu\n", satd_scalar2);
-    printf("SATD RGBA 8x8 SSE    : %llu\n", sse_result);
-    printf("SATD RGBA 8x8 AVX    : %llu\n", avx_result);
+    printf("Expected SATD RGBA: %llu\n", satd_scalar);
+    printf("mxn               : %llu\n", satd_nm);
+    printf("v1                : %llu\n", satd_v1);
+    printf("v2                : %llu\n", satd_v2);
 }

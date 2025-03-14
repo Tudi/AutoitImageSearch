@@ -6,7 +6,12 @@ enum SADSearchRegionFlags : int
 	SSRF_ST_NO_FLAGS = 0,
 	SSRF_ST_PROCESS_INLCUDE_DIFF_INFO = 1 << 0,
 	SSRF_ST_ENFORCE_SAD_WITH_HASH = 1 << 1,
-	SSRF_ST_ENFORCE_SAD_WITH_SATD = 1 << 2,
+	SSRF_ST_ENFORCE_SAD_WITH_SATD = 1 << 2, // better difference corelation than SAD but 10x slower
+	SSRF_ST_ENFORCE_SAD_WITH_SSD = 1 << 3, // squared differences. few large changes have large impact
+	SSRF_ST_ENFORCE_SAD_WITH_ZNCC = 1 << 4, // Zero-mean Normalized Cross-Correlation. Tolerance to brightness and lightning changes
+	SSRF_ST_ENFORCE_SAD_WITH_EDGE_COLOR = 1 << 5, // when texture is more importnt than color
+	SSRF_ST_ENFORCE_SAD_WITH_EDGE_GRAY = 1 << 6, // when texture is more importnt than color
+	SSRF_ST_ENFORCE_SAD_WITH_EDGE_SSIM = 1 << 7, // Structural Similarity Index
 };
 
 char* WINAPI ImageSearchOnScreenshot(const char *aImageFile, int TransparentColor, int AcceptedColorDiff, int AcceptedErrorCount, int StopAfterNFullMatches);

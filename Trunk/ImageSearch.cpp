@@ -583,8 +583,8 @@ char* WINAPI ImageSearch_SAD_Region(const char* aFilespec, int aLeft, int aTop, 
 	//DumpAsPPM( &CurScreenshot->Pixels[ 40 * Width + 40 ], 40, 40, Width );
 	const size_t stride1 = CurScreenshot->Width;
 	const size_t stride2 = cache->Width;
-	const size_t width_SAD = (cache->Width/8)*8;
-	const size_t height_SAD = cache->Height;
+	const size_t width_SAD = (cache->Width/8)*8; // value is in pixels
+	const size_t height_SAD = cache->Height;	// value is in pixels
 	for (size_t y = search_start_y; y < search_end_y; y++)
 	{
 		const LPCOLORREF AddrBig = &Pixels1[y * stride1];
@@ -708,7 +708,7 @@ docleanupandreturn:
 	FileDebug(dbgmsg);
 #endif
 
-	size_t SADPerPixel = BestSAD / (width_SAD * height_SAD * 3);
+	size_t SADPerPixel = BestSAD / (width_SAD * height_SAD * 3); // this actually called MAD
 	retx = (int)(retx + CurScreenshot->Left);
 	rety = (int)(rety + CurScreenshot->Top);
 	sprintf_s(ReturnBuff, DEFAULT_STR_BUFFER_SIZE * 10, "1|%d|%d|%llu|%llu|%llu|%llu|%llu|%d|%llu", 
