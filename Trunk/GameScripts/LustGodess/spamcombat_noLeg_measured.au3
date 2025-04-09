@@ -6,6 +6,7 @@
 Opt("MustDeclareVars", 1)
 HotKeySet("I", "ExitBot")
 HotKeySet("P", "ForeverLoopFunc")
+HotKeySet("A", "PasteClipboard")
 
 ;only used while developing
 HotKeySet("Q", "TakeScreenshotCyclePositions")
@@ -32,7 +33,7 @@ Global $g_WinCountAtPrevLegendary = 0
 Global $g_LegendariesSkipped = 0
 Global $g_LegendariesOpened = 0
 Global $g_GamesCounterPrev = -1
-Global $g_imageRanks[16][2]
+Global $g_imageRanks[19][2]
 Global $g_imageRewards[6][2]
 Global $g_imageBlueCrate[2][2]
 Global $g_AppliedColorMaskToCachedImages = 0
@@ -51,8 +52,13 @@ Global $g_LastSeenGoldCrateCanBeStored = 1
 Global $g_MouseSpeed = 10
 Global $g_FightIsForChest = 0
 Global $g_LastSeenRank = 0
+Global $g_LastSeenRankNoReset = 0
+Global $g_LastSeenRankMin = 33
 global $g_StampLastLegObtained = 0
 global $g_StampLastLegObtainedAndStored = 0
+global $g_ChestsObtainedSinceLastLeg[33][6]	; note that this also stores if chest could be stored or not 0-blue, 1-bluenostore
+global $g_RanksSeenSinceLastLegendary[33] ; also counts rank switches
+global $g_ChestsOpenedSinceLastLeg = 0
 
 Global $g_LeagueAdvanceInfo[30][2]
 $g_LeagueAdvanceInfo[0][0] = 95000 ; points min to reach this rank
@@ -162,7 +168,7 @@ GUICtrlSetTip($lblCrateCycleCrates, "Remaining crates this cycle and your crate 
 $ComponentsAdded = $ComponentsAdded + 1
 
 Global $lblTempForTooltip = GUICtrlCreateLabel("OpenLegIfLowerLegue :", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth, $ComponentHeight)
-Global $inputOpenLegendaryIfLower = GUICtrlCreateInput("7", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
+Global $inputOpenLegendaryIfLower = GUICtrlCreateInput("4", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
 GUICtrlSetTip($lblTempForTooltip, "If a legendary can't be stored, should we open it. Probably happens while spamming games")
 GUICtrlSetTip($inputOpenLegendaryIfLower, "If a legendary can't be stored, should we open it. Probably happens while spamming games")
 ;Global $hCheckboxOpenLegendary = GUICtrlCreateCheckbox("OpenLegIfLowerLegue", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth + $inputWidth, $ComponentHeight)
@@ -179,13 +185,13 @@ GUICtrlSetState($hCheckboxSkipLegendary, $GUI_CHECKED)
 $ComponentsAdded = $ComponentsAdded + 1
 
 Global $lblTempForTooltip = GUICtrlCreateLabel("MaxRankToDrop:", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth, $ComponentHeight)
-Global $inputMinRankAllowed = GUICtrlCreateInput("6", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
+Global $inputMinRankAllowed = GUICtrlCreateInput("3", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
 GUICtrlSetTip($inputMinRankAllowed, "For fast game spam, we will drop games until we reach this rank(worst case). Helps us do games faster")
 GUICtrlSetTip($lblTempForTooltip, "For fast game spam, we will drop games until we reach this rank(worst case). Helps us do games faster")
 $ComponentsAdded = $ComponentsAdded + 1
 
 Global $lblTempForTooltip = GUICtrlCreateLabel("ClimbToRank :", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth, $ComponentHeight)
-Global $inputTargetRankForCCI = GUICtrlCreateInput("6", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
+Global $inputTargetRankForCCI = GUICtrlCreateInput("3", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
 GUICtrlSetTip($lblTempForTooltip, "Climb ranks and try to reach this rank before we pause spamming games. Assumes we do not loose any games")
 GUICtrlSetTip($inputTargetRankForCCI, "Climb ranks and try to reach this rank before we pause spamming games. Assumes we do not loose any games")
 $ComponentsAdded = $ComponentsAdded + 1
@@ -287,6 +293,16 @@ InitImageSearchDLLImages()
 GuessIngameVisibleScreen()
 DisableFileExistsChecks()
 
+for $i=0 to 33 - 1
+	for $j=0 to 6 - 1
+		$g_ChestsObtainedSinceLastLeg[$i][$j] = 0
+	Next
+Next
+
+for $i=0 to UBound($g_RanksSeenSinceLastLegendary) - 1
+	$g_RanksSeenSinceLastLegendary[$i] = 0
+Next
+
 ; Event Loop
 While ( $g_BotIsRunning == 1)
 	HandleGUIMessages()
@@ -334,6 +350,8 @@ Func SaveVariables()
     IniWrite("variables.ini", "Variables", "LegendariesOpened", $g_LegendariesOpened)	
     IniWrite("variables.ini", "Variables", "GamesWon", $g_GamesWon)
     IniWrite("variables.ini", "Variables", "WinCountAtPrevLegendary", $g_WinCountAtPrevLegendary)
+    IniWrite("variables.ini", "Variables", "StampLastLegObtained", $g_StampLastLegObtained)
+    IniWrite("variables.ini", "Variables", "StampLastLegObtainedAndStored", $g_StampLastLegObtainedAndStored)
 EndFunc
 
 Func LoadVariables()
@@ -343,6 +361,8 @@ Func LoadVariables()
     Global $g_LegendariesOpened = IniRead("variables.ini", "Variables", "LegendariesOpened", 0)
     Global $g_GamesWon = IniRead("variables.ini", "Variables", "GamesWon", 0)
     Global $g_WinCountAtPrevLegendary = IniRead("variables.ini", "Variables", "WinCountAtPrevLegendary", 0)
+    Global $g_StampLastLegObtained = IniRead("variables.ini", "Variables", "StampLastLegObtained", 0)
+    Global $g_StampLastLegObtainedAndStored = IniRead("variables.ini", "Variables", "StampLastLegObtainedAndStored", 0)
 EndFunc
 
 Func MyMouseClick($button, $x, $y, $speed = $g_MouseSpeed )
@@ -551,6 +571,7 @@ Func OpenChests()
 
 		; If the color is found, click on it
 		If Not @error Then
+			$g_ChestsOpenedSinceLastLeg = $g_ChestsOpenedSinceLastLeg + 1
 			MyMouseClick("left", $pos1[0], $pos1[1])
 			Sleep(3000)
 			MyMouseClick("left", 1634, 203)
@@ -625,7 +646,7 @@ Func HandleLegendaryWinReward()
 				
 		Local $OpenLegChestIfLowLeague = getInputNumericValue($inputOpenLegendaryIfLower, 0)
 ;		If GUICtrlRead($hCheckboxOpenLegendary) = $GUI_CHECKED Then
-		If $OpenLegChestIfLowLeague <> 0 and $OpenLegChestIfLowLeague > $g_LastSeenRank and $g_LastSeenRank <> 0 Then
+		If $OpenLegChestIfLowLeague <> 0 and $OpenLegChestIfLowLeague > $g_LastSeenRankNoReset and $g_LastSeenRankNoReset <> 0 Then
 			$g_LegendariesOpened = $g_LegendariesOpened + 1
 			MyMouseClick("left", 929, 768)
 			Sleep(2000)
@@ -715,6 +736,8 @@ Func RecordVictoryRewards()
 			EndIf
 		EndIf
 	Next
+
+	$g_ChestsObtainedSinceLastLeg[$g_LastSeenRankNoReset][$bestRewardImageIndex] = $g_ChestsObtainedSinceLastLeg[$g_LastSeenRankNoReset][$bestRewardImageIndex] + 1
 	
 	; there is small blue crate and large blue crate
 	if $bestRewardType == $CRATE_BLUE or $bestRewardType == $CRATE_BLUE2 Then
@@ -805,14 +828,45 @@ Func RecordVictoryRewards()
 		if $g_LastSeenGoldCrateCanBeStored then
 			$g_StampLastLegObtainedAndStored = _WinAPI_GetTickCount()
 		EndIf
+		
+		Local $WinsSinceLegendary = $g_GamesWon - $g_WinCountAtPrevLegendary
+		Local $RemainingCrates = GUICtrlRead($lblCrateCycleCrates)
+		Local $MoreStatsStr = ""
+		$MoreStatsStr = $MoreStatsStr & ",MinutesSinceL=" & $MinuesSpentSinceLastLeg
+		$MoreStatsStr = $MoreStatsStr & ",MinutesSinceStoredL=" & $MinuesSpentSinceLastStoredLeg
+		$MoreStatsStr = $MoreStatsStr & ",CCI=" & $g_CrateCycleIndex
+		$MoreStatsStr = $MoreStatsStr & ",CCITarget=" & getInputNumericValue($inputSpamCombatUntilCCINoLeg, 100)
+		$MoreStatsStr = $MoreStatsStr & ",CanStore=" & $g_LastSeenGoldCrateCanBeStored
+		$MoreStatsStr = $MoreStatsStr & ",League=" & $g_LastSeenRank
+		$MoreStatsStr = $MoreStatsStr & ",WinsSinceL=" & $WinsSinceLegendary
+		$MoreStatsStr = $MoreStatsStr & ",CratesLeftThisCCI=" & $RemainingCrates
+
+		$MoreStatsStr = $MoreStatsStr & ",CratesOpenedSinceL=" & $g_ChestsOpenedSinceLastLeg
+
+		$MoreStatsStr = $MoreStatsStr & ",ChestsObtainedRankSinceL(B,B2,P)="
+		for $i=0 to 33 - 1
+			for $j=0 to 6 - 3
+				if $g_ChestsObtainedSinceLastLeg[$i][$j] > 0 Then
+					$MoreStatsStr = $MoreStatsStr & $i & "-" & $j & "(" & $g_ChestsObtainedSinceLastLeg[$i][$j] & ");"
+				EndIf
+			Next
+			$g_ChestsObtainedSinceLastLeg[$i][$j] = 0
+		Next
+		
+		$MoreStatsStr = $MoreStatsStr & ",RanksSeenSinceL="
+		for $i=0 to UBound($g_RanksSeenSinceLastLegendary) - 1
+			If $g_RanksSeenSinceLastLegendary[$i] > 0 Then
+				$MoreStatsStr = $MoreStatsStr & $i & "(" & $g_RanksSeenSinceLastLegendary[$i] & ");"
+			EndIf
+			$g_RanksSeenSinceLastLegendary[$i] = 0
+		Next
 
 		Local $hFile = FileOpen("legCCIs2.txt", 1) ; Mode 1 = Append
 		If $hFile <> -1 Then
-			Local $WinsSinceLegendary = $g_GamesWon - $g_WinCountAtPrevLegendary
-			Local $RemainingCrates = GUICtrlRead($lblCrateCycleCrates)
-			FileWrite($hFile, (@WDAY - 1) & "," & @HOUR & ":" & @MIN & ",CCI=" & $g_CrateCycleIndex & ",CCITarget=" & getInputNumericValue($inputSpamCombatUntilCCINoLeg, 100) & ",Minutes=" & $MinuesSpentSinceLastLeg & ",CanStore=" & $g_LastSeenGoldCrateCanBeStored & ",League=" & $g_LastSeenRank & ",Wins=" & $WinsSinceLegendary & "," & $RemainingCrates & ",MinutesSinceStored=" & $MinuesSpentSinceLastStoredLeg & "," & @CRLF)
+			FileWrite($hFile, (@WDAY - 1) & "," & @HOUR & ":" & @MIN & $MoreStatsStr & "," & @CRLF)
 			FileClose($hFile)		
 		EndIf
+		$g_ChestsOpenedSinceLastLeg = 0;
 		;Local $hFile = FileOpen(GetStringWithDayOfWeek(), 1) ; Mode 1 = Append
 		;If $hFile <> -1 Then
 		;	FileWrite($hFile, $g_CrateCycleIndex & ",")
@@ -1042,6 +1096,12 @@ Func InitImageSearchDLLImages()
 	$g_imageRanks[14][1] = 7
 	$g_imageRanks[15][0] = "L06_0820_0182_0278_0108.bmp"
 	$g_imageRanks[15][1] = 6
+	$g_imageRanks[16][0] = "L05_0819_0172_0281_0112.bmp"
+	$g_imageRanks[16][1] = 5
+	$g_imageRanks[17][0] = "L04_0823_0200_0270_0087.bmp"
+	$g_imageRanks[17][1] = 4
+	$g_imageRanks[18][0] = "L03_0822_0173_0273_0114.bmp"
+	$g_imageRanks[18][1] = 3
 
 	$g_imageRewards[0][0] = "Victory_BlueChest_0846_0576_0096_0096.bmp"
 	$g_imageRewards[0][1] = $CRATE_BLUE
@@ -1104,13 +1164,12 @@ Func InitImageSearchDLLImages()
 	ImageIsAtRegion($g_imageLeagueSreen)
 EndFunc
 
-Global $g_LastSeenRank = 0
 Func GuessCurrentPVPRank()
 	; if script got interrupted, skip executing this function. Happens due to sleeps
 	If ( $g_FuncIsRunning <> 1 or $g_BotIsRunning <> 1 ) then 
 		return
 	EndIf
-	Global $g_LastSeenRank, $g_AppliedColorMaskToCachedImages, $g_VisibleScreenType
+	; this should get resetted after each fight won/lost
 	if $g_LastSeenRank <> 0 then
 		return
 	EndIf
@@ -1133,6 +1192,19 @@ Func GuessCurrentPVPRank()
 			EndIf
 		Next
 
+		; for legendary statistics
+		If $g_LastSeenRank <> $g_LastSeenRankNoReset And $g_LastSeenRank <> 0 Then
+			$g_RanksSeenSinceLastLegendary[$g_LastSeenRank] = $g_RanksSeenSinceLastLegendary[$g_LastSeenRank] + 1
+		EndIf
+		
+		; because we have auto open options
+		If $g_LastSeenRank <> 0 Then
+			$g_LastSeenRankNoReset = $g_LastSeenRank
+		EndIF
+		If $g_LastSeenRankNoReset < $g_LastSeenRankMin Then
+			$g_LastSeenRankMin = $g_LastSeenRankNoReset
+		EndIf
+		
 		GUICtrlSetData($lblDbgOut, $g_LastSeenRank & " SADPP=" & $acceptableSADPerPixel & " best " & $bestSadPP & " ")
 	else 
 		GUICtrlSetData($lblDbgOut, $g_VisibleScreenType & " seepvp = " & IsColorAtPos(1707, 277, 0x28283F, 2, 4))
@@ -1411,8 +1483,10 @@ Func ForeverLoopFunc()
 			WEnd
 			
 			; do not open chests until we are in a very low rank ?
-			if AllowedToOpenChests() == 1 then 
+			if AllowedToOpenChests() == 1 or $g_LastSeenRankNoReset - 2 <= $g_LastSeenRankMin then 
 				OpenWinstreakChests() ; only do these at low rank
+			EndIf
+			if AllowedToOpenChests() == 1 then 
 				OpenChests()
 			EndIf
 			
@@ -1452,6 +1526,59 @@ Func ForeverLoopFunc()
 
 	GUICtrlSetBkColor($lblCrateCycleCrates, 0xFF7777)
 	
+EndFunc
+
+Func PasteClipboard()
+    Local $clipboardText = ClipGet()
+
+    If $clipboardText = "" Then
+        MsgBox(0, "Error", "Clipboard is empty!")
+        Return
+    EndIf
+
+    For $i = 1 To StringLen($clipboardText)
+        Local $char = StringMid($clipboardText, $i, 1)
+
+        ; Send character with escaping for special characters
+        Switch $char
+            Case "!"
+                Send("{!}")
+            Case "+"
+                Send("{+}")
+            Case "^"
+                Send("{^}")
+            Case "~"
+                Send("{~}")
+            Case "{"
+                Send("{{}")
+            Case "}"
+                Send("{}}")
+            Case "["
+                Send("{[}")
+            Case "]"
+                Send("{]}")
+            Case "("
+                Send("{(}")
+            Case ")"
+                Send("{)}")
+            Case @CR, @LF
+                Send("{ENTER}")
+			Case "I"
+				Send("i") ; avoid triggering hotkey
+			Case "P"
+				Send("p") ; avoid triggering hotkey
+			Case "A"
+				Send("a") ; avoid triggering hotkey
+			Case "Q"
+				Send("q") ; avoid triggering hotkey
+			Case "W"
+				Send("w") ; avoid triggering hotkey
+            Case Else
+                Send($char)
+        EndSwitch
+
+        Sleep(50) ; simulate natural typing speed
+    Next
 EndFunc
 
 ; Why it actually works : because short game duration ( relative to long game) skews the probability curve. AKA Multiple times faster to loose a legendary chest with 1/200 probability compared to a 75% chance to slowly wait for a legendary
