@@ -16,6 +16,7 @@ Global $g_BotIsRunning = 1
 Global $g_FuncIsRunning = 0
 Global $g_ClickIntervalUnkScreen = 15000 ; pvp rankup/down or huge loading screens
 Global $g_lastClickTimer = _WinAPI_GetTickCount()
+Global $g_lastPVPScreenTimeStamp = _WinAPI_GetTickCount()
 Global $g_GamesWon = 0
 Global $g_GamesWonRecordedAt = 0
 Global $AcceptedColorTolerance = 3
@@ -33,7 +34,7 @@ Global $g_WinCountAtPrevLegendary = 0
 Global $g_LegendariesSkipped = 0
 Global $g_LegendariesOpened = 0
 Global $g_GamesCounterPrev = -1
-Global $g_imageRanks[19][2]
+Global $g_imageRanks[21][2]
 Global $g_imageRewards[6][2]
 Global $g_imageBlueCrate[2][2]
 Global $g_AppliedColorMaskToCachedImages = 0
@@ -44,6 +45,13 @@ Global $g_imagePVPIngame2 = ""
 Global $g_imageVictorySreen = ""
 Global $g_imageDefeatSreen = ""
 Global $g_imageLeagueSreen = ""
+Global $g_imageGameCrashed = ""
+Global $g_imagePageReload = ""
+Global $g_imageGameloaded = ""
+Global $g_imageClosePopup1 = ""
+Global $g_imageClosePopup2 = ""
+Global $g_imageClosePopup3 = ""
+Global $g_imagePVPButton = ""
 ;Global $g_WinHistory[8]
 Global $g_CrateHistory[500]
 Global $g_CrateCycleIndex = -1000 ; index where the next cycle starts in our history array
@@ -168,7 +176,7 @@ GUICtrlSetTip($lblCrateCycleCrates, "Remaining crates this cycle and your crate 
 $ComponentsAdded = $ComponentsAdded + 1
 
 Global $lblTempForTooltip = GUICtrlCreateLabel("OpenLegIfLowerLegue :", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth, $ComponentHeight)
-Global $inputOpenLegendaryIfLower = GUICtrlCreateInput("4", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
+Global $inputOpenLegendaryIfLower = GUICtrlCreateInput("1", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
 GUICtrlSetTip($lblTempForTooltip, "If a legendary can't be stored, should we open it. Probably happens while spamming games")
 GUICtrlSetTip($inputOpenLegendaryIfLower, "If a legendary can't be stored, should we open it. Probably happens while spamming games")
 ;Global $hCheckboxOpenLegendary = GUICtrlCreateCheckbox("OpenLegIfLowerLegue", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth + $inputWidth, $ComponentHeight)
@@ -185,13 +193,13 @@ GUICtrlSetState($hCheckboxSkipLegendary, $GUI_CHECKED)
 $ComponentsAdded = $ComponentsAdded + 1
 
 Global $lblTempForTooltip = GUICtrlCreateLabel("MaxRankToDrop:", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth, $ComponentHeight)
-Global $inputMinRankAllowed = GUICtrlCreateInput("3", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
+Global $inputMinRankAllowed = GUICtrlCreateInput("1", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
 GUICtrlSetTip($inputMinRankAllowed, "For fast game spam, we will drop games until we reach this rank(worst case). Helps us do games faster")
 GUICtrlSetTip($lblTempForTooltip, "For fast game spam, we will drop games until we reach this rank(worst case). Helps us do games faster")
 $ComponentsAdded = $ComponentsAdded + 1
 
 Global $lblTempForTooltip = GUICtrlCreateLabel("ClimbToRank :", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth, $ComponentHeight)
-Global $inputTargetRankForCCI = GUICtrlCreateInput("3", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
+Global $inputTargetRankForCCI = GUICtrlCreateInput("1", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
 GUICtrlSetTip($lblTempForTooltip, "Climb ranks and try to reach this rank before we pause spamming games. Assumes we do not loose any games")
 GUICtrlSetTip($inputTargetRankForCCI, "Climb ranks and try to reach this rank before we pause spamming games. Assumes we do not loose any games")
 $ComponentsAdded = $ComponentsAdded + 1
@@ -214,7 +222,7 @@ $ComponentsAdded = $ComponentsAdded + 1
 GUICtrlSetState($hCheckboxSpamUntilLegChance, $GUI_CHECKED)
 
 Global $lblTempForTooltip = GUICtrlCreateLabel("SpamUntilCCI :", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth, $ComponentHeight)
-Global $inputSpamCombatUntilCCINoLeg = GUICtrlCreateInput("45", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
+Global $inputSpamCombatUntilCCINoLeg = GUICtrlCreateInput("35", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
 GUICtrlSetTip($lblTempForTooltip, "Spam games until we reach this CCI and we still did not open a LEGO")
 GUICtrlSetTip($inputSpamCombatUntilCCINoLeg, "Spam games until we reach this CCI and we still did not open a LEGO")
 $ComponentsAdded = $ComponentsAdded + 1
@@ -230,7 +238,7 @@ GUICtrlSetTip($hCheckboxNoChestOpens, "Do not open chests. Ever. Used while wait
 $ComponentsAdded = $ComponentsAdded + 1
 
 Global $lblTempForTooltip = GUICtrlCreateLabel("Seconds/Game :", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth, $ComponentHeight)
-Global $inputSingleGameDurationSec = GUICtrlCreateInput("140", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
+Global $inputSingleGameDurationSec = GUICtrlCreateInput("180", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
 GUICtrlSetTip($lblTempForTooltip, "How many minutes does a game take ? Highly depends on your rank, team. Used to estimate time remaining until CCI target")
 GUICtrlSetTip($inputSingleGameDurationSec, "How many minutes does a game take ? Highly depends on your rank, team. Used to estimate time remaining until CCI target")
 $ComponentsAdded = $ComponentsAdded + 1
@@ -1102,6 +1110,10 @@ Func InitImageSearchDLLImages()
 	$g_imageRanks[17][1] = 4
 	$g_imageRanks[18][0] = "L03_0822_0173_0273_0114.bmp"
 	$g_imageRanks[18][1] = 3
+	$g_imageRanks[19][0] = "L02_0822_0177_0269_0109.bmp"
+	$g_imageRanks[19][1] = 2
+	$g_imageRanks[20][0] = "L01_0839_0287_0219_0049.bmp"
+	$g_imageRanks[20][1] = 1
 
 	$g_imageRewards[0][0] = "Victory_BlueChest_0846_0576_0096_0096.bmp"
 	$g_imageRewards[0][1] = $CRATE_BLUE
@@ -1162,6 +1174,34 @@ Func InitImageSearchDLLImages()
 	$g_imageLeagueSreen = "LeagueClose_0206_0089_0332_0048.bmp"
 	ApplyColorMaskOnCachedImage($g_imageLeagueSreen)
 	ImageIsAtRegion($g_imageLeagueSreen)
+
+	$g_imageGameCrashed = "game_crashed_0791_0138_0181_0033.bmp"
+	ApplyColorMaskOnCachedImage($g_imageGameCrashed)
+	ImageIsAtRegion($g_imageGameCrashed)
+
+	$g_imagePageReload = "page_reload_0081_0047_0029_0030.bmp"
+	ApplyColorMaskOnCachedImage($g_imagePageReload)
+	ImageIsAtRegion($g_imagePageReload)
+
+	$g_imageGameloaded = "game_loaded_0918_0825_0080_0042.bmp"
+	ApplyColorMaskOnCachedImage($g_imageGameloaded)
+	ImageIsAtRegion($g_imageGameloaded)
+
+	$g_imageClosePopup1 = "close_popup1_1561_0190_0047_0050.bmp"
+	ApplyColorMaskOnCachedImage($g_imageClosePopup1)
+	ImageIsAtRegion($g_imageClosePopup1)
+
+	$g_imageClosePopup2 = "close_popup2_1619_0130_0053_0045.bmp"
+	ApplyColorMaskOnCachedImage($g_imageClosePopup2)
+	ImageIsAtRegion($g_imageClosePopup2)
+
+	$g_imageClosePopup3 = "close_popup3_0205_0089_0068_0039.bmp"
+	ApplyColorMaskOnCachedImage($g_imageClosePopup3)
+	ImageIsAtRegion($g_imageClosePopup3)
+
+	$g_imagePVPButton = "PVPButton_1481_0807_0165_0077.bmp"
+	ApplyColorMaskOnCachedImage($g_imagePVPButton)
+	ImageIsAtRegion($g_imagePVPButton)
 EndFunc
 
 Func GuessCurrentPVPRank()
@@ -1200,6 +1240,7 @@ Func GuessCurrentPVPRank()
 		; because we have auto open options
 		If $g_LastSeenRank <> 0 Then
 			$g_LastSeenRankNoReset = $g_LastSeenRank
+			$g_lastPVPScreenTimeStamp = _WinAPI_GetTickCount()
 		EndIF
 		If $g_LastSeenRankNoReset < $g_LastSeenRankMin Then
 			$g_LastSeenRankMin = $g_LastSeenRankNoReset
@@ -1356,6 +1397,66 @@ Func ExitAccidentalLegueScreen()
     EndIf
 EndFunc
 
+Func ReloadCrashedGame()
+	Global $g_VisibleScreenType, $g_FuncIsRunning, $g_BotIsRunning
+	Local $timeSincePVPScreen = _WinAPI_GetTickCount() - $g_lastPVPScreenTimeStamp
+	Local $searchRet = ImageIsAtRegion($g_imageGameCrashed)
+	Local $searchRetSADPP = $searchRet[3], $searchRetAvgColorDiffPP = $searchRet[4], $searchRetAvgColorDiffCount = $searchRet[5], $searchRetAvgColorDiffPCT = $searchRet[6], $searchRetHashMatchPCT = $searchRet[7]
+	If ($searchRet[0] > 0 and $searchRetSADPP <= 4) or ($timeSincePVPScreen > 10 * 60 * 1000) then
+		$g_lastPVPScreenTimeStamp = _WinAPI_GetTickCount()
+		GUICtrlSetData($lblDbgOut2, "gc x: " & $searchRet[1] & "y=" & $searchRet[2] & ",sad=" & $searchRetSADPP & "cd=" & $searchRetAvgColorDiffPP & " " & $searchRetAvgColorDiffCount & " " & $searchRetAvgColorDiffPCT  & " " & $searchRetHashMatchPCT)
+		; click the page reload
+        MyMouseClick("left", 95, 60)
+		Sleep(1000)
+		; wait at least 30 seconds - maybe 15 is enough
+		Local $GameLoaded = 0
+		while($GameLoaded == 0 and $g_FuncIsRunning == 1 and $g_BotIsRunning == 1)
+			Sleep(15*1000)
+			Local $searchRet = ImageIsAtRegion($g_imageGameloaded)
+			Local $searchRetSADPP = $searchRet[3], $searchRetAvgColorDiffPP = $searchRet[4], $searchRetAvgColorDiffCount = $searchRet[5], $searchRetAvgColorDiffPCT = $searchRet[6], $searchRetHashMatchPCT = $searchRet[7]
+			GUICtrlSetData($lblDbgOut2, "gl x: " & $searchRet[0] & "y=" & $searchRet[1] & ",sad=" & $searchRetSADPP & "cd=" & $searchRetAvgColorDiffPP & " " & $searchRetAvgColorDiffCount & " " & $searchRetAvgColorDiffPCT  & " " & $searchRetHashMatchPCT)
+			If $searchRet[0] > 0 and $searchRetSADPP <= 4 then
+				$GameLoaded = 1
+				MyMouseClick("left", $searchRet[0] + 10, $searchRet[1] + 10)
+				ExitLoop
+			EndIf
+		wend
+		Sleep(2*1000)
+		Local $ClosedAllPopupsOrClickedPVP = 0
+		Local $timeStampStartedClicking = _WinAPI_GetTickCount()
+		while($ClosedAllPopupsOrClickedPVP == 0 and $g_FuncIsRunning == 1 and $g_BotIsRunning == 1 and _WinAPI_GetTickCount() - $timeStampStartedClicking < 2 * 60 * 1000)
+			; close splash popups by force clicking the PVP button
+;			Local $popupImages[3] = [$g_imageClosePopup1, $g_imageClosePopup2, $g_imagePVPButton]
+;			For $i = 0 To UBound($popupImages) - 1
+;				$searchRet = ImageIsAtRegion($popupImages[$i])
+;				GUICtrlSetData($lblDbgOut2, "pp x: " & $searchRet[0] & "y=" & $searchRet[1] & ",sad=" & $searchRetSADPP & "cd=" & $searchRetAvgColorDiffPP & " " & $searchRetAvgColorDiffCount & " " & $searchRetAvgColorDiffPCT  & " " & $searchRetHashMatchPCT)
+;				If $searchRet[0] > 0 And $searchRet[3] <= 4 Then
+;					MyMouseClick("left", 1654, 875)
+;					Sleep(1000)
+;				EndIf
+;			Next
+;			; close accidentally opened "scene" screen
+;			Local $popupImages[1] = [$g_imageClosePopup3]
+;			For $i = 0 To UBound($popupImages) - 1
+;				$searchRet = ImageIsAtRegion($popupImages[$i])
+;				GUICtrlSetData($lblDbgOut2, "pp x: " & $searchRet[0] & "y=" & $searchRet[1] & ",sad=" & $searchRetSADPP & "cd=" & $searchRetAvgColorDiffPP & " " & $searchRetAvgColorDiffCount & " " & $searchRetAvgColorDiffPCT  & " " & $searchRetHashMatchPCT)
+;				If $searchRet[0] > 0 And $searchRet[3] <= 4 Then
+;					MyMouseClick("left", $searchRet[0] + 10, $searchRet[1] + 10)
+;					Sleep(1000)
+;				EndIf
+;			Next
+			; try to click the PVP figh button
+			MyMouseClick("left", 1654, 875)
+			Sleep(2000)
+			; if we can see the PVP screen, we can exit this loop
+			GuessIngameVisibleScreen()
+			if $g_VisibleScreenType == $SCREEN_START_PVP_FIGHT then
+				$ClosedAllPopupsOrClickedPVP = 1
+			EndIf
+		wend
+    EndIf
+EndFunc
+
 Func GetSpammedWinCountRemainingForCCI()
 	Local $WinsRemainUntilStopSpam = 0
 	; when you did not gather enough data to know cci. Spam some games to know your cci
@@ -1471,6 +1572,7 @@ Func ForeverLoopFunc()
 		;GUICtrlSetData($lblDbgOut, Hex( PixelGetColor(1707, 277), 6 ) & " -- " & $g_VisibleScreenType)
 
 		ExitAccidentalLegueScreen()
+		ReloadCrashedGame()
 		GuessIngameVisibleScreen()
 		CheckDropGameAlwaysToMaintainRank()
 		
