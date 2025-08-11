@@ -23,11 +23,12 @@ public:
 	bool			NeedsPSCache;
 	bool			NeedsAlphaRemoved;
 	bool			NeedsSplitChannelCache;
-	bool			AppliedColorMask;
+	int				AppliedColorMask;
 	SimilarSearch	*SSCache;
 	PiramidImage	*PSCache;
 	SplitChannel	*SCCache;
 	SADSumStoreScreenshot		SADSums;
+	ImgHashWholeIage* pSSHashCache; // if multiple images are searched on the same SS, they can reuse the hash
 	size_t			TimeStampTaken;
 	size_t			UniqueFameCounter;
 

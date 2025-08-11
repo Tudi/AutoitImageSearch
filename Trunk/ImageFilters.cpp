@@ -241,12 +241,12 @@ void WINAPI ApplyColorBitmask(int paramMask)
 	size_t startStamp = GetTickCount();
 	if (CurScreenshot == NULL)
 		return;
-	if (CurScreenshot->AppliedColorMask == true)
+	if (CurScreenshot->AppliedColorMask == paramMask)
 	{
 		FileDebug("\tApplyColorBitmask: Already applied on screenshot. Skipping");
 		return;
 	}
-	CurScreenshot->AppliedColorMask = true;
+	CurScreenshot->AppliedColorMask = paramMask;
 	DWORD Mask = *(DWORD*)&paramMask;
 	//CurScreenshot->ReplaceReadOnlyPixels();
 	ApplyColorBitmask_(CurScreenshot->Pixels, CurScreenshot->GetWidth(), CurScreenshot->GetHeight(), Mask);

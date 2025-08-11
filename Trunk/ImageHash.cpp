@@ -8,9 +8,9 @@ void genAHash_8x8(const LPCOLORREF pixels, const size_t stride, ImgHash8x8* out_
 		unsigned char* pixels2 = (unsigned char*)&pixels[row * stride];
 		for (size_t col = 0; col < 8; col++)
 		{
-			sumLuminozity[0] = pixels2[0];
-			sumLuminozity[1] = pixels2[1];
-			sumLuminozity[2] = pixels2[2];
+			sumLuminozity[0] += pixels2[0];
+			sumLuminozity[1] += pixels2[1];
+			sumLuminozity[2] += pixels2[2];
 			pixels2 += 4;
 		}
 	}
@@ -43,6 +43,10 @@ void genAHash_8x8(const LPCOLORREF pixels, const size_t stride, ImgHash8x8* out_
 void genBHash_8x8(const LPCOLORREF pixels, const size_t stride, ImgHash8x8* out_hash)
 {
 	size_t prevR, prevG, prevB;
+
+	// generate bits
+	out_hash->rHash = out_hash->gHash = out_hash->bHash = 0;
+
 	prevR = prevG = prevB = 127;
 	for (size_t row = 0; row < 8; row++)
 	{
@@ -70,6 +74,10 @@ void genBHash_8x8(const LPCOLORREF pixels, const size_t stride, ImgHash8x8* out_
 void genCHash_8x8(const LPCOLORREF pixels, const size_t stride, ImgHash8x8* out_hash)
 {
 	size_t prevR, prevG, prevB;
+
+	// generate bits
+	out_hash->rHash = out_hash->gHash = out_hash->bHash = 0;
+
 	prevR = prevG = prevB = 127;
 	for (size_t col = 0; col < 8; col++)
 	{
@@ -109,11 +117,11 @@ void compareHash_8x8(ImgHash8x8* h1, ImgHash8x8* h2, ImgHash8x8_CompareResult* o
 		memset(out, 0, sizeof(ImgHash8x8_CompareResult));
 	}
 
-	size_t valxor = ((int)h1->rHash) ^ ((int)h2->rHash);
+	size_t valxor = ((uint64_t)h1->rHash) ^ ((uint64_t)h2->rHash);
 	size_t rBitsMatch = bitCount(valxor);
-	valxor = ((int)h1->gHash) ^ ((int)h2->gHash);
+	valxor = ((uint64_t)h1->gHash) ^ ((uint64_t)h2->gHash);
 	size_t gBitsMatch = bitCount(valxor);
-	valxor = ((int)h1->bHash) ^ ((int)h2->bHash);
+	valxor = ((uint64_t)h1->bHash) ^ ((uint64_t)h2->bHash);
 	size_t bBitsMatch = bitCount(valxor);
 
 	const size_t hashBitcount = 8 * 8;
@@ -218,9 +226,9 @@ int compareHash(ImgHashWholeIage* hash1, ImgHashWholeIage* hash2, ImgHash8x8_Com
 	{
 		for (size_t col = 0; col < cols; col++)
 		{
-			compareHash_8x8(&hash1->hashes[row * hash1->rows + col].AHash, &hash2->hashes[row * hash2->rows + col].AHash, out, true);
-			compareHash_8x8(&hash1->hashes[row * hash1->rows + col].BHash, &hash2->hashes[row * hash2->rows + col].BHash, out, true);
-			compareHash_8x8(&hash1->hashes[row * hash1->rows + col].CHash, &hash2->hashes[row * hash2->rows + col].CHash, out, true);
+			compareHash_8x8(&hash1->hashes[row * hash1->cols + col].AHash, &hash2->hashes[row * hash2->cols + col].AHash, out, true);
+			compareHash_8x8(&hash1->hashes[row * hash1->cols + col].BHash, &hash2->hashes[row * hash2->cols + col].BHash, out, true);
+			compareHash_8x8(&hash1->hashes[row * hash1->cols + col].CHash, &hash2->hashes[row * hash2->cols + col].CHash, out, true);
 		}
 	}
 	return 0;
@@ -231,5 +239,25 @@ void FreeHashAllocatedData(ImgHashWholeIage* out_hashes)
 	if (out_hashes->hashes) {
 		MY_FREE(out_hashes->hashes);
 		out_hashes->hashes = NULL;
+	}
+}
+
+void ReinitScreenshotHashCache(ScreenshotStruct* ss)
+{
+	if (CurScreenshot->pSSHashCache == NULL) {
+		// create a new hash storage
+		CurScreenshot->pSSHashCache = (ImgHashWholeIage*)MY_ALLOC(sizeof(ImgHashWholeIage));
+		// first time init
+		memset(CurScreenshot->pSSHashCache, 0, sizeof(ImgHashWholeIage));
+		// mark the cache that we are generating hashes for this specific screenshot
+		CurScreenshot->pSSHashCache->UniqueFameCounter = CurScreenshot->UniqueFameCounter;
+	}
+	else if (CurScreenshot->UniqueFameCounter != CurScreenshot->pSSHashCache->UniqueFameCounter) {
+		// ditch previously generated hashes
+		FreeHashAllocatedData(CurScreenshot->pSSHashCache);
+		// reinit the struct
+		memset(CurScreenshot->pSSHashCache, 0, sizeof(ImgHashWholeIage));
+		// mark the cache that we are generating hashes for this specific screenshot
+		CurScreenshot->pSSHashCache->UniqueFameCounter = CurScreenshot->UniqueFameCounter;
 	}
 }

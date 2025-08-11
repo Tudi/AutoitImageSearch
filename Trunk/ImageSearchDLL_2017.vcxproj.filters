@@ -109,6 +109,9 @@
     <ClCompile Include="Testing\SATDTest.cpp">
       <Filter>Testing</Filter>
     </ClCompile>
+    <ClCompile Include="ImageSAD_Region.cpp">
+      <Filter>ImageTools</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EdgeDetect.h">
@@ -215,6 +218,9 @@
     </ClInclude>
     <ClInclude Include="Testing\SATDTest.h">
       <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="ImageSAD_Region.h">
+      <Filter>ImageTools</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

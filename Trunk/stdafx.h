@@ -77,6 +77,7 @@
 #include "ImageSAD.h"
 #include "ImageHash.h"
 #include "ImageSATD.h"
+#include "ImageSAD_Region.h"
 
 #ifdef _CONSOLE
     #include "Tools\CommandProcessor.h"

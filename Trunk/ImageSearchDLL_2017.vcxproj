@@ -329,6 +329,7 @@
     <ClCompile Include="ImageFilters.cpp" />
     <ClCompile Include="ImageHash.cpp" />
     <ClCompile Include="ImageSAD.cpp" />
+    <ClCompile Include="ImageSAD_Region.cpp" />
     <ClCompile Include="ImageSATD.cpp" />
     <ClCompile Include="ImageSearch.cpp" />
     <ClCompile Include="ImageSearchDLL.cpp" />
@@ -381,6 +382,7 @@
     <ClInclude Include="ImageFilters.h" />
     <ClInclude Include="ImageHash.h" />
     <ClInclude Include="ImageSAD.h" />
+    <ClInclude Include="ImageSAD_Region.h" />
     <ClInclude Include="ImageSATD.h" />
     <ClInclude Include="ImageSearch.h" />
     <ClInclude Include="ImageSearchPreSAD.h" />

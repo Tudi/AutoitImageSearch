@@ -35,12 +35,14 @@ struct ImgHashWholeIage
 {
 	size_t cols, rows;
 	ImgHash8x8_All* hashes;
+	size_t UniqueFameCounter;
 };
 
 // a simple cache is probably not enough. Perform multiple steps so that it becomes easy
 void GenHashesForCachedImage(CachedPicture *pic, ImgHashWholeIage* out_hashes);
 int GenHashesOnScreenshotForCachedImage(CachedPicture* pic, ScreenshotStruct* ss, int atX, int atY, ImgHashWholeIage* out_hashes);
 void FreeHashAllocatedData(ImgHashWholeIage* out_hashes);
+void ReinitScreenshotHashCache(ScreenshotStruct* ss);
 
 // get the average luminosity of the image, compare each pixel of the image to the avg. If lower than avg produce a 0, else 1 bit
 // pro : mostly ignores luminozity related image changes + similar to SAD but can be cached

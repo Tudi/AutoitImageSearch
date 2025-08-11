@@ -60,6 +60,12 @@ void WINAPI ReleaseScreenshot()
 		CurScreenshot->SCCache = NULL;
 	}
 	FreeSADSUMScreenshot(&CurScreenshot->SADSums);
+	if (CurScreenshot->pSSHashCache)
+	{
+		FreeHashAllocatedData(CurScreenshot->pSSHashCache);
+		MY_FREE(CurScreenshot->pSSHashCache);
+		CurScreenshot->pSSHashCache = NULL;
+	}
 }
 
 void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
