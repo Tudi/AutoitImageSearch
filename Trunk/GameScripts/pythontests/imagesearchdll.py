@@ -51,8 +51,9 @@ class SingleResult:
     sad_per_pixel: int = -1
     avg_color_diff: int = -1
     color_diff_count: int = -1
-    color_diff_pct: int = 100
+    color_diff_pct: int = -1
     hash_diff_pct: int = -1
+    satd: int = -1
     sad_brightness_corrected: int = -1
     raw: str = ""
 
@@ -69,9 +70,10 @@ def _parse_single_result(raw: str) -> SingleResult:
             sad_per_pixel   = int(toks[4]) if len(toks) > 4 else -1,
             avg_color_diff  = int(toks[5]) if len(toks) > 5 else -1,
             color_diff_count= int(toks[6]) if len(toks) > 6 else -1,
-            color_diff_pct  = int(toks[7]) if len(toks) > 7 else 100,
+            color_diff_pct  = int(toks[7]) if len(toks) > 7 else -1,
             hash_diff_pct   = int(toks[8]) if len(toks) > 8 else -1,
-            sad_brightness_corrected   = int(toks[9]) if len(toks) > 9 else -1,
+            satd            = int(toks[9]) if len(toks) > 9 else -1,
+            sad_brightness_corrected   = int(toks[10]) if len(toks) > 10 else -1,
             raw=raw
         )
     except ValueError:
