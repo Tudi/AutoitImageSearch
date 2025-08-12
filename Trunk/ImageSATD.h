@@ -7,7 +7,7 @@ size_t satd_8x8_rgb_avx2_v1(const uint8_t* src, const uint8_t* ref, size_t strid
 // don't try to use this. It's unfinished and not sure if it will be worth finishing ever
 size_t satd_8x8_rgb_avx2_v2(const uint8_t* src, const uint8_t* ref, size_t stride_src, size_t stride_dst);
 
-inline size_t satd_nxm(const LPCOLORREF src, const LPCOLORREF ref, size_t width, size_t height, size_t stride_src, size_t stride_dst)
+inline size_t satd_nxm(const LPCOLORREF src, const LPCOLORREF ref, size_t width, size_t height, size_t stride_src, size_t stride_dst, size_t abort_if_larger = ~0)
 {
 	height = (height / 8) * 8;
 	width = (width / 8) * 8;
@@ -20,6 +20,9 @@ inline size_t satd_nxm(const LPCOLORREF src, const LPCOLORREF ref, size_t width,
 		{
 			satd_sum += satd_8x8_rgb_avx2_v1((uint8_t * )(src + row * stride_src + col),
 				(uint8_t *)(ref + row * stride_dst + col), byte_stride_src, byte_stride_dst);
+			if (satd_sum >= abort_if_larger) {
+				return satd_sum;
+			}
 		}
 	}
 	return satd_sum;

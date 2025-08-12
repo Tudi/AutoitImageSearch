@@ -12,7 +12,7 @@ if os.path.exists(file_path):
 # quick region capture -> save (DLL decides where/how to save)
 isr.TakeScreenshotRegionAndSaveit(80, 45, 80+160, 45+80)
 
-res1 = isr.ImageIsAtRegion(file_path, search_flags=0)
-res2 = isr.ImageIsAtRegion(file_path, search_flags=((1<<0)|(1<<1)|(1<<2)))
+res1 = isr.SearchImageInRegion(file_path, search_flags=0)
+res2 = isr.SearchImageInRegion(file_path, search_flags=((1<<0)|(1<<1)|(1<<2)))
 print("found at x,y:", res1.x, res1.y, "SAD:", res1.sad, "raw:", res1.raw)
 print("found at x,y:", res2.x, res2.y, "SAD:", res2.sad, "raw:", res2.raw)

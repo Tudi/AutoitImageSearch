@@ -3,7 +3,7 @@
 int SearchResultCount;
 int SearchResultXYSAD[500][3];
 
-static char ReturnBuff[DEFAULT_STR_BUFFER_SIZE * 10];
+char ReturnBuff[DEFAULT_STR_BUFFER_SIZE * 10];
 char* WINAPI ImageSearchOnScreenshot(const char *aFilespec, int TransparentColor, int AcceptedColorDiff, int AcceptedErrorCount, int StopAfterNFullMatches)
 {
 	char ReturnBuff2[DEFAULT_STR_BUFFER_SIZE * 10];
@@ -354,6 +354,7 @@ char* WINAPI ImageSearchOnScreenshotMasked(const char *aFilespec, char *MaskFile
 	return ReturnBuff;
 }
 
+#if 0
 char* WINAPI ImageSearchOnScreenshotBest_SAD(const char *aFilespec)
 {
 	char ReturnBuff2[DEFAULT_STR_BUFFER_SIZE * 10];
@@ -451,6 +452,7 @@ goto docleanupandreturn;
 	FileDebug("\tImage search finished");
 	return ReturnBuff;
 }
+#endif
 
 // input images are A8R8G8B8 encoded -> 4 bytes / pixel = 32 bpp
 char* WINAPI ImageSearch_SAD(const char* aFilespec)

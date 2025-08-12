@@ -118,25 +118,25 @@ void compareHash_8x8(ImgHash8x8* h1, ImgHash8x8* h2, ImgHash8x8_CompareResult* o
 	}
 
 	size_t valxor = ((uint64_t)h1->rHash) ^ ((uint64_t)h2->rHash);
-	size_t rBitsMatch = bitCount(valxor);
+	size_t rBitsDifferent = bitCount(valxor);
 	valxor = ((uint64_t)h1->gHash) ^ ((uint64_t)h2->gHash);
-	size_t gBitsMatch = bitCount(valxor);
+	size_t gBitsDifferent = bitCount(valxor);
 	valxor = ((uint64_t)h1->bHash) ^ ((uint64_t)h2->bHash);
-	size_t bBitsMatch = bitCount(valxor);
+	size_t bBitsDifferent = bitCount(valxor);
 
 	const size_t hashBitcount = 8 * 8;
 
-	out->rBitsMatch += rBitsMatch;
-	out->gBitsMatch += gBitsMatch;
-	out->bBitsMatch += bBitsMatch;
+	out->rBitsDiffer += rBitsDifferent;
+	out->gBitsDiffer += gBitsDifferent;
+	out->bBitsDiffer += bBitsDifferent;
 
 	out->blocksAcumulated++;
 
-	out->rPctMatch = out->rBitsMatch * 100.0 / double(out->blocksAcumulated * hashBitcount);
-	out->gPctMatch = out->gBitsMatch * 100.0 / double(out->blocksAcumulated * hashBitcount);
-	out->bPctMatch = out->bBitsMatch * 100.0 / double(out->blocksAcumulated * hashBitcount);
+	out->rPctDiffer = out->rBitsDiffer * 100.0 / double(out->blocksAcumulated * hashBitcount);
+	out->gPctDiffer = out->gBitsDiffer * 100.0 / double(out->blocksAcumulated * hashBitcount);
+	out->bPctDiffer = out->bBitsDiffer * 100.0 / double(out->blocksAcumulated * hashBitcount);
 
-	out->pctMatchAvg = (out->rPctMatch + out->gPctMatch + out->bPctMatch) / 3;
+	out->PctDifferAvg = (out->rPctDiffer + out->gPctDiffer + out->bPctDiffer) / 3;
 }
 
 static int GenHashesForGenericImage(LPCOLORREF Pixels, int Width, int Height, int Stride, ImgHashWholeIage* out_hashes)

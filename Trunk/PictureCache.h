@@ -32,7 +32,7 @@ struct CachedPicture
 	OCRStore		*OCRCache;
 	// avoid searching too fast that would increase CPU usage
 	size_t			PrevSearchImageId;
-	int				PrevSearchTop, PrevSearchLeft;
+	int				PrevSearchTop, PrevSearchLeft, PrevSearchFlags;
 	char			PrevSearchReturnVal[512];
 	ImgHashWholeIage m_Hash;
 };

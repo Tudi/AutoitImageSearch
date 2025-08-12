@@ -20,8 +20,8 @@ struct ImgHash8x8
 struct ImgHash8x8_CompareResult
 {
 	uint64_t blocksAcumulated;
-	uint64_t rBitsMatch, gBitsMatch, bBitsMatch;
-	double rPctMatch, gPctMatch, bPctMatch, pctMatchAvg;
+	uint64_t rBitsDiffer, gBitsDiffer, bBitsDiffer;
+	double rPctDiffer, gPctDiffer, bPctDiffer, PctDifferAvg;
 };
 
 struct ImgHash8x8_All

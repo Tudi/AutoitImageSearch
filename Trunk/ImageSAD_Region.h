@@ -30,4 +30,3 @@ struct ImgSrchSADRegionRes {
 };
 
 char* WINAPI ImageSearch_SAD_Region(const char* aFilespec, int aLeft, int aTop, int aRight, int aBottom, SADSearchRegionFlags uSearchFlags);
-void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRight, int aBottom, SADSearchRegionFlags uSearchFlags, ImgSrchSADRegionRes &res);

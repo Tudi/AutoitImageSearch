@@ -1,5 +1,9 @@
 #include "StdAfx.h"
 
+void ImageSearch_SAD_Region__(CachedPicture* cache, int aLeft, int aTop, int aRight, int aBottom, SADSearchRegionFlags uSearchFlags, ImgSrchSADRegionRes& res);
+template <const bool secondary_cmp_hash, const bool secondary_cmp_SATD, const bool primary_cmp_SATD, const bool primary_cmp_hash>
+void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRight, int aBottom, SADSearchRegionFlags uSearchFlags, ImgSrchSADRegionRes& res);
+
 // not sure how healthy this is. Passing this buffer cross dll. Probably should convert it to global alloc
 static char ReturnBuffSadRegion[DEFAULT_STR_BUFFER_SIZE * 10];
 static char *ImageSearch_SAD_Region_FormatRes(ImgSrchSADRegionRes& res)
@@ -17,14 +21,15 @@ char* WINAPI ImageSearch_SAD_Region(const char* aFilespec, int aLeft, int aTop, 
 	if (cache) {
 		// nothing changed, we can consider the same response
 		if (cache->PrevSearchImageId == CurScreenshot->UniqueFameCounter &&
-			cache->PrevSearchTop == aTop && cache->PrevSearchLeft == aLeft) {
+			cache->PrevSearchTop == aTop && cache->PrevSearchLeft == aLeft && cache->PrevSearchFlags == uSearchFlags) {
+			FileDebug("Skipping Image search as previous search parameters match");
 			return cache->PrevSearchReturnVal;
 		}
 		else {
 			ImgSrchSADRegionRes res = { 0 };
 
 			// generate a new search result on a new screenshot
-			ImageSearch_SAD_Region_(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+			ImageSearch_SAD_Region__(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
 
 			// format the results
 			char* str_res = ImageSearch_SAD_Region_FormatRes(res);
@@ -40,13 +45,51 @@ char* WINAPI ImageSearch_SAD_Region(const char* aFilespec, int aLeft, int aTop, 
 	return ReturnBuffSadRegion;
 }
 
+void ImageSearch_SAD_Region__(CachedPicture* cache, int aLeft, int aTop, int aRight, int aBottom,SADSearchRegionFlags uSearchFlags,	ImgSrchSADRegionRes& res)
+{
+	const bool secondary_cmp_hash = (uSearchFlags & SSRF_ST_ENFORCE_SAD_WITH_HASH) != 0;
+	const bool secondary_cmp_SATD = (uSearchFlags & SSRF_ST_ENFORCE_SAD_WITH_SATD) != 0;
+	const bool primary_cmp_hash = (uSearchFlags & SSRF_ST_MAIN_CHECK_IS_HASH) != 0;
+	const bool primary_cmp_SATD = (uSearchFlags & SSRF_ST_MAIN_CHECK_IS_SATD) != 0;
+
+	// Optional sanity checks if your flags must be mutually exclusive:
+	// assert(!(primary_cmp_hash && primary_cmp_SATD));
+	// assert(secondary_cmp_hash || secondary_cmp_SATD); // etc.
+
+	const unsigned idx =
+		(unsigned(secondary_cmp_hash) << 3) |
+		(unsigned(secondary_cmp_SATD) << 2) |
+		(unsigned(primary_cmp_hash) << 1) |
+		(unsigned(primary_cmp_SATD) << 0);
+
+	switch (idx) {
+	case 0b0000: return ImageSearch_SAD_Region_<false, false, false, false>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b0001: return ImageSearch_SAD_Region_<false, false, false, true>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b0010: return ImageSearch_SAD_Region_<false, false, true, false>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b0011: return ImageSearch_SAD_Region_<false, false, true, true>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b0100: return ImageSearch_SAD_Region_<false, true, false, false>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b0101: return ImageSearch_SAD_Region_<false, true, false, true>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b0110: return ImageSearch_SAD_Region_<false, true, true, false>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b0111: return ImageSearch_SAD_Region_<false, true, true, true>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b1000: return ImageSearch_SAD_Region_< true, false, false, false>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b1001: return ImageSearch_SAD_Region_< true, false, false, true>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b1010: return ImageSearch_SAD_Region_< true, false, true, false>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b1011: return ImageSearch_SAD_Region_< true, false, true, true>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b1100: return ImageSearch_SAD_Region_< true, true, false, false>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b1101: return ImageSearch_SAD_Region_< true, true, false, true>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b1110: return ImageSearch_SAD_Region_< true, true, true, false>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b1111: return ImageSearch_SAD_Region_< true, true, true, true>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	}
+}
+
+template <const bool secondary_cmp_hash, const bool secondary_cmp_SATD, const bool primary_cmp_SATD, const bool primary_cmp_hash>
 void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRight, int aBottom, SADSearchRegionFlags uSearchFlags, ImgSrchSADRegionRes& res)
 {
 #ifdef _DEBUG
 	int MatchesFound = 0;
 	size_t startStamp = GetTickCount();
-#endif
 	FileDebug("Started Image search");
+#endif
 
 	if (cache == NULL)
 	{
@@ -70,7 +113,7 @@ void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRig
 	}
 #if !defined(_CONSOLE) // because we do want to have benchmarks
 	if (cache->PrevSearchImageId == CurScreenshot->UniqueFameCounter &&
-		cache->PrevSearchTop == aTop && cache->PrevSearchLeft == aLeft)
+		cache->PrevSearchTop == aTop && cache->PrevSearchLeft == aLeft && cache->PrevSearchFlags == uSearchFlags)
 	{
 		FileDebug("Skipping Image search as it's done on same image with same params");
 		return;
@@ -80,6 +123,7 @@ void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRig
 	cache->PrevSearchImageId = CurScreenshot->UniqueFameCounter;
 	cache->PrevSearchTop = aTop;
 	cache->PrevSearchLeft = aLeft;
+	cache->PrevSearchFlags = uSearchFlags;
 
 	// record searched regions so auto screenshot might know next time
 	const int dEstimatedSearchRadius = 3;
@@ -127,9 +171,21 @@ void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRig
 		return;
 	}
 
-	if ((uSearchFlags & SSRF_ST_ENFORCE_SAD_WITH_HASH)) {
+	if constexpr (primary_cmp_hash == true || secondary_cmp_hash == true ) {
 		ReinitScreenshotHashCache(CurScreenshot);
 	}
+
+#ifdef _DEBUG
+	{
+		char dbgmsg[DEFAULT_STR_BUFFER_SIZE];
+		sprintf_s(dbgmsg, sizeof(dbgmsg), "\t\t search flags=%d, primary_hash=%d, primary_satd=%d, sec_hash=%d, sec_satd=%d", uSearchFlags, primary_cmp_hash, primary_cmp_SATD, secondary_cmp_hash, secondary_cmp_SATD);
+		FileDebug(dbgmsg);
+		if ((uSearchFlags & SSRF_ST_PROCESS_INLCUDE_DIFF_INFO))
+			FileDebug("Result should include diff info");
+		if ((uSearchFlags & SSRF_ST_REMOVE_BRIGHTNES_FROM_SAD))
+			FileDebug("Result should include brightness corrected SAD");
+	}
+#endif
 
 	const LPCOLORREF Pixels1 = CurScreenshot->Pixels;
 	const LPCOLORREF Pixels2 = cache->Pixels;
@@ -156,11 +212,12 @@ void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRig
 		FileDebug(dbgmsg);
 	}
 #endif
+	const int max_sad_value = 0x7FFFFFFF;
 	res.HashSmallestDiffPCT = 100;
-	res.BestSATD = 0x7FFFFFFF;
+	res.BestSATD = max_sad_value;
 	res.retx = -1;
 	res.rety = -1;
-	res.BestSAD = 0x7FFFFFFF;
+	res.BestSAD = max_sad_value;
 	//DumpAsPPM( &CurScreenshot->Pixels[ 40 * Width + 40 ], 40, 40, Width );
 	const size_t stride1 = CurScreenshot->Width;
 	const size_t stride2 = cache->Width;
@@ -172,60 +229,84 @@ void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRig
 		const LPCOLORREF AddrSmall = &Pixels2[0];
 		for (size_t x = search_start_x; x < search_end_x; x++)
 		{
-			uint64_t sad = ImageSad(&AddrBig[x], stride1, AddrSmall, stride2, width_SAD, height_SAD);
-			if (res.BestSAD >= sad)
+			uint64_t sad;
+			// this means primary cmp is the default SAD
+			if constexpr ((primary_cmp_hash == false && primary_cmp_SATD == false)) {
+				sad = ImageSad(&AddrBig[x], stride1, AddrSmall, stride2, width_SAD, height_SAD);
+			}
+			else {
+				sad = max_sad_value;
+			}
 			{
-#ifdef _DEBUG
-				MatchesFound++;
-#endif
-				int HashingWasPossible = 0;
-				// this code needs more testing. Seen it crash. Did not had the time to debug
-				if ((uSearchFlags & SSRF_ST_ENFORCE_SAD_WITH_HASH))
-				{
-					ImgHashWholeIage* cacheHash = GetCreateCacheHash(cache);
-					int GenHashErr = GenHashesOnScreenshotForCachedImage(cache, CurScreenshot, (int)x, (int)y, CurScreenshot->pSSHashCache);
-					if (GenHashErr == 0)
-					{
-						ImgHash8x8_CompareResult compareRes;
-						int CompareErr = compareHash(cacheHash, CurScreenshot->pSSHashCache, &compareRes);
-						//						printf("New best sad at x=%llu y=%llu. Hash old %f, hash new %f\n", x, y, HashSmallestDiffPCT, compareRes.pctMatchAvg);
-						if (CompareErr == 0 && compareRes.pctMatchAvg < res.HashSmallestDiffPCT)
-						{
-							res.HashSmallestDiffPCT = compareRes.pctMatchAvg;
-							res.retx = (int)x;
-							res.rety = (int)y;
-							HashingWasPossible = 1;
-							res.BestSAD = sad;
-							//exact match ? I doubt it will ever happen...
-							if (res.HashSmallestDiffPCT == 100)
-								goto docleanupandreturn;
-						}
+				// because you can't do double checks using template programing :S 
+#define INLINE_HASH_CHECK_CODE \
+				ImgHashWholeIage* cacheHash = GetCreateCacheHash(cache); \
+				int GenHashErr = GenHashesOnScreenshotForCachedImage(cache, CurScreenshot, (int)x, (int)y, CurScreenshot->pSSHashCache); \
+				if (GenHashErr == 0) \
+				{ \
+					ImgHash8x8_CompareResult compareRes; \
+					compareHash(cacheHash, CurScreenshot->pSSHashCache, &compareRes); \
+					if (compareRes.PctDifferAvg < res.HashSmallestDiffPCT) { \
+						res.BestSAD = sad; \
+						res.HashSmallestDiffPCT = compareRes.PctDifferAvg; \
+						res.retx = (int)x; \
+						res.rety = (int)y; \
+						if (res.HashSmallestDiffPCT == 0.0) \
+							goto docleanupandreturn; \
+					} \
+					HashingWasPossible = 1; \
+				}
+#define INLINE_SATD_CHECK_CODE \
+				size_t satd = satd_nxm(&AddrBig[x], AddrSmall, width_SAD, height_SAD, stride1, stride2, res.BestSATD); \
+				if (satd < res.BestSATD) \
+				{ \
+					res.BestSAD = sad; \
+					res.BestSATD = satd; \
+					res.retx = (int)x; \
+					res.rety = (int)y; \
+					if (res.BestSATD == 0) \
+						goto docleanupandreturn; \
+				}
+
+				size_t HashingWasPossible = 0;
+
+				if constexpr (primary_cmp_hash == true) {
+					INLINE_HASH_CHECK_CODE;
+				}
+				else if constexpr (secondary_cmp_hash == true) {
+					if (sad < res.BestSAD) {
+						INLINE_HASH_CHECK_CODE;
 					}
 				}
 				// there are cases when SAD(loc2) < SAD(loc1) BUT SATD(loc2) > SATD(loc1)
 				// SATD is about 100+ times slower than SAD
-				if ((uSearchFlags & SSRF_ST_ENFORCE_SAD_WITH_SATD))
-				{
-					size_t satd = satd_nxm(&AddrBig[x], AddrSmall, width_SAD, height_SAD, stride1, stride2);
-					if (satd < res.BestSATD)
-					{
-						res.BestSAD = sad;
-						res.BestSATD = satd;
-						res.retx = (int)x;
-						res.rety = (int)y;
-						if (res.BestSATD == 0)
-							goto docleanupandreturn;
-					}
+				if constexpr (primary_cmp_SATD == true) {
 					HashingWasPossible = 1;
+					INLINE_SATD_CHECK_CODE;
 				}
+				else if constexpr (secondary_cmp_SATD == true) {
+					HashingWasPossible = 1;
+					if (sad < res.BestSAD) {
+						INLINE_SATD_CHECK_CODE;
+					}
+				}
+
 				// if secondary enforcer is not requested, fall back to simple SAD comparison
 				if (HashingWasPossible == 0) {
-					res.BestSAD = sad;
-					res.retx = (int)x;
-					res.rety = (int)y;
-					//exact match ? I doubt it will ever happen...
-					if (res.BestSAD == 0)
-						goto docleanupandreturn;
+					if (sad == max_sad_value) {
+						sad = ImageSad(&AddrBig[x], stride1, AddrSmall, stride2, width_SAD, height_SAD);
+					}
+					if (sad < res.BestSAD) {
+#ifdef _DEBUG
+						MatchesFound++;
+#endif
+						res.BestSAD = sad;
+						res.retx = (int)x;
+						res.rety = (int)y;
+						//exact match ? I doubt it will ever happen...
+						if (res.BestSAD == 0)
+							goto docleanupandreturn;
+					}
 				}
 			}
 		}
@@ -234,6 +315,15 @@ docleanupandreturn:
 	if (res.retx == -1)
 		FileDebug("\t Image search found no matches");
 
+	// there are chances we skipped calculating best sad value when using hashing or satd as primary compare function
+	if constexpr (primary_cmp_hash == true || primary_cmp_SATD == true || secondary_cmp_hash == true && secondary_cmp_SATD == true) {
+		if (res.BestSAD == max_sad_value && res.retx != -1){
+			const LPCOLORREF AddrBig = &Pixels1[res.rety * stride1 + res.retx];
+			const LPCOLORREF AddrSmall = &Pixels2[0];
+			res.BestSAD = ImageSad(AddrBig, stride1, AddrSmall, stride2, width_SAD, height_SAD);
+		}
+	}
+
 	res.colorDiffCount = 0;
 	res.colorDifferentPct = 0;
 	res.avgColorDiff = 0;
@@ -241,7 +331,7 @@ docleanupandreturn:
 	{
 		const LPCOLORREF AddrBig = &Pixels1[res.rety * stride1 + res.retx];
 		const LPCOLORREF AddrSmall = &Pixels2[0];
-		//		uint64_t sad = ImageSad(AddrBig, stride1, AddrSmall, stride2, width_SAD, height_SAD);
+//		uint64_t sad = ImageSad(AddrBig, stride1, AddrSmall, stride2, width_SAD, height_SAD);
 		for (size_t row = 0; row < cache->Height; row++)
 		{
 			for (size_t col = 0; col < width_SAD; col++)
@@ -355,7 +445,19 @@ docleanupandreturn:
 	FileDebug(dbgmsg);
 #endif
 
-	size_t SADPerPixel = res.BestSAD / (width_SAD * height_SAD * 3); // this actually called MAD
+	// we are missing SATD value here
+/*	if constexpr (primary_cmp_SATD == false && secondary_cmp_SATD == false) {
+		if (res.BestSATD == max_sad_value) {
+			res.BestSATD = 0;
+		}
+	}
+	// we are missing hash value here
+	if constexpr (primary_cmp_hash == false && secondary_cmp_hash == false) {
+		if (res.HashSmallestDiffPCT == 100) {
+			res.HashSmallestDiffPCT = 0;
+		}
+	}*/
+	res.SADPerPixel = res.BestSADBrightnessAdjusted / (width_SAD * height_SAD * 3); // this actually called MAD
 	res.retx = (int)(res.retx + CurScreenshot->Left);
 	res.rety = (int)(res.rety + CurScreenshot->Top);
 
