@@ -18,8 +18,10 @@ class SADSearchRegionFlags(IntFlag):
 #    SSRF_ST_ENFORCE_SAD_WITH_EDGE_GRAY = 1 << 6
 #    SSRF_ST_ENFORCE_SAD_WITH_EDGE_SSIM = 1 << 7
     SSRF_ST_REMOVE_BRIGHTNESS_FROM_SAD = 1 << 8 # will try to adjust brightness so that SAD is performed on similar lightning condition
-    SSRF_ST_MAIN_CHECK_IS_HASH = 1 << 9 # instead of SAD, use perceptual hashing - 20x slower than SAD ?
-    SSRF_ST_MAIN_CHECK_IS_SATD = 1 << 10 # istead of SAD, use SATD - 100x slower than SAD
+    SSRF_ST_MAIN_CHECK_IS_HASH = 1 << 9 # instead of SAD, use perceptual hashing - 100x slower than SAD
+    SSRF_ST_MAIN_CHECK_IS_SATD = 1 << 10 # istead of SAD, use SATD - 10x slower than SAD ?
+    SSRF_ST_INLCUDE_SATD_INFO = 1 << 11
+    SSRF_ST_INLCUDE_HASH_INFO = 1 << 12
     
 # ------------------
 # DLL + prototypes
@@ -54,6 +56,7 @@ class SingleResult:
     color_diff_pct: int = -1
     hash_diff_pct: int = -1
     satd: int = -1
+    satd_per_pixel: int = -1
     sad_brightness_corrected: int = -1
     raw: str = ""
 
@@ -73,7 +76,8 @@ def _parse_single_result(raw: str) -> SingleResult:
             color_diff_pct  = int(toks[7]) if len(toks) > 7 else -1,
             hash_diff_pct   = int(toks[8]) if len(toks) > 8 else -1,
             satd            = int(toks[9]) if len(toks) > 9 else -1,
-            sad_brightness_corrected   = int(toks[10]) if len(toks) > 10 else -1,
+            satd_per_pixel   = int(toks[10]) if len(toks) > 10 else -1,
+            sad_brightness_corrected   = int(toks[11]) if len(toks) > 11 else -1,
             raw=raw
         )
     except ValueError:

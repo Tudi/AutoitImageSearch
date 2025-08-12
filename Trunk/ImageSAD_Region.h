@@ -18,13 +18,15 @@ enum SADSearchRegionFlags : int
 	SSRF_ST_REMOVE_BRIGHTNES_FROM_SAD = 1 << 8, // If brightness setting changes since reference image was taken, sad would increase. Try to remove this
 	SSRF_ST_MAIN_CHECK_IS_HASH = 1 << 9, // Default compare is SAD, but you can request it to be HASH
 	SSRF_ST_MAIN_CHECK_IS_SATD = 1 << 10, // Default compare is SAD, but you can request it to be SATD
+	SSRF_ST_INLCUDE_SATD_INFO = 1 << 11,
+	SSRF_ST_INLCUDE_HASH_INFO = 1 << 12,
 };
 
 // have this return sumary to be able to wrap it in case multiple input images are given.
 // should benchmark speed difference first
 struct ImgSrchSADRegionRes {
 	int retx, rety;
-	size_t BestSAD, SADPerPixel, avgColorDiff, colorDiffCount, colorDifferentPct, BestSATD, BestSADBrightnessAdjusted;
+	size_t BestSAD, SADPerPixel, avgColorDiff, colorDiffCount, colorDifferentPct, BestSATD, BestSADBrightnessAdjusted, SATDPerPixel;
 	double HashSmallestDiffPCT;
 	size_t duration;
 };

@@ -1,7 +1,7 @@
 #include "StdAfx.h"
 
 void ImageSearch_SAD_Region__(CachedPicture* cache, int aLeft, int aTop, int aRight, int aBottom, SADSearchRegionFlags uSearchFlags, ImgSrchSADRegionRes& res);
-template <const bool secondary_cmp_hash, const bool secondary_cmp_SATD, const bool primary_cmp_SATD, const bool primary_cmp_hash>
+template <const bool secondary_cmp_hash, const bool secondary_cmp_SATD, const bool primary_cmp_hash, const bool primary_cmp_SATD>
 void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRight, int aBottom, SADSearchRegionFlags uSearchFlags, ImgSrchSADRegionRes& res);
 
 // not sure how healthy this is. Passing this buffer cross dll. Probably should convert it to global alloc
@@ -9,9 +9,9 @@ static char ReturnBuffSadRegion[DEFAULT_STR_BUFFER_SIZE * 10];
 static char *ImageSearch_SAD_Region_FormatRes(ImgSrchSADRegionRes& res)
 {
 	ReturnBuffSadRegion[0] = 0;
-	sprintf_s(ReturnBuffSadRegion, DEFAULT_STR_BUFFER_SIZE * 10, "1|%d|%d|%llu|%llu|%llu|%llu|%llu|%d|%llu|%llu",
+	sprintf_s(ReturnBuffSadRegion, DEFAULT_STR_BUFFER_SIZE * 10, "1|%d|%d|%llu|%llu|%llu|%llu|%llu|%d|%llu|%llu|%llu",
 		res.retx, res.rety, res.BestSAD, res.SADPerPixel, res.avgColorDiff, res.colorDiffCount, res.colorDifferentPct, 
-		int(res.HashSmallestDiffPCT), res.BestSATD, res.BestSADBrightnessAdjusted);
+		int(res.HashSmallestDiffPCT), res.BestSATD, res.SATDPerPixel, res.BestSADBrightnessAdjusted);
 	return ReturnBuffSadRegion;
 }
 
@@ -82,7 +82,7 @@ void ImageSearch_SAD_Region__(CachedPicture* cache, int aLeft, int aTop, int aRi
 	}
 }
 
-template <const bool secondary_cmp_hash, const bool secondary_cmp_SATD, const bool primary_cmp_SATD, const bool primary_cmp_hash>
+template <const bool secondary_cmp_hash, const bool secondary_cmp_SATD, const bool primary_cmp_hash, const bool primary_cmp_SATD>
 void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRight, int aBottom, SADSearchRegionFlags uSearchFlags, ImgSrchSADRegionRes& res)
 {
 #ifdef _DEBUG
@@ -171,8 +171,13 @@ void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRig
 		return;
 	}
 
+	ImgHashWholeIage* cacheHash = NULL;
 	if constexpr (primary_cmp_hash == true || secondary_cmp_hash == true ) {
 		ReinitScreenshotHashCache(CurScreenshot);
+		cacheHash = GetCreateCacheHash(cache);
+	} else if ((uSearchFlags & SSRF_ST_INLCUDE_HASH_INFO)) {
+		ReinitScreenshotHashCache(CurScreenshot);
+		cacheHash = GetCreateCacheHash(cache);
 	}
 
 #ifdef _DEBUG
@@ -213,7 +218,8 @@ void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRig
 	}
 #endif
 	const int max_sad_value = 0x7FFFFFFF;
-	res.HashSmallestDiffPCT = 100;
+	const double max_smallestDiffPCT = 100;
+	res.HashSmallestDiffPCT = max_smallestDiffPCT;
 	res.BestSATD = max_sad_value;
 	res.retx = -1;
 	res.rety = -1;
@@ -240,7 +246,6 @@ void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRig
 			{
 				// because you can't do double checks using template programing :S 
 #define INLINE_HASH_CHECK_CODE \
-				ImgHashWholeIage* cacheHash = GetCreateCacheHash(cache); \
 				int GenHashErr = GenHashesOnScreenshotForCachedImage(cache, CurScreenshot, (int)x, (int)y, CurScreenshot->pSSHashCache); \
 				if (GenHashErr == 0) \
 				{ \
@@ -425,7 +430,22 @@ docleanupandreturn:
 			}
 		}
 	}
-
+	if (res.rety != -1 && (uSearchFlags & SSRF_ST_INLCUDE_SATD_INFO) && res.BestSATD == max_sad_value)
+	{
+		const LPCOLORREF AddrBig = &Pixels1[res.rety * stride1 + res.retx];
+		const LPCOLORREF AddrSmall = &Pixels2[0];
+		res.BestSATD = satd_nxm(AddrBig, AddrSmall, width_SAD, height_SAD, stride1, stride2);
+	}
+	if (res.rety != -1 && (uSearchFlags & SSRF_ST_INLCUDE_HASH_INFO) && res.HashSmallestDiffPCT == max_smallestDiffPCT)
+	{
+		int GenHashErr = GenHashesOnScreenshotForCachedImage(cache, CurScreenshot, (int)res.retx, (int)res.rety, CurScreenshot->pSSHashCache);
+		if (GenHashErr == 0)
+		{
+			ImgHash8x8_CompareResult compareRes;
+			compareHash(cacheHash, CurScreenshot->pSSHashCache, &compareRes);
+			res.HashSmallestDiffPCT = compareRes.PctDifferAvg;
+		}
+	}
 #ifdef _DEBUG
 	if (((res.BestSAD == 0 && res.colorDiffCount != 0) || (res.BestSAD != 0 && res.colorDiffCount == 0)) && (uSearchFlags & SSRF_ST_PROCESS_INLCUDE_DIFF_INFO))
 	{
@@ -458,6 +478,12 @@ docleanupandreturn:
 		}
 	}*/
 	res.SADPerPixel = res.BestSADBrightnessAdjusted / (width_SAD * height_SAD * 3); // this actually called MAD
+	if (res.BestSATD != max_sad_value) {
+		res.SATDPerPixel = res.BestSATD / (width_SAD * height_SAD * 3);
+	}
+	else {
+		res.SATDPerPixel = max_sad_value;
+	}
 	res.retx = (int)(res.retx + CurScreenshot->Left);
 	res.rety = (int)(res.rety + CurScreenshot->Top);
 

@@ -83,6 +83,8 @@ def main():
                 tflag = int(flag)
                 if itr % 2 == 0:
                     tflag = int(flag) | ( 1 << 25 ) # add/remove useless flag as search flag to avoid search returning a cached result
+                if itr == 0 and (tflag & SADSearchRegionFlags.SSRF_ST_ENFORCE_SAD_WITH_HASH) == 0 and (tflag & SADSearchRegionFlags.SSRF_ST_MAIN_CHECK_IS_HASH) == 0:
+                    tflag = tflag | SADSearchRegionFlags.SSRF_ST_INLCUDE_HASH_INFO
                 t0 = time.perf_counter()
                 res = dll.SearchImageInRegion(bmp, 0, 0, 1900, 1000, int(tflag), False, True)
                 dt = time.perf_counter() - t0
@@ -139,48 +141,48 @@ if __name__ == "__main__":
 loaded as screenshot: Screenshot_0000_0000_0000_1906_1011.bmp
 === Speed testing: Screenshot_0000_0058_0228_0155_0047.bmp ===
 =========== Speed testing: SSRF_ST_NO_FLAGS ===
-                SSRF_ST_NO_FLAGS:  avg  1969.86 ms, total 1969.8573998175561 ms, res SingleResult(x=58, y=228, sad=413888, sad_per_pixel=19, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=100, satd=2147483647, sad_brightness_corrected=413888, raw='1|58|228|413888|19|0|0|0|100|2147483647|413888')
+                SSRF_ST_NO_FLAGS:  avg  1878.26 ms, total 1878.2628001645207 ms, res SingleResult(x=58, y=228, sad=413888, sad_per_pixel=19, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=8, satd=2147483647, satd_per_pixel=2147483647, sad_brightness_corrected=413888, raw='1|58|228|413888|19|0|0|0|8|2147483647|2147483647|413888')
 =========== Speed testing: SSRF_ST_ENFORCE_SAD_WITH_SATD ===
-   SSRF_ST_ENFORCE_SAD_WITH_SATD:  avg  2192.24 ms, total 2192.241400014609 ms, res SingleResult(x=58, y=228, sad=413888, sad_per_pixel=19, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=100, satd=743959, sad_brightness_corrected=413888, raw='1|58|228|413888|19|0|0|0|100|743959|413888')
+   SSRF_ST_ENFORCE_SAD_WITH_SATD:  avg  2274.73 ms, total 2274.733600206673 ms, res SingleResult(x=58, y=228, sad=413888, sad_per_pixel=19, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=8, satd=743959, satd_per_pixel=2933, sad_brightness_corrected=413888, raw='1|58|228|413888|19|0|0|0|8|743959|2933|413888')
 =========== Speed testing: SSRF_ST_ENFORCE_SAD_WITH_HASH ===
-   SSRF_ST_ENFORCE_SAD_WITH_HASH:  avg  5139.18 ms, total 5139.179099816829 ms, res SingleResult(x=58, y=228, sad=413888, sad_per_pixel=19, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=8, satd=2147483647, sad_brightness_corrected=413888, raw='1|58|228|413888|19|0|0|0|8|2147483647|413888')
+   SSRF_ST_ENFORCE_SAD_WITH_HASH:  avg  4558.10 ms, total 4558.095599990338 ms, res SingleResult(x=58, y=228, sad=413888, sad_per_pixel=19, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=8, satd=2147483647, satd_per_pixel=2147483647, sad_brightness_corrected=413888, raw='1|58|228|413888|19|0|0|0|8|2147483647|2147483647|413888')
 =========== Speed testing: SSRF_ST_MAIN_CHECK_IS_HASH ===
-      SSRF_ST_MAIN_CHECK_IS_HASH:  avg 19027.34 ms, total 19027.338500134647 ms, res SingleResult(x=58, y=228, sad=413888, sad_per_pixel=19, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=100, satd=743959, sad_brightness_corrected=413888, raw='1|58|228|413888|19|0|0|0|100|743959|413888')
+      SSRF_ST_MAIN_CHECK_IS_HASH:  avg 256189.74 ms, total 256189.74280031398 ms, res SingleResult(x=58, y=228, sad=413888, sad_per_pixel=19, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=8, satd=2147483647, satd_per_pixel=2147483647, sad_brightness_corrected=413888, raw='1|58|228|413888|19|0|0|0|8|2147483647|2147483647|413888')
 =========== Speed testing: SSRF_ST_MAIN_CHECK_IS_SATD ===
-      SSRF_ST_MAIN_CHECK_IS_SATD:  avg 296146.78 ms, total 296146.77549991757 ms, res SingleResult(x=58, y=228, sad=413888, sad_per_pixel=19, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=8, satd=2147483647, sad_brightness_corrected=413888, raw='1|58|228|413888|19|0|0|0|8|2147483647|413888')
+      SSRF_ST_MAIN_CHECK_IS_SATD:  avg 18195.85 ms, total 18195.84759976715 ms, res SingleResult(x=58, y=228, sad=413888, sad_per_pixel=19, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=8, satd=743959, satd_per_pixel=2933, sad_brightness_corrected=413888, raw='1|58|228|413888|19|0|0|0|8|743959|2933|413888')
   Verifying result consistency across flags...
   [OK] All flags produced identical (deterministic) results for this query. : (58, 228, 413888)
 === Speed testing: Screenshot_0001_0583_0286_0103_0028.bmp ===
 =========== Speed testing: SSRF_ST_NO_FLAGS ===
-                SSRF_ST_NO_FLAGS:  avg   394.98 ms, total 394.98250000178814 ms, res SingleResult(x=583, y=286, sad=55181, sad_per_pixel=6, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=100, satd=2147483647, sad_brightness_corrected=55181, raw='1|583|286|55181|6|0|0|0|100|2147483647|55181')
+                SSRF_ST_NO_FLAGS:  avg   375.86 ms, total 375.85780024528503 ms, res SingleResult(x=583, y=286, sad=55181, sad_per_pixel=6, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=7, satd=2147483647, satd_per_pixel=2147483647, sad_brightness_corrected=55181, raw='1|583|286|55181|6|0|0|0|7|2147483647|2147483647|55181')
 =========== Speed testing: SSRF_ST_ENFORCE_SAD_WITH_SATD ===
-   SSRF_ST_ENFORCE_SAD_WITH_SATD:  avg   409.24 ms, total 409.2442002147436 ms, res SingleResult(x=583, y=286, sad=55181, sad_per_pixel=6, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=100, satd=125158, sad_brightness_corrected=55181, raw='1|583|286|55181|6|0|0|0|100|125158|55181')
+   SSRF_ST_ENFORCE_SAD_WITH_SATD:  avg   384.39 ms, total 384.3946997076273 ms, res SingleResult(x=583, y=286, sad=55181, sad_per_pixel=6, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=7, satd=125158, satd_per_pixel=804, sad_brightness_corrected=55181, raw='1|583|286|55181|6|0|0|0|7|125158|804|55181')
 =========== Speed testing: SSRF_ST_ENFORCE_SAD_WITH_HASH ===
-   SSRF_ST_ENFORCE_SAD_WITH_HASH:  avg 11437.49 ms, total 11437.48759990558 ms, res SingleResult(x=583, y=286, sad=55181, sad_per_pixel=6, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=7, satd=2147483647, sad_brightness_corrected=55181, raw='1|583|286|55181|6|0|0|0|7|2147483647|55181')
+   SSRF_ST_ENFORCE_SAD_WITH_HASH:  avg 10844.84 ms, total 10844.840600155294 ms, res SingleResult(x=583, y=286, sad=55181, sad_per_pixel=6, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=7, satd=2147483647, satd_per_pixel=2147483647, sad_brightness_corrected=55181, raw='1|583|286|55181|6|0|0|0|7|2147483647|2147483647|55181')
 =========== Speed testing: SSRF_ST_MAIN_CHECK_IS_HASH ===
-      SSRF_ST_MAIN_CHECK_IS_HASH:  avg  6862.15 ms, total 6862.1457000263035 ms, res SingleResult(x=583, y=286, sad=55181, sad_per_pixel=6, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=100, satd=125158, sad_brightness_corrected=55181, raw='1|583|286|55181|6|0|0|0|100|125158|55181')
+      SSRF_ST_MAIN_CHECK_IS_HASH:  avg 100416.89 ms, total 100416.89289966598 ms, res SingleResult(x=583, y=286, sad=55181, sad_per_pixel=6, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=7, satd=2147483647, satd_per_pixel=2147483647, sad_brightness_corrected=55181, raw='1|583|286|55181|6|0|0|0|7|2147483647|2147483647|55181')
 =========== Speed testing: SSRF_ST_MAIN_CHECK_IS_SATD ===
-      SSRF_ST_MAIN_CHECK_IS_SATD:  avg 105917.28 ms, total 105917.28009982035 ms, res SingleResult(x=583, y=286, sad=55181, sad_per_pixel=6, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=7, satd=2147483647, sad_brightness_corrected=55181, raw='1|583|286|55181|6|0|0|0|7|2147483647|55181')
+      SSRF_ST_MAIN_CHECK_IS_SATD:  avg  6513.53 ms, total 6513.528800103813 ms, res SingleResult(x=583, y=286, sad=55181, sad_per_pixel=6, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=7, satd=125158, satd_per_pixel=804, sad_brightness_corrected=55181, raw='1|583|286|55181|6|0|0|0|7|125158|804|55181')
   Verifying result consistency across flags...
   [OK] All flags produced identical (deterministic) results for this query. : (583, 286, 55181)
 === Speed testing: Screenshot_0002_1560_0345_0197_0043.bmp ===
 =========== Speed testing: SSRF_ST_NO_FLAGS ===
-                SSRF_ST_NO_FLAGS:  avg  2204.64 ms, total 2204.6409002505243 ms, res SingleResult(x=1560, y=345, sad=269873, sad_per_pixel=10, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=100, satd=2147483647, sad_brightness_corrected=269873, raw='1|1560|345|269873|10|0|0|0|100|2147483647|269873')
+                SSRF_ST_NO_FLAGS:  avg  2016.50 ms, total 2016.5040995925665 ms, res SingleResult(x=1560, y=345, sad=269873, sad_per_pixel=10, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=5, satd=2147483647, satd_per_pixel=2147483647, sad_brightness_corrected=269873, raw='1|1560|345|269873|10|0|0|0|5|2147483647|2147483647|269873')
 =========== Speed testing: SSRF_ST_ENFORCE_SAD_WITH_SATD ===
-   SSRF_ST_ENFORCE_SAD_WITH_SATD:  avg  2169.89 ms, total 2169.8920000344515 ms, res SingleResult(x=1560, y=345, sad=269873, sad_per_pixel=10, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=100, satd=542218, sad_brightness_corrected=269873, raw='1|1560|345|269873|10|0|0|0|100|542218|269873')
+   SSRF_ST_ENFORCE_SAD_WITH_SATD:  avg  2178.88 ms, total 2178.8769997656345 ms, res SingleResult(x=1560, y=345, sad=269873, sad_per_pixel=10, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=5, satd=542218, satd_per_pixel=1989, sad_brightness_corrected=269873, raw='1|1560|345|269873|10|0|0|0|5|542218|1989|269873')
 =========== Speed testing: SSRF_ST_ENFORCE_SAD_WITH_HASH ===
-   SSRF_ST_ENFORCE_SAD_WITH_HASH:  avg  2250.29 ms, total 2250.285899732262 ms, res SingleResult(x=1560, y=345, sad=269873, sad_per_pixel=10, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=5, satd=2147483647, sad_brightness_corrected=269873, raw='1|1560|345|269873|10|0|0|0|5|2147483647|269873')
+   SSRF_ST_ENFORCE_SAD_WITH_HASH:  avg  2276.94 ms, total 2276.943000033498 ms, res SingleResult(x=1560, y=345, sad=269873, sad_per_pixel=10, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=5, satd=2147483647, satd_per_pixel=2147483647, sad_brightness_corrected=269873, raw='1|1560|345|269873|10|0|0|0|5|2147483647|2147483647|269873')
 =========== Speed testing: SSRF_ST_MAIN_CHECK_IS_HASH ===
-      SSRF_ST_MAIN_CHECK_IS_HASH:  avg 18153.89 ms, total 18153.88649981469 ms, res SingleResult(x=1560, y=345, sad=269873, sad_per_pixel=10, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=100, satd=542218, sad_brightness_corrected=269873, raw='1|1560|345|269873|10|0|0|0|100|542218|269873')
+      SSRF_ST_MAIN_CHECK_IS_HASH:  avg 321418.25 ms, total 321418.25439967215 ms, res SingleResult(x=1560, y=345, sad=269873, sad_per_pixel=10, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=5, satd=2147483647, satd_per_pixel=2147483647, sad_brightness_corrected=269873, raw='1|1560|345|269873|10|0|0|0|5|2147483647|2147483647|269873')
 =========== Speed testing: SSRF_ST_MAIN_CHECK_IS_SATD ===
-      SSRF_ST_MAIN_CHECK_IS_SATD:  avg 336069.38 ms, total 336069.38329990953 ms, res SingleResult(x=1560, y=345, sad=269873, sad_per_pixel=10, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=5, satd=2147483647, sad_brightness_corrected=269873, raw='1|1560|345|269873|10|0|0|0|5|2147483647|269873')
+      SSRF_ST_MAIN_CHECK_IS_SATD:  avg 17842.55 ms, total 17842.546300031245 ms, res SingleResult(x=1560, y=345, sad=269873, sad_per_pixel=10, avg_color_diff=0, color_diff_count=0, color_diff_pct=0, hash_diff_pct=5, satd=542218, satd_per_pixel=1989, sad_brightness_corrected=269873, raw='1|1560|345|269873|10|0|0|0|5|542218|1989|269873')
   Verifying result consistency across flags...
   [OK] All flags produced identical (deterministic) results for this query. : (1560, 345, 269873)
 
 === Overall Averages (across queries) ===
-                SSRF_ST_NO_FLAGS:  overall avg  1523.16 ms
-   SSRF_ST_ENFORCE_SAD_WITH_SATD:  overall avg  1590.46 ms
-   SSRF_ST_ENFORCE_SAD_WITH_HASH:  overall avg  6275.65 ms
-      SSRF_ST_MAIN_CHECK_IS_HASH:  overall avg 14681.12 ms
-      SSRF_ST_MAIN_CHECK_IS_SATD:  overall avg 246044.48 ms
+                SSRF_ST_NO_FLAGS:  overall avg  1423.54 ms
+   SSRF_ST_ENFORCE_SAD_WITH_SATD:  overall avg  1612.67 ms
+   SSRF_ST_ENFORCE_SAD_WITH_HASH:  overall avg  5893.29 ms
+      SSRF_ST_MAIN_CHECK_IS_HASH:  overall avg 226008.30 ms
+      SSRF_ST_MAIN_CHECK_IS_SATD:  overall avg 14183.97 ms
 """
