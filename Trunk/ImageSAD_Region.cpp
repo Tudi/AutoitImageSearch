@@ -1,88 +1,9 @@
 #include "StdAfx.h"
 
-void ImageSearch_SAD_Region__(CachedPicture* cache, int aLeft, int aTop, int aRight, int aBottom, SADSearchRegionFlags uSearchFlags, ImgSrchSADRegionRes& res);
-template <const bool secondary_cmp_hash, const bool secondary_cmp_SATD, const bool primary_cmp_hash, const bool primary_cmp_SATD>
-void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRight, int aBottom, SADSearchRegionFlags uSearchFlags, ImgSrchSADRegionRes& res);
-
 // not sure how healthy this is. Passing this buffer cross dll. Probably should convert it to global alloc
 static char ReturnBuffSadRegion[DEFAULT_STR_BUFFER_SIZE * 10];
-static char *ImageSearch_SAD_Region_FormatRes(ImgSrchSADRegionRes& res)
-{
-	ReturnBuffSadRegion[0] = 0;
-	sprintf_s(ReturnBuffSadRegion, DEFAULT_STR_BUFFER_SIZE * 10, "1|%d|%d|%llu|%llu|%llu|%llu|%llu|%d|%llu|%llu|%llu",
-		res.retx, res.rety, res.BestSAD, res.SADPerPixel, res.avgColorDiff, res.colorDiffCount, res.colorDifferentPct, 
-		int(res.HashSmallestDiffPCT), res.BestSATD, res.SATDPerPixel, res.BestSADBrightnessAdjusted);
-	return ReturnBuffSadRegion;
-}
 
-char* WINAPI ImageSearch_SAD_Region(const char* aFilespec, int aLeft, int aTop, int aRight, int aBottom, SADSearchRegionFlags uSearchFlags)
-{
-	CachedPicture* cache = CachePicture(aFilespec);
-	if (cache) {
-		// nothing changed, we can consider the same response
-		if (cache->PrevSearchImageId == CurScreenshot->UniqueFameCounter &&
-			cache->PrevSearchTop == aTop && cache->PrevSearchLeft == aLeft && cache->PrevSearchFlags == uSearchFlags) {
-			FileDebug("Skipping Image search as previous search parameters match");
-			return cache->PrevSearchReturnVal;
-		}
-		else {
-			ImgSrchSADRegionRes res = { 0 };
-
-			// generate a new search result on a new screenshot
-			ImageSearch_SAD_Region__(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
-
-			// format the results
-			char* str_res = ImageSearch_SAD_Region_FormatRes(res);
-
-			// in case caller is spamming searches more than we are able to keep up the pace with
-			strcpy_s(cache->PrevSearchReturnVal, str_res);
-
-			return str_res;
-		}
-	}
-
-	ReturnBuffSadRegion[0] = 0;
-	return ReturnBuffSadRegion;
-}
-
-void ImageSearch_SAD_Region__(CachedPicture* cache, int aLeft, int aTop, int aRight, int aBottom,SADSearchRegionFlags uSearchFlags,	ImgSrchSADRegionRes& res)
-{
-	const bool secondary_cmp_hash = (uSearchFlags & SSRF_ST_ENFORCE_SAD_WITH_HASH) != 0;
-	const bool secondary_cmp_SATD = (uSearchFlags & SSRF_ST_ENFORCE_SAD_WITH_SATD) != 0;
-	const bool primary_cmp_hash = (uSearchFlags & SSRF_ST_MAIN_CHECK_IS_HASH) != 0;
-	const bool primary_cmp_SATD = (uSearchFlags & SSRF_ST_MAIN_CHECK_IS_SATD) != 0;
-
-	// Optional sanity checks if your flags must be mutually exclusive:
-	// assert(!(primary_cmp_hash && primary_cmp_SATD));
-	// assert(secondary_cmp_hash || secondary_cmp_SATD); // etc.
-
-	const unsigned idx =
-		(unsigned(secondary_cmp_hash) << 3) |
-		(unsigned(secondary_cmp_SATD) << 2) |
-		(unsigned(primary_cmp_hash) << 1) |
-		(unsigned(primary_cmp_SATD) << 0);
-
-	switch (idx) {
-	case 0b0000: return ImageSearch_SAD_Region_<false, false, false, false>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
-	case 0b0001: return ImageSearch_SAD_Region_<false, false, false, true>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
-	case 0b0010: return ImageSearch_SAD_Region_<false, false, true, false>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
-	case 0b0011: return ImageSearch_SAD_Region_<false, false, true, true>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
-	case 0b0100: return ImageSearch_SAD_Region_<false, true, false, false>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
-	case 0b0101: return ImageSearch_SAD_Region_<false, true, false, true>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
-	case 0b0110: return ImageSearch_SAD_Region_<false, true, true, false>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
-	case 0b0111: return ImageSearch_SAD_Region_<false, true, true, true>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
-	case 0b1000: return ImageSearch_SAD_Region_< true, false, false, false>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
-	case 0b1001: return ImageSearch_SAD_Region_< true, false, false, true>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
-	case 0b1010: return ImageSearch_SAD_Region_< true, false, true, false>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
-	case 0b1011: return ImageSearch_SAD_Region_< true, false, true, true>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
-	case 0b1100: return ImageSearch_SAD_Region_< true, true, false, false>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
-	case 0b1101: return ImageSearch_SAD_Region_< true, true, false, true>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
-	case 0b1110: return ImageSearch_SAD_Region_< true, true, true, false>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
-	case 0b1111: return ImageSearch_SAD_Region_< true, true, true, true>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
-	}
-}
-
-template <const bool secondary_cmp_hash, const bool secondary_cmp_SATD, const bool primary_cmp_hash, const bool primary_cmp_SATD>
+template <const bool secondary_cmp_hash, const bool secondary_cmp_SATD, const bool primary_cmp_hash, const bool primary_cmp_SATD, const int MultiStageSadVer>
 void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRight, int aBottom, SADSearchRegionFlags uSearchFlags, ImgSrchSADRegionRes& res)
 {
 #ifdef _DEBUG
@@ -217,8 +138,12 @@ void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRig
 		FileDebug(dbgmsg);
 	}
 #endif
-	const int max_sad_value = 0x7FFFFFFF;
+	const uint64_t max_sad_value = ~(uint64_t)0;
 	const double max_smallestDiffPCT = 100;
+	uint64_t multiStageSads[9];
+	if constexpr (MultiStageSadVer != 0) {
+		memset(multiStageSads, (uint8_t)0xFF, sizeof(multiStageSads));
+	}
 	res.HashSmallestDiffPCT = max_smallestDiffPCT;
 	res.BestSATD = max_sad_value;
 	res.retx = -1;
@@ -235,14 +160,6 @@ void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRig
 		const LPCOLORREF AddrSmall = &Pixels2[0];
 		for (size_t x = search_start_x; x < search_end_x; x++)
 		{
-			uint64_t sad;
-			// this means primary cmp is the default SAD
-			if constexpr ((primary_cmp_hash == false && primary_cmp_SATD == false)) {
-				sad = ImageSad(&AddrBig[x], stride1, AddrSmall, stride2, width_SAD, height_SAD);
-			}
-			else {
-				sad = max_sad_value;
-			}
 			{
 				// because you can't do double checks using template programing :S 
 #define INLINE_HASH_CHECK_CODE \
@@ -276,21 +193,50 @@ void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRig
 				size_t HashingWasPossible = 0;
 
 				if constexpr (primary_cmp_hash == true) {
+					uint64_t sad = max_sad_value;
 					INLINE_HASH_CHECK_CODE;
 				}
 				else if constexpr (secondary_cmp_hash == true) {
+					HashingWasPossible = 1;
+					uint64_t sad;
+					if constexpr (MultiStageSadVer == 1) {
+						sad = ImageSad2Stage(&AddrBig[x], stride1, AddrSmall, stride2, width_SAD, height_SAD, multiStageSads);
+					}
+					else if constexpr (MultiStageSadVer == 2) {
+						sad = ImageSad4Stage(&AddrBig[x], stride1, AddrSmall, stride2, width_SAD, height_SAD, multiStageSads);
+					}
+					else if constexpr (MultiStageSadVer == 3) {
+						sad = ImageSad9Stage(&AddrBig[x], stride1, AddrSmall, stride2, width_SAD, height_SAD, multiStageSads);
+					}
+					else {
+						sad = ImageSad(&AddrBig[x], stride1, AddrSmall, stride2, width_SAD, height_SAD);
+					}
 					if (sad < res.BestSAD) {
 						INLINE_HASH_CHECK_CODE;
 					}
 				}
 				// there are cases when SAD(loc2) < SAD(loc1) BUT SATD(loc2) > SATD(loc1)
 				// SATD is about 100+ times slower than SAD
-				if constexpr (primary_cmp_SATD == true) {
+				else if constexpr (primary_cmp_SATD == true) {
 					HashingWasPossible = 1;
+					uint64_t sad = max_sad_value;
 					INLINE_SATD_CHECK_CODE;
 				}
 				else if constexpr (secondary_cmp_SATD == true) {
 					HashingWasPossible = 1;
+					uint64_t sad;
+					if constexpr (MultiStageSadVer == 1) {
+						sad = ImageSad2Stage(&AddrBig[x], stride1, AddrSmall, stride2, width_SAD, height_SAD, multiStageSads);
+					}
+					else if constexpr (MultiStageSadVer == 2) {
+						sad = ImageSad4Stage(&AddrBig[x], stride1, AddrSmall, stride2, width_SAD, height_SAD, multiStageSads);
+					}
+					else if constexpr (MultiStageSadVer == 3) {
+						sad = ImageSad9Stage(&AddrBig[x], stride1, AddrSmall, stride2, width_SAD, height_SAD, multiStageSads);
+					}
+					else {
+						sad = ImageSad(&AddrBig[x], stride1, AddrSmall, stride2, width_SAD, height_SAD);
+					}
 					if (sad < res.BestSAD) {
 						INLINE_SATD_CHECK_CODE;
 					}
@@ -298,7 +244,17 @@ void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRig
 
 				// if secondary enforcer is not requested, fall back to simple SAD comparison
 				if (HashingWasPossible == 0) {
-					if (sad == max_sad_value) {
+					uint64_t sad;
+					if constexpr (MultiStageSadVer == 1) {
+						sad = ImageSad2Stage(&AddrBig[x], stride1, AddrSmall, stride2, width_SAD, height_SAD, multiStageSads);
+					}
+					else if constexpr (MultiStageSadVer == 2) {
+						sad = ImageSad4Stage(&AddrBig[x], stride1, AddrSmall, stride2, width_SAD, height_SAD, multiStageSads);
+					}
+					else if constexpr (MultiStageSadVer == 3) {
+						sad = ImageSad9Stage(&AddrBig[x], stride1, AddrSmall, stride2, width_SAD, height_SAD, multiStageSads);
+					}
+					else {
 						sad = ImageSad(&AddrBig[x], stride1, AddrSmall, stride2, width_SAD, height_SAD);
 					}
 					if (sad < res.BestSAD) {
@@ -495,4 +451,109 @@ docleanupandreturn:
 #endif
 
 	return;
+}
+
+static inline char* ImageSearch_SAD_Region_FormatRes(ImgSrchSADRegionRes& res)
+{
+	ReturnBuffSadRegion[0] = 0;
+	sprintf_s(ReturnBuffSadRegion, DEFAULT_STR_BUFFER_SIZE * 10, "1|%d|%d|%llu|%llu|%llu|%llu|%llu|%d|%llu|%llu|%llu",
+		res.retx, res.rety, res.BestSAD, res.SADPerPixel, res.avgColorDiff, res.colorDiffCount, res.colorDifferentPct,
+		int(res.HashSmallestDiffPCT), res.BestSATD, res.SATDPerPixel, res.BestSADBrightnessAdjusted);
+	return ReturnBuffSadRegion;
+}
+
+template<int MS>
+static inline void ImageSearch_SAD_Region_DecideCmpFunc(CachedPicture* cache, int aLeft, int aTop, int aRight, int aBottom, SADSearchRegionFlags uSearchFlags, ImgSrchSADRegionRes& res)
+{
+	const bool secondary_cmp_hash = (uSearchFlags & SSRF_ST_ENFORCE_SAD_WITH_HASH) != 0;
+	const bool secondary_cmp_SATD = (uSearchFlags & SSRF_ST_ENFORCE_SAD_WITH_SATD) != 0;
+	const bool primary_cmp_hash = (uSearchFlags & SSRF_ST_MAIN_CHECK_IS_HASH) != 0;
+	const bool primary_cmp_SATD = (uSearchFlags & SSRF_ST_MAIN_CHECK_IS_SATD) != 0;
+
+	// Optional sanity checks if your flags must be mutually exclusive:
+	// assert(!(primary_cmp_hash && primary_cmp_SATD));
+	// assert(secondary_cmp_hash || secondary_cmp_SATD); // etc.
+
+	const unsigned idx =
+		(unsigned(secondary_cmp_hash) << 3) |
+		(unsigned(secondary_cmp_SATD) << 2) |
+		(unsigned(primary_cmp_hash) << 1) |
+		(unsigned(primary_cmp_SATD) << 0);
+
+	switch (idx) {
+	case 0b0000: return ImageSearch_SAD_Region_<false, false, false, false, MS>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b0001: return ImageSearch_SAD_Region_<false, false, false, true, MS>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b0010: return ImageSearch_SAD_Region_<false, false, true, false, MS>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b0011: return ImageSearch_SAD_Region_<false, false, true, true, MS>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b0100: return ImageSearch_SAD_Region_<false, true, false, false, MS>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b0101: return ImageSearch_SAD_Region_<false, true, false, true, MS>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b0110: return ImageSearch_SAD_Region_<false, true, true, false, MS>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b0111: return ImageSearch_SAD_Region_<false, true, true, true, MS>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b1000: return ImageSearch_SAD_Region_< true, false, false, false, MS>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b1001: return ImageSearch_SAD_Region_< true, false, false, true, MS>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b1010: return ImageSearch_SAD_Region_< true, false, true, false, MS>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b1011: return ImageSearch_SAD_Region_< true, false, true, true, MS>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b1100: return ImageSearch_SAD_Region_< true, true, false, false, MS>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b1101: return ImageSearch_SAD_Region_< true, true, false, true, MS>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b1110: return ImageSearch_SAD_Region_< true, true, true, false, MS>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	case 0b1111: return ImageSearch_SAD_Region_< true, true, true, true, MS>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+	default:
+		assert(false);
+	}
+}
+
+static inline void ImageSearch_SAD_Region_DecideSad(CachedPicture* cache, int aLeft, int aTop, int aRight, int aBottom, SADSearchRegionFlags uSearchFlags, ImgSrchSADRegionRes& res)
+{
+	if ((uSearchFlags & SSRF_ST_ALLOW_MULTI_STAGE_SAD2) != 0) {
+		// 2 stage SAD
+		if (cache->Height > 2 && cache->Width > 8) {
+			ImageSearch_SAD_Region_DecideCmpFunc<1>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+			return;
+		}
+	}
+	else if ((uSearchFlags & SSRF_ST_ALLOW_MULTI_STAGE_SAD4) != 0) {
+		// 4 stage SAD
+		if (cache->Height > 2 && cache->Width > 16) {
+			ImageSearch_SAD_Region_DecideCmpFunc<2>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+			return;
+		}
+	}
+	else if ((uSearchFlags & SSRF_ST_ALLOW_MULTI_STAGE_SAD9) != 0) {
+		if (cache->Height > 3 && cache->Width > 24) {
+			// 9 stage SAD
+			ImageSearch_SAD_Region_DecideCmpFunc<3>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+			return;
+		}
+	}
+	ImageSearch_SAD_Region_DecideCmpFunc<0>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+}
+
+char* WINAPI ImageSearch_SAD_Region(const char* aFilespec, int aLeft, int aTop, int aRight, int aBottom, SADSearchRegionFlags uSearchFlags)
+{
+	CachedPicture* cache = CachePicture(aFilespec);
+	if (cache) {
+		// nothing changed, we can consider the same response
+		if (cache->PrevSearchImageId == CurScreenshot->UniqueFameCounter &&
+			cache->PrevSearchTop == aTop && cache->PrevSearchLeft == aLeft && cache->PrevSearchFlags == uSearchFlags) {
+			FileDebug("Skipping Image search as previous search parameters match");
+			return cache->PrevSearchReturnVal;
+		}
+		else {
+			ImgSrchSADRegionRes res = { 0 };
+
+			// generate a new search result on a new screenshot
+			ImageSearch_SAD_Region_DecideSad(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+
+			// format the results
+			char* str_res = ImageSearch_SAD_Region_FormatRes(res);
+
+			// in case caller is spamming searches more than we are able to keep up the pace with
+			strcpy_s(cache->PrevSearchReturnVal, str_res);
+
+			return str_res;
+		}
+	}
+
+	ReturnBuffSadRegion[0] = 0;
+	return ReturnBuffSadRegion;
 }

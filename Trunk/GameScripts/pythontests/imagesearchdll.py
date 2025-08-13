@@ -22,6 +22,9 @@ class SADSearchRegionFlags(IntFlag):
     SSRF_ST_MAIN_CHECK_IS_SATD = 1 << 10 # istead of SAD, use SATD - 10x slower than SAD ?
     SSRF_ST_INLCUDE_SATD_INFO = 1 << 11
     SSRF_ST_INLCUDE_HASH_INFO = 1 << 12
+    SSRF_ST_ALLOW_MULTI_STAGE_SAD2 = 1 << 13 # faster but less precise
+    SSRF_ST_ALLOW_MULTI_STAGE_SAD4 = 1 << 14 # faster but less precise
+    SSRF_ST_ALLOW_MULTI_STAGE_SAD9 = 1 << 19 # faster but less precise
     
 # ------------------
 # DLL + prototypes
@@ -105,8 +108,9 @@ class ImageSearchDLL:
     def SetScreenshotMaxFPS(self, max_fps: int) -> None:
         self._dll.SetScreehotFPSLimit(int(max_fps))
 
-    def LoadCacheOverScreenshot(self, img_name: str, start_x: int, start_y: int) -> None:
-        self._dll.TakeScreenshot(-1, -1, -1, -1)
+    def LoadCacheOverScreenshot(self, img_name: str, start_x: int, start_y: int, take_screenshot: bool = True) -> None:
+        if take_screenshot == True:
+            self._dll.TakeScreenshot(-1, -1, -1, -1)
         path_b = img_name.encode("mbcs", errors="replace")
         self._dll.LoadCacheOverScreenshot(path_b,start_x,start_y)
 
@@ -122,19 +126,19 @@ class ImageSearchDLL:
     def SearchImageInRegion(self, img_name: str,
                         start_x: int = -1, start_y: int = -1,
                         end_x: int = -1, end_y: int = -1,
-                        search_flags: int = 0,
+                        search_flags: int = SADSearchRegionFlags.SSRF_ST_ALLOW_MULTI_STAGE_SAD2, # in case you catch an instance where this is not accurate, remove it
                         apply_mask: bool = True,
+                        search_radius_for_auto_taget = 2,   # when the search location is extracted from the file name, we will search an area to make sure there is no target movement
                         no_new_screenshot = False) -> SingleResult:
 
         # optional filename-derived coordinates
         if start_x < 0 or start_y < 0 or end_x < 0 or end_y < 0:
             x, y, w, h = _get_coords_from_image_filename(img_name)
             if x or y or w or h:
-                radius = 2
-                start_x = x - radius
-                start_y = y - radius
-                end_x   = x + radius
-                end_y   = y + radius
+                start_x = x - search_radius_for_auto_taget
+                start_y = y - search_radius_for_auto_taget
+                end_x   = x + search_radius_for_auto_taget
+                end_y   = y + search_radius_for_auto_taget
 
         if no_new_screenshot == False:
             # take a (possibly throttled) screenshot of “full screen” (-1,-1,-1,-1)

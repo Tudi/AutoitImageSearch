@@ -20,15 +20,18 @@ enum SADSearchRegionFlags : int
 	SSRF_ST_MAIN_CHECK_IS_SATD = 1 << 10, // Default compare is SAD, but you can request it to be SATD
 	SSRF_ST_INLCUDE_SATD_INFO = 1 << 11,
 	SSRF_ST_INLCUDE_HASH_INFO = 1 << 12,
+	SSRF_ST_ALLOW_MULTI_STAGE_SAD2 = 1 << 13, // faster but less precise
+	SSRF_ST_ALLOW_MULTI_STAGE_SAD4 = 1 << 14, // faster but less precise
+	SSRF_ST_ALLOW_MULTI_STAGE_SAD9 = 1 << 19, // faster but less precise
 };
 
 // have this return sumary to be able to wrap it in case multiple input images are given.
 // should benchmark speed difference first
 struct ImgSrchSADRegionRes {
 	int retx, rety;
-	size_t BestSAD, SADPerPixel, avgColorDiff, colorDiffCount, colorDifferentPct, BestSATD, BestSADBrightnessAdjusted, SATDPerPixel;
+	uint64_t BestSAD, SADPerPixel, avgColorDiff, colorDiffCount, colorDifferentPct, BestSATD, BestSADBrightnessAdjusted, SATDPerPixel;
 	double HashSmallestDiffPCT;
-	size_t duration;
+	uint64_t duration;
 };
 
 char* WINAPI ImageSearch_SAD_Region(const char* aFilespec, int aLeft, int aTop, int aRight, int aBottom, SADSearchRegionFlags uSearchFlags);
