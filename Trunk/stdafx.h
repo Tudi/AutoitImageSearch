@@ -79,6 +79,7 @@
 #include "ImageSATD.h"
 #include "ImageSAD_Region.h"
 #include "ImageSADGrayscale.h"
+#include "AutoSizeCapture.h"
 
 #ifdef _CONSOLE
     #include "Tools\CommandProcessor.h"

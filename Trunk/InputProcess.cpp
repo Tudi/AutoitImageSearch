@@ -4,9 +4,10 @@ LIBRARY_API ScreenshotStruct	ScreenshotCache[NR_SCREENSHOTS_CACHED];
 LIBRARY_API ScreenshotStruct	*CurScreenshot = NULL, *PrevScreenshot = NULL;
 LIBRARY_API int					ScreenshotStoreIndex = 0;
 
-LIBRARY_API SearchedRegionMinMax g_SearchedRegions = { 10000, 10000, -10000, -10000 };
 #define MAX_RETURN_BUFF_SIZE		1024
 static char*					g_FuncReturnBuff = NULL;
+
+size_t g_UnqiueFrameCounter = 1000; // avoid 0 value check in other places
 
 class ConstructorForStaticVars
 {
@@ -19,7 +20,6 @@ public:
 		}
 		CurScreenshot = PrevScreenshot = NULL;
 		ScreenshotStoreIndex = 0;
-		g_SearchedRegions = { 10000, 10000, -10000, -10000 };
 		g_FuncReturnBuff = (char*)MY_ALLOC(MAX_RETURN_BUFF_SIZE);
 	}
 };
@@ -198,29 +198,24 @@ void WINAPI TakeScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 	// use auto optimized based on previous frame statistics
 	if (aLeft == -1)
 	{
-		if (g_SearchedRegions.aBottom != -10000)
+		GetAdvisedNewCaptureSize(aLeft, aTop, aRight, aBottom);
+#ifdef _DEBUG
 		{
-			aLeft = g_SearchedRegions.aLeft;
-			aTop = g_SearchedRegions.aTop;
-			aRight = g_SearchedRegions.aRight;
-			aBottom = g_SearchedRegions.aBottom;
-			FileDebug("TakeScreenshot:Auto adjusted screenshot region");
+			char dbgmsg[DEFAULT_STR_BUFFER_SIZE];
+			sprintf_s(dbgmsg, sizeof(dbgmsg), "TakeScreenshot:Auto adjusted screenshot region left=%d top=%d right=%d, bottom=%d", aLeft, aTop, aRight, aBottom);
+			FileDebug(dbgmsg);
 		}
-		else
-		{
-			aLeft = aTop = aRight = aBottom = 0;
-			FileDebug("TakeScreenshot:Unknown screenshot region");
-		}
+#endif
 	}
 	int MaxWidth, MaxHeight;
 	GetMaxDesktopResolution(&MaxWidth, &MaxHeight);
 
 	// if we want a full screen screenshot
-	if (aBottom == 0) {
+	if (aBottom < 0) {
 		aBottom = MaxHeight;
 		FileDebug("TakeScreenshot:Bottom was too large, adjusted to max");
 	}
-	if (aRight == 0) {
+	if (aRight < 0) {
 		aRight = MaxWidth;
 		FileDebug("TakeScreenshot:Right was 0, adjusted to max");
 	}

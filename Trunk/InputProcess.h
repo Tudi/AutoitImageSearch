@@ -12,6 +12,8 @@ char* WINAPI GetImageSize( char *aImageFile );
 char* WINAPI IsAnythingChanced( int StartX, int StartY, int EndX, int EndY );
 void WINAPI CycleScreenshots();
 
+extern size_t g_UnqiueFrameCounter;
+
 class ScreenshotStruct
 {
 public:
@@ -50,7 +52,6 @@ public:
 		IsDiffMap = false;
 		NeedsSSCache = NeedsPSCache = NeedsSplitChannelCache = true;
 		AppliedColorMask = false;
-		static size_t g_UnqiueFrameCounter = 0;
 		UniqueFameCounter = (++g_UnqiueFrameCounter);
 	}
 	int				GetWidth()
@@ -96,7 +97,6 @@ struct SearchedRegionMinMax
 {
 	int aLeft, aTop, aRight, aBottom;
 };
-extern LIBRARY_API SearchedRegionMinMax g_SearchedRegions;
 
 void EnsureScreenshotHasGrayscale();
 #endif

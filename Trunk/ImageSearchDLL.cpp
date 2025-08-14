@@ -72,6 +72,22 @@ int main(int argc, char **arg)
 #endif
 
 #if defined(_DEBUG) || defined(_CONSOLE)
+	// testing if auto adjust capture size is working
+/*	{
+		// take a screenshot
+		TakeScreenshot(-1, -1, -1, -1);
+		const char* ret = ImageSearch_SAD_Region("visual_studio_text.bmp", 100, 100, 200, 200, SADSearchRegionFlags::SSRF_ST_ALLOW_MULTI_STAGE_GSAD);
+		Sleep(1000);
+		TakeScreenshot(-1, -1, -1, -1);
+		ret = ImageSearch_SAD_Region("visual_studio_text.bmp", 200, 200, 300, 300, SADSearchRegionFlags::SSRF_ST_ALLOW_MULTI_STAGE_GSAD);
+		TakeScreenshot(-1, -1, -1, -1);
+		Sleep(1000);
+		TakeScreenshot(-1, -1, -1, -1);
+		ret = ImageSearch_SAD_Region("visual_studio_text.bmp", 300, 200, 400, 400, SADSearchRegionFlags::SSRF_ST_ALLOW_MULTI_STAGE_GSAD);
+		TakeScreenshot(-1, -1, -1, -1);
+	}/**/
+/*
+	// testing if SADG2 is actually working / functional
 	{
 		// take a screenshot
 		TakeScreenshot(0, 0, 1920, 1080);
@@ -83,7 +99,7 @@ int main(int argc, char **arg)
 		SaveImage((LPCOLORREF)cache->pGrayscalePixels, cache->Width, cache->Height, "ciGS.bmp", 1);
 		SaveImage((LPCOLORREF)CurScreenshot->pGrayscalePixels, CurScreenshot->Width, CurScreenshot->Height, "ssGS.bmp", 1);
 		ret = ImageSearch_SAD_Region(searchedPicFilename, 0, 0, 1900, 1000, SADSearchRegionFlags::SSRF_ST_ALLOW_MULTI_STAGE_GSAD2);
-	}
+	}/**/
 //	TestSATDCorrectness(); return 0;
 /* {
 		for (size_t i = 0; i < 4; i++) { // testing leak detector

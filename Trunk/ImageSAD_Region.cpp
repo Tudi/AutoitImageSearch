@@ -48,10 +48,9 @@ void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRig
 
 	// record searched regions so auto screenshot might know next time
 	const int dEstimatedSearchRadius = 3;
-	g_SearchedRegions.aLeft = min(g_SearchedRegions.aLeft, aLeft - dEstimatedSearchRadius);
-	g_SearchedRegions.aRight = max(g_SearchedRegions.aRight, aRight + cache->Width + dEstimatedSearchRadius);
-	g_SearchedRegions.aTop = min(g_SearchedRegions.aTop, aTop - dEstimatedSearchRadius);
-	g_SearchedRegions.aBottom = max(g_SearchedRegions.aBottom, aBottom + cache->Height + dEstimatedSearchRadius);
+	AddSearchedRegion(CurScreenshot->UniqueFameCounter, aTop - dEstimatedSearchRadius, 
+		aLeft - dEstimatedSearchRadius, aRight + cache->Width + dEstimatedSearchRadius, 
+		aBottom + cache->Height + dEstimatedSearchRadius);
 
 	if (aLeft < CurScreenshot->Left)
 	{
@@ -81,6 +80,7 @@ void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRig
 		}
 		aBottom = CurScreenshot->Bottom - cache->Height;
 	}
+	// this happens when searched image is larger than screenshot
 	if (aRight <= aLeft)
 	{
 		FileDebug("ImageSearch_SAD_Region:Screenshot width is too small for searching. Skipping search");
