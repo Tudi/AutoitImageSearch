@@ -35,6 +35,7 @@ struct CachedPicture
 	int				PrevSearchTop, PrevSearchLeft, PrevSearchFlags;
 	char			PrevSearchReturnVal[512];
 	ImgHashWholeIage m_Hash;
+	uint8_t			*pGrayscalePixels; // 1 byte / pixel. Stride is same as width
 };
 
 int GetCacheIndex( const char *aFilespec );
@@ -47,6 +48,7 @@ void WINAPI LoadCacheOverScreenshot(const char *aFilename, int Atx, int Aty);
 void UnloadLastCache(); //right now only used when training OCR with huge amount of files
 void UnloadCache(char *aFilespec);
 ImgHashWholeIage* GetCreateCacheHash(CachedPicture* cache);
+void EnsureCacheHasGrayscale(CachedPicture* cache);
 
 extern LIBRARY_API CachedPicture PictureCache[MAX_PICTURE_CACHE_COUNT];
 extern LIBRARY_API int NrPicturesCached;

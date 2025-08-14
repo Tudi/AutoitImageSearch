@@ -18,7 +18,7 @@ void SaveImageAutoName(LPCOLORREF Pixels, int aLeft, int aTop, int Width, int He
 	SaveImage(Pixels, Width, Height, MyFileName, BytesPerPixel);
 }
 
-void SaveImage(LPCOLORREF Pixels, int Width, int Height, char *BaseName, int BytesPerPixel)
+void SaveImage(LPCOLORREF Pixels, int Width, int Height, const char *BaseName, int BytesPerPixel)
 {
 	//create a bitmap and populate pixels on it
 	CImage Img;

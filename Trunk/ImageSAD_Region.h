@@ -22,7 +22,9 @@ enum SADSearchRegionFlags : int
 	SSRF_ST_INLCUDE_HASH_INFO = 1 << 12,
 	SSRF_ST_ALLOW_MULTI_STAGE_SAD2 = 1 << 13, // faster but less precise
 	SSRF_ST_ALLOW_MULTI_STAGE_SAD4 = 1 << 14, // faster but less precise
-	SSRF_ST_ALLOW_MULTI_STAGE_SAD9 = 1 << 19, // faster but less precise
+	SSRF_ST_ALLOW_MULTI_STAGE_SAD9 = 1 << 15, // faster but less precise
+	SSRF_ST_ALLOW_MULTI_STAGE_GSAD = 1 << 16, // grayscale preSAD before SAD. Min cache width 32
+	SSRF_ST_ALLOW_MULTI_STAGE_GSAD2 = 1 << 17, // grayscale preSAD before SAD. Min cache width 64
 };
 
 // have this return sumary to be able to wrap it in case multiple input images are given.

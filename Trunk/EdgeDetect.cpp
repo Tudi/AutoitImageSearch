@@ -1,27 +1,32 @@
 #include "StdAfx.h"
+#include <immintrin.h>
+#include <stdint.h>
+#include <stddef.h>
 
+// this function keeps 4 BPP
 void WINAPI ConvertToGrayScale()
 {
 	if (CurScreenshot == NULL)
 		return;
-	int Width = CurScreenshot->GetWidth();
-	int Height = CurScreenshot->GetHeight();
-	for (int y = 0; y < Height; y++)
+	const size_t Width = CurScreenshot->GetWidth();
+	const size_t stride1 = CurScreenshot->Width;
+	const size_t Height = CurScreenshot->GetHeight();
+	for (size_t y = 0; y < Height; y++)
 	{
-		int *BaseSrc = (int*)&CurScreenshot->Pixels[y*Width];
-		int *BaseDst = BaseSrc;
-		for (int x = 0; x < Width; x++)
+		int* BaseSrc = (int*)&CurScreenshot->Pixels[y * stride1];
+		int* BaseDst = BaseSrc;
+		for (size_t x = 0; x < Width; x++)
 		{
-			unsigned char *SP = (unsigned char*)&BaseSrc[x];
-			unsigned char *DP = (unsigned char*)&BaseDst[x];
+			unsigned char* SP = (unsigned char*)&BaseSrc[x];
+			unsigned char* DP = (unsigned char*)&BaseDst[x];
 			// Sum the 3 color channels
-			int	Sum = 0;
-			for (int i = 0; i < 3; i++)
+			size_t	Sum = 0;
+			for (size_t i = 0; i < 3; i++)
 				Sum += SP[i];
 			Sum = Sum / 3; // avg the channels
 			//write back
-			for (int i = 0; i < 3; i++)
-				DP[i] = Sum;
+			for (size_t i = 0; i < 3; i++)
+				DP[i] = (unsigned char)Sum;
 		}
 	}
 }
@@ -312,4 +317,59 @@ void WINAPI EdgeCopyOriginalForEdges()
 			CurScreenshot->Pixels[i] = PrevScreenshot->Pixels[i];
 		else
 			CurScreenshot->Pixels[i] = TRANSPARENT_COLOR;
+}
+
+// this function converts the source with 4BPP to dest 1 BPP
+void ConvertToGrayscale_v3(const LPCOLORREF src, uint8_t* dst, size_t count)
+{
+#ifdef _DEBUG
+	size_t startStamp = GetTickCount();
+#endif
+	size_t i = 0;
+	const __m256i maskFF = _mm256_set1_epi32(0xFF);
+//	const __m256i C341 = _mm256_set1_epi32(341); // ~1/3 when shifted by 10 : 341/1024=0.3330078 * 3 * 255 = 254 ( max error from max sum rgb )
+	const __m256i C341 = _mm256_set1_epi32(342); // ~1/3 when shifted by 10 : 342/1024=0.3330078 * 3 * 255 = 255 ( max error from max sum rgb )
+//	const __m256i C341 = _mm256_set1_epi32(10923); // ~1/3 when shifted by 10 : 10923/32768=0.33332825 * 3 * 255 = 254 ( max error from max sum rgb )
+
+	const size_t count2 = count - 8;
+	for (; i <= count2; i += 8) {
+		// Load 8 pixels (BGRA with A = 0)
+		__m256i px = _mm256_loadu_si256((const __m256i*)(src + i));
+
+		__m256i r = _mm256_and_si256(px, maskFF);
+		__m256i g = _mm256_and_si256(_mm256_srli_epi32(px, 8), maskFF);
+		__m256i b = _mm256_and_si256(_mm256_srli_epi32(px, 16), maskFF);
+
+		__m256i sum = _mm256_add_epi32(r, _mm256_add_epi32(g, b));
+
+		__m256i gray32 = _mm256_srli_epi32(_mm256_mullo_epi32(sum, C341), 10);
+
+		// Make a copy where the *low* 128 of 'b' is the original *high* 128 of gray32.
+		__m256i a = gray32;
+		__m256i b2 = _mm256_permute2x128_si256(gray32, gray32, 0x11); // [hi | hi]
+
+		// Now pack within lanes: low lane becomes [a.low.d0-3, b2.low.d0-3] => 8 non-zero words
+		__m256i gray16 = _mm256_packus_epi32(a, b2);
+
+		// Pack to bytes; low lane now has 8 contiguous grayscale bytes at its bottom
+		__m256i gray8 = _mm256_packus_epi16(gray16, _mm256_setzero_si256());
+
+		// Store the 8 bytes
+		_mm_storel_epi64((__m128i*)(dst + i), _mm256_castsi256_si128(gray8));
+	}
+
+	// Tail loop
+	for (; i < count; i++) {
+		size_t c = src[i];
+		size_t r = (c & 0xFF);
+		size_t g = ((c >> 8) & 0xFF);
+		size_t b = ((c >> 16) & 0xFF);
+		dst[i] = (uint8_t)((r + g + b) / 3);
+	}
+#ifdef _DEBUG
+	size_t endStamp = GetTickCount();
+	char dbgmsg[DEFAULT_STR_BUFFER_SIZE];
+	sprintf_s(dbgmsg, sizeof(dbgmsg), "ConvertToGrayscale_v3 finished in %d ms", (int)(endStamp - startStamp));
+	FileDebug(dbgmsg);
+#endif
 }

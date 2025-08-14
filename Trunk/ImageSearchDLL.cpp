@@ -72,8 +72,20 @@ int main(int argc, char **arg)
 #endif
 
 #if defined(_DEBUG) || defined(_CONSOLE)
+	{
+		// take a screenshot
+		TakeScreenshot(0, 0, 1920, 1080);
+		ApplyColorBitmask(0x00F0F0F0);
+		// load cache and test grayscale prefilter
+		const char* searchedPicFilename = "visual_studio_text.bmp";
+		const char* ret = ImageSearch_SAD_Region(searchedPicFilename, 0, 0, 1900, 1000, SADSearchRegionFlags::SSRF_ST_ALLOW_MULTI_STAGE_GSAD);
+		CachedPicture* cache = CachePicture(searchedPicFilename);
+		SaveImage((LPCOLORREF)cache->pGrayscalePixels, cache->Width, cache->Height, "ciGS.bmp", 1);
+		SaveImage((LPCOLORREF)CurScreenshot->pGrayscalePixels, CurScreenshot->Width, CurScreenshot->Height, "ssGS.bmp", 1);
+		ret = ImageSearch_SAD_Region(searchedPicFilename, 0, 0, 1900, 1000, SADSearchRegionFlags::SSRF_ST_ALLOW_MULTI_STAGE_GSAD2);
+	}
 //	TestSATDCorrectness(); return 0;
- {
+/* {
 		for (size_t i = 0; i < 4; i++) { // testing leak detector
 			TakeScreenshot(0, 0, 1920, 1080);
 		}
@@ -193,7 +205,7 @@ int main(int argc, char **arg)
 		printf("result of search benchmarking : %d %d FPS\n", End - Start, 1000 * 1000 / ( End - Start + 1 ) );
 		_getch();
 		}/**/
- {
+ /*{
 		_getch();
 		const char *res;
 		TakeScreenshot(0, 0, 1920, 1080);

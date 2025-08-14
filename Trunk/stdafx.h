@@ -78,6 +78,7 @@
 #include "ImageHash.h"
 #include "ImageSATD.h"
 #include "ImageSAD_Region.h"
+#include "ImageSADGrayscale.h"
 
 #ifdef _CONSOLE
     #include "Tools\CommandProcessor.h"

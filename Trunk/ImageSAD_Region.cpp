@@ -208,6 +208,12 @@ void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRig
 					else if constexpr (MultiStageSadVer == 3) {
 						sad = ImageSad9Stage(&AddrBig[x], stride1, AddrSmall, stride2, width_SAD, height_SAD, multiStageSads);
 					}
+					else if constexpr (MultiStageSadVer == 4) {
+						sad = ImageSadGrayScale_s(CurScreenshot, cache, x, y, width_SAD, height_SAD, multiStageSads);
+					}
+					else if constexpr (MultiStageSadVer == 5) {
+						sad = ImageSad2StageGrayScale_s(CurScreenshot, cache, x, y, width_SAD, height_SAD, multiStageSads);
+					}
 					else {
 						sad = ImageSad(&AddrBig[x], stride1, AddrSmall, stride2, width_SAD, height_SAD);
 					}
@@ -234,6 +240,12 @@ void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRig
 					else if constexpr (MultiStageSadVer == 3) {
 						sad = ImageSad9Stage(&AddrBig[x], stride1, AddrSmall, stride2, width_SAD, height_SAD, multiStageSads);
 					}
+					else if constexpr (MultiStageSadVer == 4) {
+						sad = ImageSadGrayScale_s(CurScreenshot, cache, x, y, width_SAD, height_SAD, multiStageSads);
+					}
+					else if constexpr (MultiStageSadVer == 5) {
+						sad = ImageSad2StageGrayScale_s(CurScreenshot, cache, x, y, width_SAD, height_SAD, multiStageSads);
+					}
 					else {
 						sad = ImageSad(&AddrBig[x], stride1, AddrSmall, stride2, width_SAD, height_SAD);
 					}
@@ -253,6 +265,12 @@ void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRig
 					}
 					else if constexpr (MultiStageSadVer == 3) {
 						sad = ImageSad9Stage(&AddrBig[x], stride1, AddrSmall, stride2, width_SAD, height_SAD, multiStageSads);
+					}
+					else if constexpr (MultiStageSadVer == 4) {
+						sad = ImageSadGrayScale_s(CurScreenshot, cache, x, y, width_SAD, height_SAD, multiStageSads);
+					}
+					else if constexpr (MultiStageSadVer == 5) {
+						sad = ImageSad2StageGrayScale_s(CurScreenshot, cache, x, y, width_SAD, height_SAD, multiStageSads);
 					}
 					else {
 						sad = ImageSad(&AddrBig[x], stride1, AddrSmall, stride2, width_SAD, height_SAD);
@@ -511,17 +529,40 @@ static inline void ImageSearch_SAD_Region_DecideSad(CachedPicture* cache, int aL
 			return;
 		}
 	}
-	else if ((uSearchFlags & SSRF_ST_ALLOW_MULTI_STAGE_SAD4) != 0) {
+	if ((uSearchFlags & SSRF_ST_ALLOW_MULTI_STAGE_SAD4) != 0) {
 		// 4 stage SAD
 		if (cache->Height > 2 && cache->Width > 16) {
 			ImageSearch_SAD_Region_DecideCmpFunc<2>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
 			return;
 		}
 	}
-	else if ((uSearchFlags & SSRF_ST_ALLOW_MULTI_STAGE_SAD9) != 0) {
+	if ((uSearchFlags & SSRF_ST_ALLOW_MULTI_STAGE_SAD9) != 0) {
 		if (cache->Height > 3 && cache->Width > 24) {
 			// 9 stage SAD
 			ImageSearch_SAD_Region_DecideCmpFunc<3>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+			return;
+		}
+	}
+	if ((uSearchFlags & SSRF_ST_ALLOW_MULTI_STAGE_GSAD) != 0) {
+		if (cache->Width > 32) {
+			EnsureCacheHasGrayscale(cache);
+			EnsureScreenshotHasGrayscale();
+			ImageSearch_SAD_Region_DecideCmpFunc<4>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+			return;
+		}
+	}
+	if ((uSearchFlags & SSRF_ST_ALLOW_MULTI_STAGE_GSAD2) != 0) {
+		if (cache->Height > 2 && cache->Width > 64) {
+			EnsureCacheHasGrayscale(cache);
+			EnsureScreenshotHasGrayscale();
+			ImageSearch_SAD_Region_DecideCmpFunc<5>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
+			return;
+		}
+		// fall back to mini version
+		else if (cache->Width > 32) {
+			EnsureCacheHasGrayscale(cache);
+			EnsureScreenshotHasGrayscale();
+			ImageSearch_SAD_Region_DecideCmpFunc<4>(cache, aLeft, aTop, aRight, aBottom, uSearchFlags, res);
 			return;
 		}
 	}

@@ -382,6 +382,7 @@
     <ClInclude Include="ImageFilters.h" />
     <ClInclude Include="ImageHash.h" />
     <ClInclude Include="ImageSAD.h" />
+    <ClInclude Include="ImageSADGrayscale.h" />
     <ClInclude Include="ImageSAD_Region.h" />
     <ClInclude Include="ImageSATD.h" />
     <ClInclude Include="ImageSearch.h" />

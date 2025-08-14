@@ -106,6 +106,8 @@ CachedPicture *CachePicture( const char *aFilespec )
 	PictureCache[NrPicturesCached].PrevSearchReturnVal[0] = 0;
 
 	PictureCache[NrPicturesCached].m_Hash.hashes = NULL;
+
+	PictureCache[NrPicturesCached].pGrayscalePixels = NULL;
 	
 	//FixAlphaChannelZero();
 
@@ -312,4 +314,13 @@ ImgHashWholeIage* GetCreateCacheHash(CachedPicture* cache)
 	GenHashesForCachedImage(cache, &cache->m_Hash);
 
 	return &cache->m_Hash;
+}
+
+void EnsureCacheHasGrayscale(CachedPicture* cache)
+{
+	if (cache->pGrayscalePixels == NULL) {
+		size_t pixel_count = cache->Width * cache->Height;
+		cache->pGrayscalePixels = (uint8_t*)MY_ALLOC(pixel_count);
+		ConvertToGrayscale_v3(cache->Pixels, cache->pGrayscalePixels, pixel_count);
+	}
 }

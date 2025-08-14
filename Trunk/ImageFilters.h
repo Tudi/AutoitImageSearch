@@ -16,7 +16,7 @@ void DecreaseColorPrecision(ScreenshotStruct *cache, unsigned int Div, unsigned 
 void DecreaseColorCount_(ScreenshotStruct *cache, unsigned int ColorsPerChannel);
 void GetUniqueColorsInRegion(int StartX, int StartY, int EndX, int EndY);
 LPCOLORREF BlurrImage_(int HalfKernelSize, int MiddleFactor, LPCOLORREF Pixels, int Width, int Height);
-void ApplyColorBitmask_(LPCOLORREF Pixels, int Width, int Height, DWORD Mask);
+void ApplyColorBitmask_(LPCOLORREF Pixels, int Width, int Height, uint32_t Mask);
 
 
 

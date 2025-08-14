@@ -24,7 +24,9 @@ class SADSearchRegionFlags(IntFlag):
     SSRF_ST_INLCUDE_HASH_INFO = 1 << 12
     SSRF_ST_ALLOW_MULTI_STAGE_SAD2 = 1 << 13 # faster but less precise
     SSRF_ST_ALLOW_MULTI_STAGE_SAD4 = 1 << 14 # faster but less precise
-    SSRF_ST_ALLOW_MULTI_STAGE_SAD9 = 1 << 19 # faster but less precise
+    SSRF_ST_ALLOW_MULTI_STAGE_SAD9 = 1 << 15 # faster but less precise
+    SSRF_ST_ALLOW_MULTI_STAGE_GSAD = 1 << 16 # grayscale preSAD before SAD. Min cache width 32
+    SSRF_ST_ALLOW_MULTI_STAGE_GSAD2 = 1 << 17 # grayscale preSAD before SAD. Min cache width 64
     
 # ------------------
 # DLL + prototypes
@@ -38,7 +40,7 @@ class _DLL:
         self.SaveScreenshot = ctypes.WINFUNCTYPE(None)(("SaveScreenshot", self.h))
         self.LoadCacheOverScreenshot = ctypes.WINFUNCTYPE(None, ctypes.c_char_p, ctypes.c_int, ctypes.c_int)(("LoadCacheOverScreenshot", self.h))
         self.ApplyColorBitmask = ctypes.WINFUNCTYPE(None, ctypes.c_uint)(("ApplyColorBitmask", self.h))
-        self.ImageSearch_SAD_Region = ctypes.WINFUNCTYPE(
+        self.ImageSearchRegion = ctypes.WINFUNCTYPE(
             ctypes.c_char_p, ctypes.c_char_p,
             ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int,
             ctypes.c_uint
@@ -126,7 +128,7 @@ class ImageSearchDLL:
     def SearchImageInRegion(self, img_name: str,
                         start_x: int = -1, start_y: int = -1,
                         end_x: int = -1, end_y: int = -1,
-                        search_flags: int = SADSearchRegionFlags.SSRF_ST_ALLOW_MULTI_STAGE_SAD2, # in case you catch an instance where this is not accurate, remove it
+                        search_flags: int = SADSearchRegionFlags.SSRF_ST_ALLOW_MULTI_STAGE_GSAD2, # in case you catch an instance where this is not accurate, remove it
                         apply_mask: bool = True,
                         search_radius_for_auto_taget = 2,   # when the search location is extracted from the file name, we will search an area to make sure there is no target movement
                         no_new_screenshot = False) -> SingleResult:
@@ -149,7 +151,7 @@ class ImageSearchDLL:
 
         # call the search; DLL expects ANSI/MBCS path (change to utf-8 if your DLL does)
         path_b = img_name.encode("mbcs", errors="replace")
-        raw_ptr = self._dll.ImageSearch_SAD_Region(
+        raw_ptr = self._dll.ImageSearchRegion(
             path_b, int(start_x), int(start_y), int(end_x), int(end_y),
             ctypes.c_uint(search_flags)
         )

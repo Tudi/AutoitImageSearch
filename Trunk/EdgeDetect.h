@@ -33,3 +33,5 @@ void WINAPI ConvertToGrayScaleMaxChannel();
 void WINAPI EdgeDetectSobel3Channels();
 // copy from previous screenshot the data only from edges
 void WINAPI EdgeCopyOriginalForEdges();
+
+void ConvertToGrayscale_v3(const LPCOLORREF src, uint8_t* dst, size_t count);

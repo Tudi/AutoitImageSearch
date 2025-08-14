@@ -66,6 +66,11 @@ void WINAPI ReleaseScreenshot()
 		MY_FREE(CurScreenshot->pSSHashCache);
 		CurScreenshot->pSSHashCache = NULL;
 	}
+	if (CurScreenshot->pGrayscalePixels)
+	{
+		MY_FREE(CurScreenshot->pGrayscalePixels);
+		CurScreenshot->pGrayscalePixels = NULL;
+	}
 }
 
 void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
@@ -386,3 +391,12 @@ void ScreenshotStruct::ReplaceReadOnlyPixels()
 	}
 }
 #endif
+
+void EnsureScreenshotHasGrayscale()
+{
+	if (CurScreenshot->pGrayscalePixels == NULL) {
+		size_t pixel_count = CurScreenshot->Width * CurScreenshot->Height;
+		CurScreenshot->pGrayscalePixels = (uint8_t*)MY_ALLOC(pixel_count);
+		ConvertToGrayscale_v3(CurScreenshot->Pixels, CurScreenshot->pGrayscalePixels, pixel_count);
+	}
+}

@@ -29,6 +29,7 @@ public:
 	SplitChannel	*SCCache;
 	SADSumStoreScreenshot		SADSums;
 	ImgHashWholeIage* pSSHashCache; // if multiple images are searched on the same SS, they can reuse the hash
+	uint8_t			*pGrayscalePixels; // 1 byte / pixel. Stride is same as width
 	size_t			TimeStampTaken;
 	size_t			UniqueFameCounter;
 
@@ -42,6 +43,8 @@ public:
 		SSCache = NULL;
 		PSCache = NULL;
 		SCCache = NULL;
+		pSSHashCache = NULL;
+		pGrayscalePixels = NULL;
 		InitSADSUMScreenshot(&SADSums);
 		Left = Top = Right = Bottom = 0;
 		IsDiffMap = false;
@@ -95,4 +98,5 @@ struct SearchedRegionMinMax
 };
 extern LIBRARY_API SearchedRegionMinMax g_SearchedRegions;
 
+void EnsureScreenshotHasGrayscale();
 #endif

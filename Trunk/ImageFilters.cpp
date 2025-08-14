@@ -226,13 +226,22 @@ void WINAPI EdgeDetect( int HalfKernelSize )
 	FileDebug( "\tFinished bluring screenshot" );
 }
 
-void ApplyColorBitmask_(LPCOLORREF Pixels, int Width, int Height, DWORD Mask)
+void ApplyColorBitmask_(LPCOLORREF Pixels, int Width, int Height, uint32_t Mask)
 {
 	if (Pixels == NULL)
 		return;
-	size_t PixelCount = Height * Width;
-	for (size_t i = 0; i < PixelCount; i++)
-		Pixels[i] = Pixels[i] & Mask;
+	const size_t PixelCount = Height * Width;
+	size_t i = 0;
+#ifndef DISABLE_AX2_MASKING
+	const __m256i m = _mm256_set1_epi32(Mask);
+	for (; i + 8 <= PixelCount; i += 8) {
+		__m256i x = _mm256_loadu_si256((const __m256i*)(Pixels + i));
+		x = _mm256_and_si256(x, m);
+		_mm256_storeu_si256((__m256i*)(Pixels + i), x);
+	}
+#endif
+	for (; i < PixelCount; ++i)
+		Pixels[i] &= Mask;
 }
 
 void WINAPI ApplyColorBitmask(int paramMask)
