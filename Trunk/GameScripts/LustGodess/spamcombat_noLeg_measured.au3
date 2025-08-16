@@ -48,6 +48,7 @@ Global $g_imageLeagueSreen = ""
 Global $g_imageGameCrashed = ""
 Global $g_imagePageReload = ""
 Global $g_imageGameloaded = ""
+Global $g_imageGameloaded2 = ""
 Global $g_imageClosePopup1 = ""
 Global $g_imageClosePopup2 = ""
 Global $g_imageClosePopup3 = ""
@@ -182,6 +183,13 @@ GUICtrlSetTip($inputOpenLegendaryIfLower, "If a legendary can't be stored, shoul
 ;Global $hCheckboxOpenLegendary = GUICtrlCreateCheckbox("OpenLegIfLowerLegue", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth + $inputWidth, $ComponentHeight)
 ;GUICtrlSetTip($hCheckboxOpenLegendary, "If a legendary can't be stored, should we open it. Probably happens while spamming games")
 $ComponentsAdded = $ComponentsAdded + 1
+
+Global $lblTempForTooltip = GUICtrlCreateLabel("OpenLegCount :", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth, $ComponentHeight)
+Global $inputOpenLegendaryCount = GUICtrlCreateInput("0", $margin + $labelWidth + $spacing, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $inputWidth, $ComponentHeight)
+GUICtrlSetTip($lblTempForTooltip, "If a legendary can't be stored, should we open it. Needed for 3 girl event")
+GUICtrlSetTip($inputOpenLegendaryCount, "If a legendary can't be stored, should we open it. Needed for 3 girl event")
+$ComponentsAdded = $ComponentsAdded + 1
+
 
 Global $hCheckboxPauseLegendary = GUICtrlCreateCheckbox("PauseOnLeg", $margin, $margin + $ComponentsAdded * ( $margin + $ComponentHeight), $labelWidth + $inputWidth, $ComponentHeight)
 GUICtrlSetTip($hCheckboxPauseLegendary, "If a legendary can't be stored, should we pause game? Probably happens while quests that require to open X legendaries. Kinda unused feature")
@@ -653,9 +661,11 @@ Func HandleLegendaryWinReward()
 		EndIf
 				
 		Local $OpenLegChestIfLowLeague = getInputNumericValue($inputOpenLegendaryIfLower, 0)
+		Local $OpenLegCount = getInputNumericValue($inputOpenLegendaryCount, 0)
 ;		If GUICtrlRead($hCheckboxOpenLegendary) = $GUI_CHECKED Then
-		If $OpenLegChestIfLowLeague <> 0 and $OpenLegChestIfLowLeague > $g_LastSeenRankNoReset and $g_LastSeenRankNoReset <> 0 Then
+		If $OpenLegChestIfLowLeague <> 0 and $OpenLegChestIfLowLeague > $g_LastSeenRankNoReset and $g_LastSeenRankNoReset <> 0 and $OpenLegCount > 0 Then
 			$g_LegendariesOpened = $g_LegendariesOpened + 1
+			GUICtrlSetData($inputOpenLegendaryCount, $OpenLegCount - 1)
 			MyMouseClick("left", 929, 768)
 			Sleep(2000)
 			MyMouseClick("left", 929, 768);
@@ -1187,6 +1197,10 @@ Func InitImageSearchDLLImages()
 	ApplyColorMaskOnCachedImage($g_imageGameloaded)
 	ImageIsAtRegion($g_imageGameloaded)
 
+	$g_imageGameloaded2 = "game_loaded_0821_0760_0276_0053.bmp"
+	ApplyColorMaskOnCachedImage($g_imageGameloaded2)
+	ImageIsAtRegion($g_imageGameloaded2)
+
 	$g_imageClosePopup1 = "close_popup1_1561_0190_0047_0050.bmp"
 	ApplyColorMaskOnCachedImage($g_imageClosePopup1)
 	ImageIsAtRegion($g_imageClosePopup1)
@@ -1420,6 +1434,13 @@ Func ReloadCrashedGame()
 				MyMouseClick("left", $searchRet[0] + 10, $searchRet[1] + 10)
 				ExitLoop
 			EndIf
+			$searchRet = ImageIsAtRegion($g_imageGameloaded2)
+			$searchRetSADPP = $searchRet[3]
+			If $searchRet[0] > 0 and $searchRetSADPP <= 4 then
+				$GameLoaded = 1
+				MyMouseClick("left", $searchRet[0] + 10, $searchRet[1] + 10)
+				ExitLoop
+			EndIf
 		wend
 		Sleep(2*1000)
 		Local $ClosedAllPopupsOrClickedPVP = 0
@@ -1571,14 +1592,18 @@ Func ForeverLoopFunc()
 		
 		;GUICtrlSetData($lblDbgOut, Hex( PixelGetColor(1707, 277), 6 ) & " -- " & $g_VisibleScreenType)
 
+		;most functions depend on these 2 functions. make sure info is available in the loop
+		GuessIngameVisibleScreen()
+		if $g_VisibleScreenType == $SCREEN_START_PVP_FIGHT then
+			GuessCurrentPVPRank() ; internally will handle states based on ingame or outofgame screens
+		EndIf
+		
 		ExitAccidentalLegueScreen()
 		ReloadCrashedGame()
-		GuessIngameVisibleScreen()
 		CheckDropGameAlwaysToMaintainRank()
 		
 		; things to do while out of fight screen
 		if $g_VisibleScreenType == $SCREEN_START_PVP_FIGHT then
-			GuessCurrentPVPRank() ; internally will handle states based on ingame or outofgame screens
 			
 			; probably just for some quests. Open multiple chests without fighting because we might miss some
 			while OpenChestsWith1Emeryx() == 1
