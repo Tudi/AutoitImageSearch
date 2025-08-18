@@ -6,6 +6,7 @@ from ctypes import wintypes
 from dataclasses import dataclass
 from typing import List, Tuple, Optional
 from enum import IntFlag
+import time
 
 class SADSearchRegionFlags(IntFlag):
     SSRF_ST_NO_FLAGS = 0
@@ -27,6 +28,7 @@ class SADSearchRegionFlags(IntFlag):
     SSRF_ST_ALLOW_MULTI_STAGE_SAD9 = 1 << 15 # faster but less precise
     SSRF_ST_ALLOW_MULTI_STAGE_GSAD = 1 << 16 # grayscale preSAD before SAD. Min cache width 32
     SSRF_ST_ALLOW_MULTI_STAGE_GSAD2 = 1 << 17 # grayscale preSAD before SAD. Min cache width 64
+    SSRF_ST_Similar = 1 << 25 # dummy temp flag, remove me if not removed
     
 # ------------------
 # DLL + prototypes
@@ -45,6 +47,7 @@ class _DLL:
             ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int,
             ctypes.c_uint
         )(("ImageSearch_SAD_Region", self.h))     
+        self.ImageSearchSimilar = ctypes.WINFUNCTYPE(ctypes.c_char_p, ctypes.c_char_p)(("SearchSimilarOnScreenshot", self.h))  
         self.BlurrImage = ctypes.WINFUNCTYPE(None, ctypes.c_uint)(("BlurrImage", self.h))
 
 _DEFAULT_MASK = 0x00C0C0C0  # same default as AU3 script
@@ -128,10 +131,14 @@ class ImageSearchDLL:
     def SearchImageInRegion(self, img_name: str,
                         start_x: int = -1, start_y: int = -1,
                         end_x: int = -1, end_y: int = -1,
-                        search_flags: int = SADSearchRegionFlags.SSRF_ST_ALLOW_MULTI_STAGE_GSAD2, # in case you catch an instance where this is not accurate, remove it
+                        search_flags: int = SADSearchRegionFlags.SSRF_ST_ALLOW_MULTI_STAGE_GSAD2 | SADSearchRegionFlags.SSRF_ST_ENFORCE_SAD_WITH_HASH, # in case you catch an instance where this is not accurate, remove it
                         apply_mask: bool = True,
                         search_radius_for_auto_taget = 2,   # when the search location is extracted from the file name, we will search an area to make sure there is no target movement
-                        no_new_screenshot = False) -> SingleResult:
+                        no_new_screenshot = False,
+                        wait_appear_timeout = -1,
+                        wait_dissapear_timeout = -1,
+                        accepted_similarity_pct = -1,
+                        click_image = False ) -> SingleResult:
 
         # optional filename-derived coordinates
         if start_x < 0 or start_y < 0 or end_x < 0 or end_y < 0:
@@ -142,21 +149,92 @@ class ImageSearchDLL:
                 end_x   = x + search_radius_for_auto_taget
                 end_y   = y + search_radius_for_auto_taget
 
-        if no_new_screenshot == False:
-            # take a (possibly throttled) screenshot of “full screen” (-1,-1,-1,-1)
-            self._dll.TakeScreenshot(-1, -1, -1, -1)
-            # optional mask to smooth color blending
-            if apply_mask:
-                self._dll.ApplyColorBitmask(ctypes.c_uint(self._mask_default))
+        start_time = time.time()
+        last_result = None
+        while True:
+            if no_new_screenshot == False:
+                # take a (possibly throttled) screenshot of “full screen” (-1,-1,-1,-1)
+                self._dll.TakeScreenshot(-1, -1, -1, -1)
+                # optional mask to smooth color blending
+                if apply_mask:
+                    self._dll.ApplyColorBitmask(ctypes.c_uint(self._mask_default))
 
-        # call the search; DLL expects ANSI/MBCS path (change to utf-8 if your DLL does)
-        path_b = img_name.encode("mbcs", errors="replace")
-        raw_ptr = self._dll.ImageSearchRegion(
-            path_b, int(start_x), int(start_y), int(end_x), int(end_y),
-            ctypes.c_uint(search_flags)
-        )
-        raw = (ctypes.cast(raw_ptr, ctypes.c_char_p).value or b"").decode("mbcs", errors="replace")
-        return _parse_single_result(raw)
+            # call the search; DLL expects ANSI/MBCS path (change to utf-8 if your DLL does)
+            path_b = img_name.encode("mbcs", errors="replace")
+            
+            # make a search
+            raw_ptr = self._dll.ImageSearchRegion(
+                path_b, int(start_x), int(start_y), int(end_x), int(end_y),
+                int(search_flags)
+            )
+            raw = (ctypes.cast(raw_ptr, ctypes.c_char_p).value or b"").decode("mbcs", errors="replace")
+            result = _parse_single_result(raw)
+
+            # check similarity if threshold is set
+            similarity_ok = True
+            if accepted_similarity_pct >= 0 and result.hash_diff_pct is not None:
+                similarity_ok = result.hash_diff_pct >= accepted_similarity_pct
+
+            # handle wait_appear_timeout: wait until image appears
+            if wait_appear_timeout >= 0:
+                if similarity_ok:
+                    break  # image appeared
+                elif time.time() - start_time > wait_appear_timeout:
+                    break  # timeout reached
+                else:
+                    continue
+
+            # handle wait_disappear_timeout: wait until image disappears
+            if wait_dissapear_timeout >= 0:
+                if not similarity_ok:
+                    break  # image disappeared
+                elif time.time() - start_time > wait_dissapear_timeout:
+                    break  # timeout reached
+                else:
+                    continue
+
+            # if no wait timeouts, exit after one iteration
+            if wait_appear_timeout < 0 and wait_dissapear_timeout < 0:
+                break
+
+            last_result = result
+
+        if click_image and similarity_ok:
+            # calculate center coordinates
+            center_x = result.x + w / 2
+            center_y = result.y + h / 2
+
+            # Windows API constants
+            MOUSEEVENTF_MOVE = 0x0001
+            MOUSEEVENTF_ABSOLUTE = 0x8000
+            MOUSEEVENTF_LEFTDOWN = 0x0002
+            MOUSEEVENTF_LEFTUP = 0x0004
+
+            # get screen size
+            screen_width = ctypes.windll.user32.GetSystemMetrics(0)
+            screen_height = ctypes.windll.user32.GetSystemMetrics(1)
+
+            # convert to absolute coordinates (0..65535)
+            abs_x = int(center_x * 65535 / screen_width)
+            abs_y = int(center_y * 65535 / screen_height)
+
+            # move mouse
+            ctypes.windll.user32.mouse_event(MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE, abs_x, abs_y, 0, 0)
+            time.sleep(0.01)  # short delay to ensure move registers
+
+            # click
+            ctypes.windll.user32.mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
+            ctypes.windll.user32.mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
+    
+        return result
 
     def BlurrImage(self, half_kernel_size: int) -> None:
         self._dll.BlurrImage(int(half_kernel_size))
+        
+    # only exists for benchmarking    
+    def SearchSimilar(self, img_name: str) -> SingleResult:
+        path_b = img_name.encode("mbcs", errors="replace")
+        raw_ptr = self._dll.ImageSearchSimilar(path_b)
+        raw = (ctypes.cast(raw_ptr, ctypes.c_char_p).value or b"").decode("mbcs", errors="replace")
+        return _parse_single_result(raw)     
+        
