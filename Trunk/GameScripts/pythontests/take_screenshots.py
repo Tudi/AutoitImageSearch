@@ -5,6 +5,7 @@ import ctypes
 from ctypes import wintypes
 import sys
 import keyboard
+import time
 
 # Import your wrapper around ImageSearchDLL.dll
 # (This file comes from your upload and exposes TakeScreenshotRegionAndSaveit)
@@ -25,11 +26,18 @@ def normalize_rect(p1: tuple[int, int], p2: tuple[int, int]) -> tuple[int, int, 
     bottom = y2 if y2 > y1 else y1
     return left, top, right, bottom
 
+running = True
+
+def exit_program():
+    global running
+    print("ESC pressed, exiting...")
+    running = False
+    
 def main():
     print("Hotkeys:")
-    print("  q  -> set TOP-LEFT to current mouse position")
-    print("  s  -> set BOTTOM-RIGHT to current mouse position")
-    print("  r  -> TakeScreenshotRegionAndSaveit(left, top, right, bottom)")
+    print("  Q  -> set TOP-LEFT to current mouse position")
+    print("  S  -> set BOTTOM-RIGHT to current mouse position")
+    print("  R  -> TakeScreenshotRegionAndSaveit(left, top, right, bottom)")
     print("  esc-> quit")
     print()
 
@@ -66,13 +74,17 @@ def main():
         except Exception as e:
             print("[r] Error calling TakeScreenshotRegionAndSaveit:", e)
 
-    keyboard.add_hotkey("q", set_top_left, suppress=False)
-    keyboard.add_hotkey("s", set_bottom_right, suppress=False)
-    keyboard.add_hotkey("r", run_screenshot, suppress=False)
-    keyboard.add_hotkey("esc", lambda: sys.exit(0), suppress=False)
+    keyboard.add_hotkey("Q", set_top_left, suppress=False)
+    keyboard.add_hotkey("S", set_bottom_right, suppress=False)
+    keyboard.add_hotkey("R", run_screenshot, suppress=False)
+    keyboard.add_hotkey("esc", exit_program, suppress=False)
 
     print("Ready. Set your corners with q/s, then press r.")
-    keyboard.wait("esc")  # blocks until Esc is pressed
+    try:
+        while running:
+            time.sleep(0.1)  # tiny sleep, avoids busy wait
+    except KeyboardInterrupt:
+        sys.exit(0)
 
 if __name__ == "__main__":
     main()
