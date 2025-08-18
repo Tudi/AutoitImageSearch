@@ -6,8 +6,8 @@ How to use:
 	- apply 'ApplyColorBitmask' to remove small lightning effects ( many games will have color bleed effects )
 	- use 'SaveScreenshot' to save the recently captured image to a BMP file
 	- use 'ImageSearch_SAD_Region' to search for a recently captured BMP file on the last screen capture
-	- if you have many many searched images on large area, use HASH based image searching that can precompute searched image data
-	- Fastest is probably 'SearchSimilarOnScreenshot', but it's also innacurate ( sums up RGB values into a single value and does 3 compares / location ). Maybe combine it with SAD and Hash to determine best result
+	- Fastest is using flag 'SSRF_ST_ALLOW_MULTI_STAGE_GSAD2', but not as acurate as simple SAD
+	- if you have many many searched images on large area, use HASH based image searching that can precompute searched image data. Other option is Similar search
 	
 Good to know :
 	- screen capture is frames per second limited to avoid 100% cpu usage. You can disable FPS limit
@@ -19,7 +19,7 @@ Good to know :
 Tips :
 	- use images where size is multiple of 16. Image compare uses 16 pixels at once and will neglect anything not fully 16 ! 
 		Good Ex : 16x16, 32x32, 64x64
-		Not perfect ex : 17x25 would only use 16x25 image, 31x31 would only use 16x16 portion of the image
+		Not perfect ex : 17x25 would only use 16x25 image, 31x31 would only use 16x31 portion of the image
 	- if searched image is "large", try to use ImageSearch_Similar. The better the match you are looking for, the faster the search. A perfect match image has diff=0. The worse the match, the larger the difference
 	- try to limit screenshot rate. Use "SetScreehotFPSLimit" and set it to 1 FPS ?
 	- re-using the same screenshot for multiple image searches is faster than taking a screenshot as soon as possible. Though obvious, if you spam screenshots to be able to catch changes as fast as possible, it might take so much time you detect changes slower
