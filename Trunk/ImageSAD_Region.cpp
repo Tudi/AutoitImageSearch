@@ -48,9 +48,9 @@ void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRig
 
 	// record searched regions so auto screenshot might know next time
 	const int dEstimatedSearchRadius = 3;
-	AddSearchedRegion(CurScreenshot->UniqueFameCounter, aTop - dEstimatedSearchRadius, 
-		aLeft - dEstimatedSearchRadius, aRight + cache->Width + dEstimatedSearchRadius, 
-		aBottom + cache->Height + dEstimatedSearchRadius);
+	AddSearchedRegion(CurScreenshot->UniqueFameCounter, 
+		aLeft - dEstimatedSearchRadius, aTop - dEstimatedSearchRadius, 
+		aRight + cache->Width + dEstimatedSearchRadius,	aBottom + cache->Height + dEstimatedSearchRadius);
 
 	if (aLeft < CurScreenshot->Left)
 	{
@@ -427,7 +427,7 @@ docleanupandreturn:
 	}
 	char dbgmsg[DEFAULT_STR_BUFFER_SIZE];
 	if (res.rety == -1) { res.rety = 0; res.retx = 0; }
-	sprintf_s(dbgmsg, sizeof(dbgmsg), "\t\t retxy %d %d", res.retx, res.rety);
+	sprintf_s(dbgmsg, sizeof(dbgmsg), "\t\t retxy %d %d -> %d %d", res.retx, res.rety, (int)(res.retx + CurScreenshot->Left), (int)(res.rety + CurScreenshot->Top));
 	FileDebug(dbgmsg);
 	const unsigned char* AddrBig = (unsigned char*)&Pixels1[res.rety * stride1 + res.retx];
 	const unsigned char* AddrSmall = (unsigned char*)&Pixels2[0];

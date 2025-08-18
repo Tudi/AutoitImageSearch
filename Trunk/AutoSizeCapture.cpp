@@ -32,7 +32,7 @@ void AddSearchedRegion(size_t ImageId, int aLeft, int aTop, int aRight, int aBot
 	size_t nBestIndexToStore = 0;
 	int64_t SmallestFrameId = MAX_INT;
 	for (size_t i = 0; i < MAX_SEARCH_HISTORY_SIZE; i++) {
-		if (g_PastRequests[i].LastImageId < SmallestFrameId) {
+		if ((int64_t)g_PastRequests[i].LastImageId < SmallestFrameId) {
 			nBestIndexToStore = i;
 			SmallestFrameId = g_PastRequests[i].LastImageId;
 		}

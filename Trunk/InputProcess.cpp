@@ -273,6 +273,7 @@ void WINAPI TakeScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 			if (CurScreenshot->TimeStampTaken + 1000 / TakeScreenshotFPSLimit > GetTickCount()) // limit to 5 FPS ? Every 200 ms ? This process takes time :(
 			{
 				FileDebug("\tFinished taking the screenshot. Skipped because recent screenshot is too fresh");
+				return;
 			}
 		}
 	}
