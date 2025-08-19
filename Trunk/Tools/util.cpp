@@ -146,8 +146,10 @@ LPCOLORREF getbits(HBITMAP ahImage, HDC hdc, LONG &aWidth, LONG &aHeight, bool &
 	int image_pixel_count = 0;
 	bool is_8bit = false;
 	HDC tdc = CreateCompatibleDC(hdc);
-	if (!tdc)
+	if (!tdc) {
+		FileDebug("getbits:Failed CreateCompatibleDC");
 		return NULL;
+	}
 
 	// From this point on, "goto end" will assume tdc is non-NULL, but that the below
 	// might still be NULL.  Therefore, all of the following must be initialized so that the "end"
@@ -171,8 +173,10 @@ LPCOLORREF getbits(HBITMAP ahImage, HDC hdc, LONG &aWidth, LONG &aHeight, bool &
 	bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 	bmi.bmiHeader.biBitCount = 0; // i.e. "query bitmap attributes" only.
 	if (!GetDIBits(tdc, ahImage, 0, 0, NULL, (LPBITMAPINFO)&bmi, DIB_RGB_COLORS)
-		|| bmi.bmiHeader.biBitCount < aMinColorDepth) // Relies on short-circuit boolean order.
+		|| bmi.bmiHeader.biBitCount < aMinColorDepth) {// Relies on short-circuit boolean order.
+		FileDebug("getbits:Failed GetDIBits");
 		goto end;
+	}
 
 	// Set output parameters for caller:
 	aIs16Bit = (bmi.bmiHeader.biBitCount == 16);
@@ -188,8 +192,10 @@ LPCOLORREF getbits(HBITMAP ahImage, HDC hdc, LONG &aWidth, LONG &aHeight, bool &
 	{
 		image_pixel = (LPCOLORREF)MY_ALLOC(aWidth * (aHeight + SSE_PADDING) * sizeof(COLORREF));
 	}
-	if( !image_pixel )
+	if (!image_pixel) {
+		FileDebug("getbits:Failed MY_ALLOC");
 		goto end;
+	}
 
 	// v1.0.40.10: To preserve compatibility with callers who check for transparency in icons, don't do any
 	// of the extra color table handling for 1-bpp images.  Update: For code simplification, support only
@@ -210,8 +216,10 @@ LPCOLORREF getbits(HBITMAP ahImage, HDC hdc, LONG &aWidth, LONG &aHeight, bool &
 
 	// Appparently there is no need to specify DIB_PAL_COLORS below when color depth is 8-bit because
 	// DIB_RGB_COLORS also retrieves the color indices.
-	if (   !(GetDIBits(tdc, ahImage, 0, aHeight, image_pixel, (LPBITMAPINFO)&bmi, DIB_RGB_COLORS))   )
+	if (!(GetDIBits(tdc, ahImage, 0, aHeight, image_pixel, (LPBITMAPINFO)&bmi, DIB_RGB_COLORS))) {
+		FileDebug("getbits:Failed GetDIBits");
 		goto end;
+	}
 
 	if (is_8bit) // This section added in v1.0.40.10.
 	{

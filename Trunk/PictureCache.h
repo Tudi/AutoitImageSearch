@@ -49,6 +49,8 @@ void UnloadLastCache(); //right now only used when training OCR with huge amount
 void UnloadCache(char *aFilespec);
 ImgHashWholeIage* GetCreateCacheHash(CachedPicture* cache);
 void EnsureCacheHasGrayscale(CachedPicture* cache);
+// Width and Height can come from different images
+void GetMinWHCachedImages(OUT int &minWidth, OUT int &minHeight);
 
 extern LIBRARY_API CachedPicture PictureCache[MAX_PICTURE_CACHE_COUNT];
 extern LIBRARY_API int NrPicturesCached;

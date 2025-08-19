@@ -37,6 +37,7 @@ void WINAPI CycleScreenshots()
 
 void WINAPI ReleaseScreenshot()
 {
+	FileDebug("ReleaseScreenshot:Started");
 #ifndef REDUCE_ALLOC_COUNT
 	if (CurScreenshot->Pixels)
 	{
@@ -133,16 +134,22 @@ void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 	}
 
 	hbitmap_screen = CreateCompatibleBitmap(hdc, search_width, search_height);
-	if( !hbitmap_screen )
+	if (!hbitmap_screen) {
+		FileDebug("\nTakeScreenshot:Failed CreateCompatibleBitmap");
 		goto end;
+	}
 
 	sdc_orig_select = SelectObject(sdc, hbitmap_screen);
-	if( !sdc_orig_select )
+	if (!sdc_orig_select) {
+		FileDebug("\nTakeScreenshot:Failed SelectObject");
 		goto end;
+	}
 
 	// Copy the pixels in the search-area of the screen into the DC to be searched:
-	if( !(BitBlt(sdc, 0, 0, search_width, search_height, hdc, aLeft, aTop, SRCCOPY)) )
+	if (!(BitBlt(sdc, 0, 0, search_width, search_height, hdc, aLeft, aTop, SRCCOPY))) {
+		FileDebug("\nTakeScreenshot:Failed BitBlt");
 		goto end;
+	}
 
 	LONG screen_width, screen_height;
 	bool screen_is_16bit;
@@ -155,8 +162,10 @@ void TakeNewScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 #else
 	CurScreenshot->Pixels = getbits(hbitmap_screen, sdc, screen_width, screen_height, screen_is_16bit, 8, PixelsBeforeReset);
 #endif
-	if( !CurScreenshot->Pixels )
+	if (!CurScreenshot->Pixels) {
+		FileDebug("\nTakeScreenshot:Failed getbits");
 		goto end;
+	}
 	CurScreenshot->Width = screen_width;
 	CurScreenshot->Height = screen_height;
 
@@ -261,29 +270,33 @@ void WINAPI TakeScreenshot( int aLeft, int aTop, int aRight, int aBottom )
 		aBottom = MaxHeight;
 	}
 
-	size_t startStamp = GetTickCount();
-	char TBuff[2000];
-	sprintf_s(TBuff, sizeof(TBuff), "Started taking the screenshot [%d,%d][%d,%d]", aLeft, aTop, aRight, aBottom);
-	FileDebug(TBuff);
-
-	if (CurScreenshot != NULL && TakeScreenshotFPSLimit > 0)
+	if (CurScreenshot != NULL && CurScreenshot->Pixels != NULL && TakeScreenshotFPSLimit > 0)
 	{
 		if (CurScreenshot->Left <= aLeft && CurScreenshot->Top <= aTop &&
 			CurScreenshot->Right >= aRight && CurScreenshot->Bottom >= aBottom) {
-			if (CurScreenshot->TimeStampTaken + 1000 / TakeScreenshotFPSLimit > GetTickCount()) // limit to 5 FPS ? Every 200 ms ? This process takes time :(
+			if (CurScreenshot->TimeStampTaken + (1000 / TakeScreenshotFPSLimit) > GetTickCount()) // limit to 5 FPS ? Every 200 ms ? This process takes time :(
 			{
-				FileDebug("\tFinished taking the screenshot. Skipped because recent screenshot is too fresh");
+				FileDebug("\tTakeScreenshot:Finished taking the screenshot. Skipped because recent screenshot is too fresh");
 				return;
 			}
 		}
 	}
 
+	size_t startStamp = GetTickCount();
+	char TBuff[2000];
+	sprintf_s(TBuff, sizeof(TBuff), "TakeScreenshot:Started taking the screenshot [%d,%d][%d,%d]", aLeft, aTop, aRight, aBottom);
+	FileDebug(TBuff);
+
 	CycleScreenshots();
 	ReleaseScreenshot();
 	TakeNewScreenshot( aLeft, aTop, aRight, aBottom );
+	if (CurScreenshot->Pixels == NULL) {
+		FileDebug("\tTakeScreenshot:Failed to capture screen. Will retry once");
+		TakeNewScreenshot(aLeft, aTop, aRight, aBottom);
+	}
 
 	size_t endStamp = GetTickCount();
-	sprintf_s(TBuff, sizeof(TBuff), "\tFinished taking the screenshot. Took %d ms", (int)(endStamp - startStamp));
+	sprintf_s(TBuff, sizeof(TBuff), "\tTakeScreenshot:Finished taking the screenshot. Took %d ms", (int)(endStamp - startStamp));
 
 	FileDebug(TBuff);
 //	if( CurScreenshot->Pixels == NULL )

@@ -324,3 +324,19 @@ void EnsureCacheHasGrayscale(CachedPicture* cache)
 		ConvertToGrayscale_v3(cache->Pixels, cache->pGrayscalePixels, pixel_count);
 	}
 }
+
+void GetMinWHCachedImages(OUT int& minWidth, OUT int& minHeight) {
+	minWidth = MAX_INT;
+	minHeight = MAX_INT;
+	for (size_t i = 0; i < NrPicturesCached; ++i) {
+		if (PictureCache[i].Pixels == NULL) {
+			continue;
+		}
+		if (PictureCache[i].Width < minWidth) {
+			minWidth = PictureCache[i].Width;
+		}
+		if (PictureCache[i].Height < minHeight) {
+			minHeight = PictureCache[i].Height;
+		}
+	}
+}

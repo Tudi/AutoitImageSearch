@@ -47,7 +47,7 @@ void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRig
 	cache->PrevSearchFlags = uSearchFlags;
 
 	// record searched regions so auto screenshot might know next time
-	const int dEstimatedSearchRadius = 3;
+	const int dEstimatedSearchRadius = 1;
 	AddSearchedRegion(CurScreenshot->UniqueFameCounter, 
 		aLeft - dEstimatedSearchRadius, aTop - dEstimatedSearchRadius, 
 		aRight + cache->Width + dEstimatedSearchRadius,	aBottom + cache->Height + dEstimatedSearchRadius);
@@ -120,7 +120,10 @@ void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRig
 #ifdef _DEBUG
 	if ((Pixels1[0] & 0xFF000000) != (Pixels2[0] & 0xFF000000))
 	{
-		FileDebug("ImageSearch_SAD_Region: !!!! Alpha channel mismatch between screenshot and loaded image");
+		char dbgmsg[DEFAULT_STR_BUFFER_SIZE];
+		sprintf_s(dbgmsg, sizeof(dbgmsg), "ImageSearch_SAD_Region: !!!! Alpha channel mismatch between screenshot and loaded image. SS %d, C %d", 
+			((Pixels1[0] >> 24 ) & 0xFF), ((Pixels2[0] >> 24) & 0xFF));
+		FileDebug(dbgmsg);
 	}
 #endif
 
@@ -139,7 +142,7 @@ void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRig
 	}
 #endif
 	const uint64_t max_sad_value = ~(uint64_t)0;
-	const double max_smallestDiffPCT = 100;
+	const size_t max_smallestDiffPCT = 100;
 	uint64_t multiStageSads[9];
 	if constexpr (MultiStageSadVer != 0) {
 		memset(multiStageSads, (uint8_t)0xFF, sizeof(multiStageSads));
@@ -322,7 +325,7 @@ docleanupandreturn:
 					if (AddrBig2[0] != AddrSmall2[0]) res.colorDiffCount++;
 					if (AddrBig2[1] != AddrSmall2[1]) res.colorDiffCount++;
 					if (AddrBig2[2] != AddrSmall2[2]) res.colorDiffCount++;
-#ifdef _DEBUG
+#if defined(_DEBUG) && 0
 					char dbgmsg[DEFAULT_STR_BUFFER_SIZE];
 					sprintf_s(dbgmsg, sizeof(dbgmsg), "\t\t diff at %lld %lld screenshot %X cache %X DiffCount %llu", col, row, AddrBig[row * stride1 + col], AddrSmall[row * stride2 + col], res.colorDiffCount);
 					FileDebug(dbgmsg);
@@ -458,6 +461,12 @@ docleanupandreturn:
 	else {
 		res.SATDPerPixel = max_sad_value;
 	}
+	if (res.retx == -1) {
+		res.found_res = 0;
+	}
+	else {
+		res.found_res = 1;
+	}
 	res.retx = (int)(res.retx + CurScreenshot->Left);
 	res.rety = (int)(res.rety + CurScreenshot->Top);
 
@@ -474,8 +483,8 @@ docleanupandreturn:
 static inline char* ImageSearch_SAD_Region_FormatRes(ImgSrchSADRegionRes& res)
 {
 	ReturnBuffSadRegion[0] = 0;
-	sprintf_s(ReturnBuffSadRegion, DEFAULT_STR_BUFFER_SIZE * 10, "1|%d|%d|%llu|%llu|%llu|%llu|%llu|%d|%llu|%llu|%llu",
-		res.retx, res.rety, res.BestSAD, res.SADPerPixel, res.avgColorDiff, res.colorDiffCount, res.colorDifferentPct,
+	sprintf_s(ReturnBuffSadRegion, DEFAULT_STR_BUFFER_SIZE * 10, "%d|%d|%d|%llu|%llu|%llu|%llu|%llu|%d|%llu|%llu|%llu",
+		res.found_res, res.retx, res.rety, res.BestSAD, res.SADPerPixel, res.avgColorDiff, res.colorDiffCount, res.colorDifferentPct,
 		int(res.HashSmallestDiffPCT), res.BestSATD, res.SATDPerPixel, res.BestSADBrightnessAdjusted);
 	return ReturnBuffSadRegion;
 }

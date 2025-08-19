@@ -190,9 +190,12 @@ int main(int argc, char **arg)
 		//	ReadTextFromScreenshot( 53, 98, 127, 117 );
 		//	ReadTextFromScreenshot( 63, 100, 103, 108 );
 		ReadTextFromScreenshot( 218, 95, 271, 116 );
-		}/**/
-//	SetupSimilarSearch( 0, 1, 3, 0 );
-//	SearchSimilarOnScreenshot( "tosearch10.bmp" );
+	}/**/
+/*	{
+		TakeScreenshot(-1, -1, -1, -1);
+//		SetupSimilarSearch( 0, 1, 3, 0 );
+		SearchSimilarOnScreenshot( "visual_studio_text.bmp" );
+	}/**/
 /*	{
 		_getch();
 		TakeScreenshot( 0, 0, 2000, 2000 );

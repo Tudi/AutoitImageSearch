@@ -32,7 +32,7 @@ class SimilarSearch
 public:
 	SimilarSearch();
 	~SimilarSearch();
-	void BuildFromImg( LPCOLORREF Pixels, int pWidth, int pHeight, int pStride );
+	void BuildFromImg( LPCOLORREF Pixels, int pWidth, int pHeight, int pStride, bool bIsCache );
 	int Width, Height, Stride;
 	int	*R,*G,*B;
 	int SearchType;
@@ -42,7 +42,7 @@ public:
 #endif
 };
 
-int GetNextBestMatch( SimilarSearch *SearchIn, SimilarSearch *SearchFor, int &retx, int &rety );
+uint64_t GetNextBestMatch( SimilarSearch *SearchIn, SimilarSearch *SearchFor, int &retx, int &rety );
 char * WINAPI SearchSimilarOnScreenshot(const char *aImageFile );
 void WINAPI SetupSimilarSearch( int MaxImageSize, int DownScale, int SearchType, int OnlyAtDiffMask );
 

@@ -30,9 +30,9 @@ enum SADSearchRegionFlags : int
 // have this return sumary to be able to wrap it in case multiple input images are given.
 // should benchmark speed difference first
 struct ImgSrchSADRegionRes {
-	int retx, rety;
+	int found_res, retx, rety;
 	uint64_t BestSAD, SADPerPixel, avgColorDiff, colorDiffCount, colorDifferentPct, BestSATD, BestSADBrightnessAdjusted, SATDPerPixel;
-	double HashSmallestDiffPCT;
+	size_t HashSmallestDiffPCT;
 	uint64_t duration;
 };
 

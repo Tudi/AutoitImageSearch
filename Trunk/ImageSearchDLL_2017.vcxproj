@@ -346,6 +346,7 @@
     <ClCompile Include="Resampling.cpp" />
     <ClCompile Include="SaveImages.cpp" />
     <ClCompile Include="SimilarSearch.cpp" />
+    <ClCompile Include="SimilarSearchExperiments.cpp" />
     <ClCompile Include="SplitChannelSearch.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DebugConsoleTest|Win32'">Create</PrecompiledHeader>

@@ -262,7 +262,7 @@ void RunSimilarSearchBenchmark()
 	for( int i = 0; i < LoopCount; i++ )
 	{
 		CurScreenshot->NeedsSSCache = true;
-		CurScreenshot->SSCache->BuildFromImg( CurScreenshot->Pixels, CurScreenshot->Right - CurScreenshot->Left, CurScreenshot->Bottom - CurScreenshot->Top, CurScreenshot->Right - CurScreenshot->Left );
+		CurScreenshot->SSCache->BuildFromImg( CurScreenshot->Pixels, CurScreenshot->Right - CurScreenshot->Left, CurScreenshot->Bottom - CurScreenshot->Top, CurScreenshot->Right - CurScreenshot->Left, false );
 		AntiOptimizer += i;
 	}
 	End = GetTimeTickI();

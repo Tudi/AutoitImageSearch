@@ -112,6 +112,12 @@
     <ClCompile Include="ImageSAD_Region.cpp">
       <Filter>ImageTools</Filter>
     </ClCompile>
+    <ClCompile Include="AutoSizeCapture.cpp">
+      <Filter>ImageTools</Filter>
+    </ClCompile>
+    <ClCompile Include="SimilarSearchExperiments.cpp">
+      <Filter>ImageTools</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EdgeDetect.h">
@@ -220,6 +226,12 @@
       <Filter>Testing</Filter>
     </ClInclude>
     <ClInclude Include="ImageSAD_Region.h">
+      <Filter>ImageTools</Filter>
+    </ClInclude>
+    <ClInclude Include="AutoSizeCapture.h">
+      <Filter>ImageTools</Filter>
+    </ClInclude>
+    <ClInclude Include="ImageSADGrayscale.h">
       <Filter>ImageTools</Filter>
     </ClInclude>
   </ItemGroup>
