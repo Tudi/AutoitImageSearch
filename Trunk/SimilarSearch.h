@@ -33,7 +33,8 @@ public:
 	SimilarSearch();
 	~SimilarSearch();
 	void BuildFromImg( LPCOLORREF Pixels, int pWidth, int pHeight, int pStride, bool bIsCache );
-	int Width, Height, Stride;
+	int Width, Height; // this refers to the blocks array R,G,B
+	int PixelWidth, PixelHeight, PixelStride;
 	int	*R,*G,*B;
 	int SearchType;
 	int SearchDownScale;

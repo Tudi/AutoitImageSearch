@@ -142,7 +142,7 @@ void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRig
 	}
 #endif
 	const uint64_t max_sad_value = ~(uint64_t)0;
-	const size_t max_smallestDiffPCT = 100;
+	const uint64_t max_smallestDiffPCT = 10000;
 	uint64_t multiStageSads[9];
 	if constexpr (MultiStageSadVer != 0) {
 		memset(multiStageSads, (uint8_t)0xFF, sizeof(multiStageSads));
@@ -419,8 +419,15 @@ docleanupandreturn:
 		if (GenHashErr == 0)
 		{
 			ImgHash8x8_CompareResult compareRes;
-			compareHash(cacheHash, CurScreenshot->pSSHashCache, &compareRes);
-			res.HashSmallestDiffPCT = compareRes.PctDifferAvg;
+			if (compareHash(cacheHash, CurScreenshot->pSSHashCache, &compareRes) == 0) {
+				res.HashSmallestDiffPCT = compareRes.PctDifferAvg;
+			}
+			else {
+				FileDebug("\t\t!!!Failed to compare final hash values");
+			}
+		}
+		else {
+			FileDebug("\t\t!!!Failed to generate final hash value");
 		}
 	}
 #ifdef _DEBUG
@@ -483,9 +490,9 @@ docleanupandreturn:
 static inline char* ImageSearch_SAD_Region_FormatRes(ImgSrchSADRegionRes& res)
 {
 	ReturnBuffSadRegion[0] = 0;
-	sprintf_s(ReturnBuffSadRegion, DEFAULT_STR_BUFFER_SIZE * 10, "%d|%d|%d|%llu|%llu|%llu|%llu|%llu|%d|%llu|%llu|%llu",
+	sprintf_s(ReturnBuffSadRegion, DEFAULT_STR_BUFFER_SIZE * 10, "%d|%d|%d|%llu|%llu|%llu|%llu|%llu|%.2f|%llu|%llu|%llu",
 		res.found_res, res.retx, res.rety, res.BestSAD, res.SADPerPixel, res.avgColorDiff, res.colorDiffCount, res.colorDifferentPct,
-		int(res.HashSmallestDiffPCT), res.BestSATD, res.SATDPerPixel, res.BestSADBrightnessAdjusted);
+		float(res.HashSmallestDiffPCT)/100.0f, res.BestSATD, res.SATDPerPixel, res.BestSADBrightnessAdjusted);
 	return ReturnBuffSadRegion;
 }
 

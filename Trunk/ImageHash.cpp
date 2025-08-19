@@ -226,9 +226,9 @@ int compareHash(ImgHashWholeIage* hash1, ImgHashWholeIage* hash2, ImgHash8x8_Com
 		}
 	}
 
-	const size_t hashBitcount = 8 * 8;
-
-	out->PctDifferAvg = out->rgbBitsDiffer * 100 / ( out->blocksAcumulated * hashBitcount * 3);
+	const size_t hashBitCount = 8 * 8;
+	const size_t hashTypeCount = 3;
+	out->PctDifferAvg = out->rgbBitsDiffer * 10000 / ( out->blocksAcumulated * hashBitCount * hashTypeCount);
 
 
 	return 0;
