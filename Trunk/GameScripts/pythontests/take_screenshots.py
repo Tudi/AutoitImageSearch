@@ -35,9 +35,9 @@ def exit_program():
     
 def main():
     print("Hotkeys:")
-    print("  Q  -> set TOP-LEFT to current mouse position")
-    print("  S  -> set BOTTOM-RIGHT to current mouse position")
-    print("  R  -> TakeScreenshotRegionAndSaveit(left, top, right, bottom)")
+    print("  q  -> set TOP-LEFT to current mouse position")
+    print("  s  -> set BOTTOM-RIGHT to current mouse position")
+    print("  r  -> TakeScreenshotRegionAndSaveit(left, top, right, bottom)")
     print("  esc-> quit")
     print()
 
@@ -74,9 +74,9 @@ def main():
         except Exception as e:
             print("[r] Error calling TakeScreenshotRegionAndSaveit:", e)
 
-    keyboard.add_hotkey("Q", set_top_left, suppress=False)
-    keyboard.add_hotkey("S", set_bottom_right, suppress=False)
-    keyboard.add_hotkey("R", run_screenshot, suppress=False)
+    keyboard.add_hotkey("q", set_top_left, suppress=False)
+    keyboard.add_hotkey("s", set_bottom_right, suppress=False)
+    keyboard.add_hotkey("r", run_screenshot, suppress=False)
     keyboard.add_hotkey("esc", exit_program, suppress=False)
 
     print("Ready. Set your corners with q/s, then press r.")

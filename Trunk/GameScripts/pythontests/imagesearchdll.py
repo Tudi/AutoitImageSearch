@@ -7,7 +7,20 @@ from dataclasses import dataclass
 from typing import List, Tuple, Optional
 from enum import IntFlag
 import time
+import pyautogui
+import psutil
+from typing import Union
+import time
+import win32gui
+import win32process
+from pynput.keyboard import Key, Controller
+import os
+import sys
 
+# Enable ANSI escape sequences on Windows
+if os.name == 'nt':
+    os.system('color')
+    
 class SADSearchRegionFlags(IntFlag):
     SSRF_ST_NO_FLAGS = 0
     SSRF_ST_PROCESS_INCLUDE_DIFF_INFO = 1 << 0  # result will include the number of pixels, colors that changed
@@ -55,6 +68,7 @@ _CHECK_FILE_EXISTS = False   # AU3 popped a MsgBox; python version just skips it
 
 @dataclass
 class SingleResult:
+    found_result: int = 0
     x: int = -1
     y: int = -1
     sad: int = -1
@@ -62,11 +76,15 @@ class SingleResult:
     avg_color_diff: int = -1
     color_diff_count: int = -1
     color_diff_pct: int = -1
-    hash_diff_pct: int = -1
+    hash_diff_pct: float = -1
     satd: int = -1
     satd_per_pixel: int = -1
     sad_brightness_corrected: int = -1
     raw: str = ""
+    img_name: str = ""
+    found_it: bool = False
+    img_width: int = -1
+    img_height: int = -1
 
 def _parse_single_result(raw: str) -> SingleResult:
     if not raw:
@@ -74,7 +92,8 @@ def _parse_single_result(raw: str) -> SingleResult:
 
     toks = [t for t in (x.strip() for x in raw.split("|")) if t != ""]
     try:    # be flexible about short/partial strings
-        return SingleResult(
+        ret = SingleResult(
+            found_result    = int(toks[0]) if len(toks) > 0 else 0,
             x               = int(toks[1]) if len(toks) > 1 else -1,
             y               = int(toks[2]) if len(toks) > 2 else -1,
             sad             = int(toks[3]) if len(toks) > 3 else -1,
@@ -88,6 +107,12 @@ def _parse_single_result(raw: str) -> SingleResult:
             sad_brightness_corrected   = int(toks[11]) if len(toks) > 11 else -1,
             raw=raw
         )
+        if ret.sad_brightness_corrected == 18446744073709551615:
+            ret.sad_brightness_corrected = -1
+        if ret.satd_per_pixel == 18446744073709551615:
+            ret.satd_per_pixel = -1
+        ret.raw = ret.raw.replace("18446744073709551615","-1")
+        return ret
     except ValueError:
         return SingleResult(raw=raw)
 
@@ -131,29 +156,47 @@ class ImageSearchDLL:
     def SearchImageInRegion(self, img_name: str,
                         start_x: int = -1, start_y: int = -1,
                         end_x: int = -1, end_y: int = -1,
-                        search_flags: int = SADSearchRegionFlags.SSRF_ST_ALLOW_MULTI_STAGE_GSAD2 | SADSearchRegionFlags.SSRF_ST_ENFORCE_SAD_WITH_HASH, # in case you catch an instance where this is not accurate, remove it
+                        search_flags: int = int(SADSearchRegionFlags.SSRF_ST_ALLOW_MULTI_STAGE_GSAD2) | int(SADSearchRegionFlags.SSRF_ST_INLCUDE_HASH_INFO), # in case you catch an instance where this is not accurate, remove it
                         apply_mask: bool = True,
-                        search_radius_for_auto_taget = 2,   # when the search location is extracted from the file name, we will search an area to make sure there is no target movement
+                        search_radius_for_auto_taget = 10,   # when the search location is extracted from the file name, we will search an area to make sure there is no target movement
                         no_new_screenshot = False,
                         wait_appear_timeout = -1,
                         wait_dissapear_timeout = -1,
                         accepted_similarity_pct = -1,
-                        click_image = False ) -> SingleResult:
+                        click_image = False,
+                        click_offset_x = -10000,
+                        click_offset_y = -10000,
+                        click_sleep = 0.2,
+                        extend_search_left = -10000,
+                        extend_search_up = -10000,
+                        extend_search_right = -10000,
+                        extend_search_down = -10000,
+                        ) -> SingleResult:
 
+        w = -1
+        h = -1
         # optional filename-derived coordinates
         if start_x < 0 or start_y < 0 or end_x < 0 or end_y < 0:
             x, y, w, h = _get_coords_from_image_filename(img_name)
-            if x or y or w or h:
+            if x and y and w and h:
                 start_x = x - search_radius_for_auto_taget
                 start_y = y - search_radius_for_auto_taget
                 end_x   = x + search_radius_for_auto_taget
                 end_y   = y + search_radius_for_auto_taget
+            if extend_search_left != -10000:
+                start_x -= extend_search_left
+            if extend_search_up != -10000:
+                start_y -= extend_search_up
+            if extend_search_right != -10000:
+                end_x += extend_search_right
+            if extend_search_down != -10000:
+                end_y -= extend_search_down
 
         start_time = time.time()
-        last_result = None
+        prev_search_res = ""
         while True:
             if no_new_screenshot == False:
-                # take a (possibly throttled) screenshot of “full screen” (-1,-1,-1,-1)
+                # take a (possibly throttled) screenshot of “full screen” (-1,-1,-1,-1). -1 values mean the screenshot will be smart to target search area used
                 self._dll.TakeScreenshot(-1, -1, -1, -1)
                 # optional mask to smooth color blending
                 if apply_mask:
@@ -171,9 +214,16 @@ class ImageSearchDLL:
             result = _parse_single_result(raw)
 
             # check similarity if threshold is set
-            similarity_ok = True
-            if accepted_similarity_pct >= 0 and result.hash_diff_pct is not None:
-                similarity_ok = result.hash_diff_pct >= accepted_similarity_pct
+            similarity_ok = False
+            if accepted_similarity_pct >= 0 and result.found_result != 0 and result.hash_diff_pct is not None:
+                similarity_ok = int(result.hash_diff_pct) <= int(accepted_similarity_pct)
+#                if similarity_ok == False:
+                diff_time = int((time.time() - start_time) * 1000)
+                if prev_search_res != result.raw:
+                    print(f" t{diff_time:>03} {result.hash_diff_pct}% <?> {accepted_similarity_pct}%  {result.raw} ")                
+                    prev_search_res = result.raw
+                else:
+                    print(f"\033[A\r\033[K t{diff_time:>03} {result.hash_diff_pct}% <?> {accepted_similarity_pct}%  {result.raw} ")                
 
             # handle wait_appear_timeout: wait until image appears
             if wait_appear_timeout >= 0:
@@ -197,35 +247,18 @@ class ImageSearchDLL:
             if wait_appear_timeout < 0 and wait_dissapear_timeout < 0:
                 break
 
-            last_result = result
-
         if click_image and similarity_ok:
-            # calculate center coordinates
-            center_x = result.x + w / 2
-            center_y = result.y + h / 2
-
-            # Windows API constants
-            MOUSEEVENTF_MOVE = 0x0001
-            MOUSEEVENTF_ABSOLUTE = 0x8000
-            MOUSEEVENTF_LEFTDOWN = 0x0002
-            MOUSEEVENTF_LEFTUP = 0x0004
-
-            # get screen size
-            screen_width = ctypes.windll.user32.GetSystemMetrics(0)
-            screen_height = ctypes.windll.user32.GetSystemMetrics(1)
-
-            # convert to absolute coordinates (0..65535)
-            abs_x = int(center_x * 65535 / screen_width)
-            abs_y = int(center_y * 65535 / screen_height)
-
-            # move mouse
-            ctypes.windll.user32.mouse_event(MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE, abs_x, abs_y, 0, 0)
-            time.sleep(0.01)  # short delay to ensure move registers
-
-            # click
-            ctypes.windll.user32.mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
-            ctypes.windll.user32.mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
-    
+            if click_offset_x == -10000:
+                click_offset_x = w/2
+            if click_offset_y == -10000:
+                click_offset_y = h/2
+            MouseClick(result.x + click_offset_x, result.y + click_offset_y, click_sleep) # after a click, we sleep a bit to allow window to refresh
+   
+        result.img_name = img_name
+        result.found_it = similarity_ok
+        result.img_width = w
+        result.img_height = h
+        
         return result
 
     def BlurrImage(self, half_kernel_size: int) -> None:
@@ -237,4 +270,152 @@ class ImageSearchDLL:
         raw_ptr = self._dll.ImageSearchSimilar(path_b)
         raw = (ctypes.cast(raw_ptr, ctypes.c_char_p).value or b"").decode("mbcs", errors="replace")
         return _parse_single_result(raw)     
+
+#######################################################################################################
+    
+def MouseClick(x:int, y:int, click_sleep = 0.1):
+    print(f"Will click mouse coord : [{x},{y}]")
+    # Windows API constants
+    MOUSEEVENTF_MOVE = 0x0001
+    MOUSEEVENTF_ABSOLUTE = 0x8000
+    MOUSEEVENTF_LEFTDOWN = 0x0002
+    MOUSEEVENTF_LEFTUP = 0x0004
+
+    # get screen size
+    screen_width = ctypes.windll.user32.GetSystemMetrics(0)
+    screen_height = ctypes.windll.user32.GetSystemMetrics(1)
+
+    # convert to absolute coordinates (0..65535)
+    abs_x = int(x * 65535 / screen_width)
+    abs_y = int(y * 65535 / screen_height)
+
+    # move mouse
+    ctypes.windll.user32.mouse_event(MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE, abs_x, abs_y, 0, 0)
+    time.sleep(click_sleep)  # short delay to ensure move registers
+
+    # click
+    ctypes.windll.user32.mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
+    ctypes.windll.user32.mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)    
+
+#######################################################################################################
+
+class SendKeys:
+    def __init__(self):
+        self.keyboard = Controller()
+    
+    def send_key(self, key, delay=0.01):
+        """Send a single key press"""
+        if isinstance(key, str):
+            if len(key) == 1:
+                # Single character
+                self.keyboard.press(key)
+                self.keyboard.release(key)
+            else:
+                # Special key name (convert to pynput Key)
+                special_key = self._get_special_key(key)
+                if special_key:
+                    self.keyboard.press(special_key)
+                    self.keyboard.release(special_key)
+        else:
+            # Direct Key object
+            self.keyboard.press(key)
+            self.keyboard.release(key)
         
+        time.sleep(delay)
+    
+    def send_text(self, text, delay=0.01):
+        """Send a string of text"""
+        for char in text:
+            self.keyboard.press(char)
+            self.keyboard.release(char)
+            time.sleep(delay)
+    
+    def send_keys_combination(self, *keys):
+        """Send key combination (like Ctrl+C)"""
+        # Press all keys
+        for key in keys:
+            if isinstance(key, str):
+                key = self._get_special_key(key) or key
+            self.keyboard.press(key)
+        
+        # Release all keys in reverse order
+        for key in reversed(keys):
+            if isinstance(key, str):
+                key = self._get_special_key(key) or key
+            self.keyboard.release(key)
+    
+    def _get_special_key(self, key_name):
+        """Convert string key names to pynput Key objects"""
+        key_mapping = {
+            'enter': Key.enter,
+            'return': Key.enter,
+            'tab': Key.tab,
+            'space': Key.space,
+            'backspace': Key.backspace,
+            'delete': Key.delete,
+            'esc': Key.esc,
+            'escape': Key.esc,
+            'shift': Key.shift,
+            'ctrl': Key.ctrl,
+            'alt': Key.alt,
+            'cmd': Key.cmd,
+            'win': Key.cmd,  # Add this line - Windows key
+            'windows': Key.cmd,  # Add this line - Alternative name
+            'up': Key.up,
+            'down': Key.down,
+            'left': Key.left,
+            'right': Key.right,
+            'home': Key.home,
+            'end': Key.end,
+            'page_up': Key.page_up,
+            'page_down': Key.page_down,
+            'f1': Key.f1, 'f2': Key.f2, 'f3': Key.f3, 'f4': Key.f4,
+            'f5': Key.f5, 'f6': Key.f6, 'f7': Key.f7, 'f8': Key.f8,
+            'f9': Key.f9, 'f10': Key.f10, 'f11': Key.f11, 'f12': Key.f12,
+        }
+        return key_mapping.get(key_name.lower())
+        
+#######################################################################################################
+        
+def winactivate(process_name, start_process_path = "", wait_time_startup = 3):
+    found = False
+    
+    def callback(hwnd, _):
+        nonlocal found
+        if win32gui.IsWindowVisible(hwnd) and win32gui.GetWindowText(hwnd):
+            try:
+                _, pid = win32process.GetWindowThreadProcessId(hwnd)
+                if psutil.Process(pid).name() == process_name:
+                    win32gui.SetForegroundWindow(hwnd)
+                    found = True
+                    time.sleep(0.1)
+            except:
+                pass
+        return True
+    
+    win32gui.EnumWindows(callback, None)
+    
+    if found == False and len(start_process_path) != 0:
+        # Start the process with admin rights
+        try:
+            # Method 1: Using ShellExecute with runas
+            import win32api
+            win32api.ShellExecute(None, "runas", start_process_path, None, None, 1)
+        except ImportError:
+            # Method 2: Using subprocess with PowerShell
+            try:
+                subprocess.run([
+                    "powershell", 
+                    "-Command", 
+                    f"Start-Process '{start_process_path}' -Verb RunAs"
+                ], check=True)
+            except subprocess.CalledProcessError:
+                # Method 3: Fallback to regular process start
+                subprocess.Popen([start_process_path])
+        
+        # Wait a bit
+        time.sleep(wait_time_startup)
+        # Try to activate it again
+        win32gui.EnumWindows(callback, None)
+        
+    return found
