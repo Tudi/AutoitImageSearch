@@ -276,7 +276,7 @@ uint64_t GetNextBestMatch(ScreenshotStruct *ss , CachedPicture *pc, int &retx, i
 	const uint64_t width_SAD = ( pc->Width / 8 ) * 8;
 	const uint64_t height_SAD = pc->Height;
 	retx = rety = -1;
-#define PRINT_NUMBER_OF_SADS
+//#define PRINT_NUMBER_OF_SADS
 #ifdef PRINT_NUMBER_OF_SADS
 	size_t NumberOfSSCompares = 0;
 	size_t NumberOfSADSearches = 0;

@@ -40,6 +40,16 @@ void SaveImage(LPCOLORREF Pixels, int Width, int Height, const char *BaseName, i
 	Img.Save(BaseName);
 }
 
+void SaveImage_(LPCOLORREF Pixels, int Width, int Height, int Stride, const char* BaseName)
+{
+	CImage Img;
+	Img.Create(Width, Height, 32);
+	for (int y = 0; y < Height; y += 1)
+		for (int x = 0; x < Width; x += 1)
+			Img.SetPixel(x, y, Pixels[y * Stride + x]);
+	Img.Save(BaseName);
+}
+
 void SaveScreenshot_(ScreenshotStruct	*CurScreenshot)
 {
 	FileDebug("Started saving the screenshot");

@@ -27,3 +27,27 @@ Tips :
 	- make sure to use raw BMP 24bpp format for searched images. Best is to make a screenshot using the DLL and cut out images using Paint ( yes that idiot tool ) because it will not alter the copied image portion with fancy filters.
 	- you can use OCR by creating your own alphabet library
  
+Some orientative benchmark results ( just for relative comparison between different modes ):
+=== Overall Averages (across queries) ===
+                SSRF_ST_NO_FLAGS:  overall avg  1642.67 ms
+  SSRF_ST_ALLOW_MULTI_STAGE_SAD2:  overall avg  1089.34 ms
+  SSRF_ST_ALLOW_MULTI_STAGE_SAD4:  overall avg   555.07 ms
+  SSRF_ST_ALLOW_MULTI_STAGE_GSAD:  overall avg   363.36 ms
+  SSRF_ST_ALLOW_MULTI_STAGE_GSAD2:  overall avg   274.47 ms
+                 SSRF_ST_Similar:  overall avg   119.66 ms
+   SSRF_ST_ENFORCE_SAD_WITH_SATD:  overall avg  1760.54 ms
+   SSRF_ST_ENFORCE_SAD_WITH_HASH:  overall avg  2281.40 ms
+      SSRF_ST_MAIN_CHECK_IS_SATD:  overall avg 16768.81 ms
+      SSRF_ST_MAIN_CHECK_IS_HASH:  overall avg 74252.45 ms
+
+=== Warmup Averages (across queries) ===
+                SSRF_ST_NO_FLAGS:  warmup avg  1669.67 ms
+  SSRF_ST_ALLOW_MULTI_STAGE_SAD2:  warmup avg   976.73 ms
+  SSRF_ST_ALLOW_MULTI_STAGE_SAD4:  warmup avg   560.42 ms
+  SSRF_ST_ALLOW_MULTI_STAGE_GSAD:  warmup avg   314.33 ms
+  SSRF_ST_ALLOW_MULTI_STAGE_GSAD2:  warmup avg   248.57 ms
+                 SSRF_ST_Similar:  warmup avg   804.33 ms
+   SSRF_ST_ENFORCE_SAD_WITH_SATD:  warmup avg  1673.91 ms
+   SSRF_ST_ENFORCE_SAD_WITH_HASH:  warmup avg  3980.56 ms
+      SSRF_ST_MAIN_CHECK_IS_SATD:  warmup avg 16566.57 ms
+      SSRF_ST_MAIN_CHECK_IS_HASH:  warmup avg 169318.44 ms

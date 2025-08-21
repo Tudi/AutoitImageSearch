@@ -12,6 +12,9 @@ class ScreenshotStruct;
 #define BYTES_PER_PIXEL			4
 #define PUSH_BIT(store, bit)	(*(uint64_t*)&store)=(((*(uint64_t*)&store)<<(uint64_t)1)|(uint64_t)bit)
 
+#define HashPixelWidth 8
+#define HashPixelHeight 8
+
 struct ImgHash8x8
 {
 	uint64_t rHash, gHash, bHash;
@@ -26,22 +29,68 @@ struct ImgHash8x8_CompareResult
 
 struct ImgHash8x8_All
 {
+	uint8_t HasHashesGenerated;
 	ImgHash8x8 AHash;
 	ImgHash8x8 BHash;
 	ImgHash8x8 CHash;
 };
 
-struct ImgHashWholeIage
+class ImgHashWholeImage
 {
-	size_t cols, rows;
-	ImgHash8x8_All* hashes;
-	size_t UniqueFameCounter;
+public:
+	~ImgHashWholeImage();
+	void initHashes() {
+		if (hashes == NULL) {
+			hashes = (ImgHash8x8_All*)MY_ALLOC(rows * cols * sizeof(ImgHash8x8_All));
+		}
+		if (hashes) {
+			memset(hashes, 0, cols * rows * sizeof(ImgHash8x8_All));
+		}
+	}
+	void reinit() {
+		cols = rows = 0;
+	}
+	virtual inline ImgHash8x8_All* GetHashStore(const size_t x, const size_t y) const { return NULL; }
+	size_t cols, rows; // because ss store 1 hash / pixel, but caches store 1 hash / 8 pixel
+	size_t imgWidth, imgHeight; // the hash was generated based on these sizes
+	ImgHash8x8_All* hashes; // screenshots will have 1 hash8x8 for every pixel. cached images will have 1 hash for every 8x8 pixel
+	size_t UniqueFameCounter; // this is the link to the owner frame. If the attached screenshot changes, hash cache needs to be refreshed
+};
+
+class ImgHashCache : public ImgHashWholeImage {
+public:
+	// coordinates are original pixel based
+	inline ImgHash8x8_All* GetHashStore(const size_t x, const size_t y) const {
+#ifdef _DEBUG
+		assert(hashes != NULL);
+		assert(x < imgWidth);
+		assert(y < imgHeight);
+#endif
+		return &hashes[(y / HashPixelHeight) * cols + x / HashPixelWidth];
+	}
+};
+
+class ImgHashSS : public ImgHashWholeImage {
+public:
+	void reinit() {
+		cols = rows = 0;
+	}
+	// coordinates are original pixel based
+	inline ImgHash8x8_All* GetHashStore(const size_t x, const size_t y) const {
+#ifdef _DEBUG
+		assert(hashes != NULL);
+		assert(x < imgWidth);
+		assert(y < imgHeight);
+#endif
+		return &hashes[y * cols + x];
+	}
 };
 
 // a simple cache is probably not enough. Perform multiple steps so that it becomes easy
-void GenHashesForCachedImage(CachedPicture *pic, ImgHashWholeIage* out_hashes);
-int GenHashesOnScreenshotForCachedImage(CachedPicture* pic, ScreenshotStruct* ss, int atX, int atY, ImgHashWholeIage* out_hashes);
-void FreeHashAllocatedData(ImgHashWholeIage* out_hashes);
+void GenHashesForCachedImage(CachedPicture *pic, ImgHashCache* out_hashes);
+template <const bool bGenAllPositions>
+int64_t GenHashesOnScreenshotForCachedImage(CachedPicture* pic, ScreenshotStruct* ss, size_t atX, size_t atY);
+void FreeHashAllocatedData(ImgHashWholeImage* out_hashes);
 void ReinitScreenshotHashCache(ScreenshotStruct* ss);
 
 // get the average luminosity of the image, compare each pixel of the image to the avg. If lower than avg produce a 0, else 1 bit
@@ -56,5 +105,4 @@ void genBHash_8x8(const LPCOLORREF pixels, const size_t stride, ImgHash8x8* out_
 // pro : mostly ignores luminozity changes + semi retains row pixel locations
 // cons : only retains row related locations + single extra row added might produce a 100% different hash
 void genCHash_8x8(const LPCOLORREF pixels, const size_t stride, ImgHash8x8* out_hash);
-void compareHash_8x8(ImgHash8x8* h1, ImgHash8x8* h2, ImgHash8x8_CompareResult* out, bool bIsAcumulate);
-int compareHash(ImgHashWholeIage* hash1, ImgHashWholeIage* hash2, ImgHash8x8_CompareResult* out);
+int64_t compareHash(const ImgHashSS* hashSS, const ImgHashCache* hashC, size_t atX, size_t atY, ImgHash8x8_CompareResult* out);

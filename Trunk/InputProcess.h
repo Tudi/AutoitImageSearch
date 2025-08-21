@@ -30,7 +30,7 @@ public:
 	PiramidImage	*PSCache;
 	SplitChannel	*SCCache;
 	SADSumStoreScreenshot		SADSums;
-	ImgHashWholeIage* pSSHashCache; // if multiple images are searched on the same SS, they can reuse the hash
+	ImgHashSS		*pSSHashCache; // if multiple images are searched on the same SS, they can reuse the hash
 	uint8_t			*pGrayscalePixels; // 1 byte / pixel. Stride is same as width
 	size_t			TimeStampTaken;
 	size_t			UniqueFameCounter;

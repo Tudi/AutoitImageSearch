@@ -92,7 +92,7 @@ void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRig
 		return;
 	}
 
-	ImgHashWholeIage* cacheHash = NULL;
+	ImgHashCache* cacheHash = NULL;
 	if constexpr (primary_cmp_hash == true || secondary_cmp_hash == true ) {
 		ReinitScreenshotHashCache(CurScreenshot);
 		cacheHash = GetCreateCacheHash(cache);
@@ -166,11 +166,11 @@ void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRig
 			{
 				// because you can't do double checks using template programing :S 
 #define INLINE_HASH_CHECK_CODE \
-				int GenHashErr = GenHashesOnScreenshotForCachedImage(cache, CurScreenshot, (int)x, (int)y, CurScreenshot->pSSHashCache); \
+				int64_t GenHashErr = GenHashesOnScreenshotForCachedImage<primary_cmp_hash>(cache, CurScreenshot, x, y); \
 				if (GenHashErr == 0) \
 				{ \
 					ImgHash8x8_CompareResult compareRes; \
-					compareHash(cacheHash, CurScreenshot->pSSHashCache, &compareRes); \
+					compareHash(CurScreenshot->pSSHashCache, cacheHash, x, y, &compareRes); \
 					if (compareRes.PctDifferAvg < res.HashSmallestDiffPCT) { \
 						res.BestSAD = sad; \
 						res.HashSmallestDiffPCT = compareRes.PctDifferAvg; \
@@ -415,11 +415,11 @@ docleanupandreturn:
 	}
 	if (res.rety != -1 && (uSearchFlags & SSRF_ST_INLCUDE_HASH_INFO) && res.HashSmallestDiffPCT == max_smallestDiffPCT)
 	{
-		int GenHashErr = GenHashesOnScreenshotForCachedImage(cache, CurScreenshot, (int)res.retx, (int)res.rety, CurScreenshot->pSSHashCache);
+		int64_t GenHashErr = GenHashesOnScreenshotForCachedImage<primary_cmp_hash>(cache, CurScreenshot, res.retx, res.rety);
 		if (GenHashErr == 0)
 		{
 			ImgHash8x8_CompareResult compareRes;
-			if (compareHash(cacheHash, CurScreenshot->pSSHashCache, &compareRes) == 0) {
+			if (compareHash(CurScreenshot->pSSHashCache, cacheHash, res.retx, res.rety, &compareRes) == 0) {
 				res.HashSmallestDiffPCT = compareRes.PctDifferAvg;
 			}
 			else {

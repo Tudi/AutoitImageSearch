@@ -1,4 +1,7 @@
 #include "StdAfx.h"
+#include <intrin.h>
+
+#define USE_INTRINSICS
 
 void genAHash_8x8(const LPCOLORREF pixels, const size_t stride, ImgHash8x8* out_hash)
 {
@@ -101,6 +104,7 @@ void genCHash_8x8(const LPCOLORREF pixels, const size_t stride, ImgHash8x8* out_
 	}
 }
 
+#if !defined(USE_INTRINSICS)
 static inline size_t bitCount(size_t num)
 {
 	size_t setBits = 0;
@@ -110,21 +114,25 @@ static inline size_t bitCount(size_t num)
 	}
 	return setBits;
 }
+#else
+static inline size_t bitCount(uint64_t x) {
+	return __popcnt64(x);
+}
+#endif
 
-void compareHash_8x8(ImgHash8x8* h1, ImgHash8x8* h2, ImgHash8x8_CompareResult* out, bool bIsAcumulate)
+template <const bool bIsAcumulate>
+static inline void compareHash_8x8(const ImgHash8x8* __restrict h1, const ImgHash8x8* __restrict h2, ImgHash8x8_CompareResult* out)
 {
-	if (bIsAcumulate == false) {
+	if constexpr (bIsAcumulate == false) {
 		memset(out, 0, sizeof(ImgHash8x8_CompareResult));
 	}
 
-	size_t valxor = ((uint64_t)h1->rHash) ^ ((uint64_t)h2->rHash);
-	const size_t rBitsDifferent = bitCount(valxor);
-	valxor = ((uint64_t)h1->gHash) ^ ((uint64_t)h2->gHash);
-	const size_t gBitsDifferent = bitCount(valxor);
-	valxor = ((uint64_t)h1->bHash) ^ ((uint64_t)h2->bHash);
-	const size_t bBitsDifferent = bitCount(valxor);
-
-	const size_t hashBitcount = 8 * 8;
+	const uint64_t valxorr = ((uint64_t)h1->rHash) ^ ((uint64_t)h2->rHash);
+	const uint64_t rBitsDifferent = bitCount(valxorr);
+	const uint64_t valxorg = ((uint64_t)h1->gHash) ^ ((uint64_t)h2->gHash);
+	const uint64_t gBitsDifferent = bitCount(valxorg);
+	const uint64_t valxorb = ((uint64_t)h1->bHash) ^ ((uint64_t)h2->bHash);
+	const uint64_t bBitsDifferent = bitCount(valxorb);
 
 	out->rgbBitsDiffer += rBitsDifferent;
 	out->rgbBitsDiffer += gBitsDifferent;
@@ -133,67 +141,118 @@ void compareHash_8x8(ImgHash8x8* h1, ImgHash8x8* h2, ImgHash8x8_CompareResult* o
 	out->blocksAcumulated++;
 }
 
-static int GenHashesForGenericImage(LPCOLORREF Pixels, int Width, int Height, int Stride, ImgHashWholeIage* out_hashes)
+const size_t kernel_half_size = 1;
+
+// based on input pixels, we generate multiple hashes to cover an area
+template <const bool all_positions>
+int64_t GenHashesForGenericImage(LPCOLORREF Pixels, int Width, int Height, int Stride,
+	size_t atX, size_t atY,
+	ImgHashWholeImage* out_hashes)
 {
-	const size_t kernel_half_size = 1;
-	LPCOLORREF blurredImg = BlurrImage2_<kernel_half_size>(Pixels, Width, Height, Stride, 1.0);
+	// sanity checks
+	{
+		// the blurring will be unusable at the edge of the image
+		size_t usable_width = Width - 2 * kernel_half_size;
+		size_t usable_height = Height - 2 * kernel_half_size;
+		size_t HashColCnt = usable_width / HashPixelWidth;
+		size_t HashRowCnt = usable_height / HashPixelHeight;
+
+		// sanity. We can't process too small images
+		if (HashRowCnt <= 0 || HashColCnt <= 0) {
+			return -1;
+		}
+	}
+
+	size_t PixelStep;
+	if constexpr (all_positions) {
+		PixelStep = 1;
+	}
+	else {
+		PixelStep = HashPixelWidth;
+	}
+
+	// check if we already have hashes calculated for this image. Only makes sense when working on screenshots
+	bool HasAllHashesCalculated = true;
+	for (size_t pixelY = kernel_half_size; pixelY <= Height - kernel_half_size - HashPixelHeight; pixelY += PixelStep) {
+		for (size_t pixelX = kernel_half_size; pixelX <= Width - kernel_half_size - HashPixelWidth; pixelX += PixelStep) {
+			// cols represents RowStride
+			// caches store 1 hash for every 8x8 pixel block
+			// screenshots store 1 cache for every pixel location to be able to search based on hash comparison
+			ImgHash8x8_All* hashes2 = out_hashes->GetHashStore(atX + pixelX, atY + pixelY);
+			if (hashes2->HasHashesGenerated == 0) {
+				HasAllHashesCalculated = false;
+				break;
+			}
+		}
+		if (HasAllHashesCalculated == false) {
+			break;
+		}
+	}
+	if (HasAllHashesCalculated == true) {
+		FileDebug("GenHashesForCachedImage: Amaizing, found one time when caching was usefull");
+		return 0;
+	}
+
+	// blurring is advised or else it will be very sensitive to small pixel differences
+	LPCOLORREF Pixels2 = &Pixels[atY * Stride + atX];
+	LPCOLORREF blurredImg = BlurrImage2_<kernel_half_size, 1.0>(Pixels2, Width, Height, Stride);
+	const size_t BlurredImageStride = Width;
 	if (blurredImg == NULL)
 	{
 		FileDebug("GenHashesForCachedImage: mem allocation error");
 		return -1;
 	}
 
-	// the blurring will be unusable at the edge of the image
-	size_t usable_width = Width - 2 * kernel_half_size;
-	size_t usable_height = Height - 2 * kernel_half_size;
-	size_t usable_stride = Stride;
-	LPCOLORREF usable_pixels = &blurredImg[kernel_half_size + kernel_half_size * usable_stride];
+/*	if (Width != Stride) {
+		SaveImage_(Pixels2, Width, Height, Stride, "Original.bmp");
+		SaveImage_(blurredImg, Width, Height, Width, "blurred.bmp");
+	}/**/
 
-	// store multiple out_hashes
-	if (out_hashes->hashes != NULL && (out_hashes->rows != (usable_height / 8) || out_hashes->cols != (usable_width / 8)))
-	{
-		MY_FREE(out_hashes->hashes);
-		out_hashes->hashes = NULL;
-	}
-	out_hashes->rows = usable_height / 8;
-	out_hashes->cols = usable_width / 8;
-	if (out_hashes->rows <= 0 || out_hashes->cols <= 0)
-	{
-		return -1;
-	}
-	if (out_hashes->hashes == NULL)
-	{
-		out_hashes->hashes = (ImgHash8x8_All*)MY_ALLOC(out_hashes->rows * out_hashes->cols * sizeof(ImgHash8x8_All));
-	}
-	if (out_hashes->hashes == NULL)
-	{
-		FileDebug("GenHashesForCachedImage: mem allocation error");
-		return -1;
-	}
-
-	for (size_t row_hash = 0; row_hash < out_hashes->rows; row_hash++)
-	{
-		for (size_t col_hash = 0; col_hash < out_hashes->cols; col_hash++)
-		{
-			LPCOLORREF usable_pixels2 = &usable_pixels[row_hash * 8 * usable_stride + col_hash * 8];
-			ImgHash8x8_All* hashes2 = &out_hashes->hashes[row_hash * out_hashes->cols + col_hash];
-			genAHash_8x8(usable_pixels2, usable_stride, &hashes2->AHash);
-			genBHash_8x8(usable_pixels2, usable_stride, &hashes2->BHash);
-			genCHash_8x8(usable_pixels2, usable_stride, &hashes2->CHash);
+	// how many 8x8 blocks fit in the requested area, we calculate a hash
+	for (size_t pixelY = kernel_half_size; pixelY <= Height - kernel_half_size - HashPixelHeight; pixelY += PixelStep) {
+		for (size_t pixelX = kernel_half_size; pixelX <= Width - kernel_half_size - HashPixelWidth; pixelX += PixelStep) {
+			// caches store 1 hash for every 8x8 pixel block
+			// screenshots store 1 cache for every pixel location to be able to search based on hash comparison
+			ImgHash8x8_All* hashes2 = out_hashes->GetHashStore(atX + pixelX, atY + pixelY);
+			if (hashes2->HasHashesGenerated) {
+				continue;
+			}
+			// make sure we do not recalculate hash for this pixel position next time
+			hashes2->HasHashesGenerated = 1;
+			// cache pixels are hashed at every 8x8 pixel intervals
+			LPCOLORREF usable_pixels2 = &blurredImg[pixelY * BlurredImageStride + pixelX];
+			genAHash_8x8(usable_pixels2, BlurredImageStride, &hashes2->AHash);
+			genBHash_8x8(usable_pixels2, BlurredImageStride, &hashes2->BHash);
+			genCHash_8x8(usable_pixels2, BlurredImageStride, &hashes2->CHash);
 		}
 	}
 
+	// no more use for the blurred version of the image region
 	MY_FREE(blurredImg);
 
 	return 0;
 }
 
-void GenHashesForCachedImage(CachedPicture* pic, ImgHashWholeIage* out_hashes)
+// gen all hashes for a staticly cached image
+void GenHashesForCachedImage(CachedPicture* pic, ImgHashCache* out_hashes)
 {
-	GenHashesForGenericImage(pic->Pixels, pic->Width, pic->Height, pic->Width, out_hashes);
+	// cached images will generate hashes only once
+	if (out_hashes->hashes != NULL) {
+		return;
+	}
+	out_hashes->imgWidth = pic->Width;
+	out_hashes->imgHeight = pic->Height;
+	out_hashes->cols = (pic->Width - 2 * kernel_half_size) / HashPixelWidth;
+	out_hashes->rows = (pic->Height - 2 * kernel_half_size) / HashPixelHeight;
+	// sanity
+	out_hashes->initHashes();
+	// for each 8x8 pixel block, generate 1 hash
+	GenHashesForGenericImage<false>(pic->Pixels, pic->Width, pic->Height, pic->Width, 0, 0, out_hashes);
 }
 
-int GenHashesOnScreenshotForCachedImage(CachedPicture* pic, ScreenshotStruct* ss, int atX, int atY, ImgHashWholeIage* out_hashes)
+// when we check a static cahed image if it is present on the screenshot, we need to have the hashes on the screeenshot
+template <const bool bGenAllPositions>
+int64_t GenHashesOnScreenshotForCachedImage(CachedPicture* pic, ScreenshotStruct* ss, size_t atX, size_t atY)
 {
 	if (atY + pic->Height >= ss->Height)
 	{
@@ -203,38 +262,46 @@ int GenHashesOnScreenshotForCachedImage(CachedPicture* pic, ScreenshotStruct* ss
 	{
 		return -1;
 	}
-	LPCOLORREF PixelsAt = &ss->Pixels[atY * ss->Width + atX];
-	return GenHashesForGenericImage(PixelsAt, pic->Width, pic->Height, ss->Width, out_hashes);
+	return GenHashesForGenericImage<bGenAllPositions>(ss->Pixels, pic->Width, pic->Height, ss->Width, atX, atY, ss->pSSHashCache);
 }
 
-int compareHash(ImgHashWholeIage* hash1, ImgHashWholeIage* hash2, ImgHash8x8_CompareResult* out)
+int64_t compareHash(const ImgHashSS* __restrict hashSS, const ImgHashCache* __restrict hashC, size_t atX, size_t atY, ImgHash8x8_CompareResult* out)
 {
-	if (hash1 == NULL || hash2 == NULL || out == NULL)
+	if (hashSS == NULL || hashC == NULL || out == NULL)
 	{
-		return 1;
+		return -1;
 	}
 	memset(out, 0, sizeof(ImgHash8x8_CompareResult));
-	const size_t cols = min(hash1->cols, hash2->cols);
-	const size_t rows = min(hash1->rows, hash2->rows);
-	for (size_t row = 0; row < rows; row++)
+	for (size_t y = kernel_half_size; y <= hashC->imgHeight - kernel_half_size - HashPixelHeight; y+= HashPixelHeight)
 	{
-		for (size_t col = 0; col < cols; col++)
+		for (size_t x = kernel_half_size; x <= hashC->imgWidth - kernel_half_size - HashPixelWidth; x+= HashPixelWidth)
 		{
-			compareHash_8x8(&hash1->hashes[row * hash1->cols + col].AHash, &hash2->hashes[row * hash2->cols + col].AHash, out, true);
-			compareHash_8x8(&hash1->hashes[row * hash1->cols + col].BHash, &hash2->hashes[row * hash2->cols + col].BHash, out, true);
-			compareHash_8x8(&hash1->hashes[row * hash1->cols + col].CHash, &hash2->hashes[row * hash2->cols + col].CHash, out, true);
+			ImgHash8x8_All* hSS = hashSS->GetHashStore(atX + x, atY + y);
+			ImgHash8x8_All* hC = hashC->GetHashStore(x, y);
+#ifdef _DEBUG
+			if (hSS->HasHashesGenerated == 0) {
+				FileDebug("!!!Hash1 does not have a hash generated for all required locations");
+			}
+			if (hC->HasHashesGenerated == 0) {
+				FileDebug("!!!Hash2 does not have a hash generated for all required locations");
+			}
+#endif
+			compareHash_8x8<true>(&hSS->AHash, &hC->AHash, out);
+			compareHash_8x8<true>(&hSS->BHash, &hC->BHash, out);
+			compareHash_8x8<true>(&hSS->CHash, &hC->CHash, out);
 		}
 	}
 
-	const size_t hashBitCount = 8 * 8;
-	const size_t hashTypeCount = 3;
-	out->PctDifferAvg = out->rgbBitsDiffer * 10000 / ( out->blocksAcumulated * hashBitCount * hashTypeCount);
+	const size_t hashBitCount = HashPixelWidth * HashPixelHeight;
+	const size_t rgbHashChannels = 3;
+	out->PctDifferAvg = out->rgbBitsDiffer * 10000 / ( out->blocksAcumulated * hashBitCount * rgbHashChannels);
 
 
 	return 0;
 }
 
-void FreeHashAllocatedData(ImgHashWholeIage* out_hashes)
+// we are done with this cache can be freed
+void FreeHashAllocatedData(ImgHashWholeImage* out_hashes)
 {
 	if (out_hashes->hashes) {
 		MY_FREE(out_hashes->hashes);
@@ -242,22 +309,41 @@ void FreeHashAllocatedData(ImgHashWholeIage* out_hashes)
 	}
 }
 
+// function called after a new screenshot was taken(or attempted taken)
 void ReinitScreenshotHashCache(ScreenshotStruct* ss)
 {
-	if (CurScreenshot->pSSHashCache == NULL) {
+	if (ss->pSSHashCache == NULL) {
 		// create a new hash storage
-		CurScreenshot->pSSHashCache = (ImgHashWholeIage*)MY_ALLOC(sizeof(ImgHashWholeIage));
-		// first time init
-		memset(CurScreenshot->pSSHashCache, 0, sizeof(ImgHashWholeIage));
-		// mark the cache that we are generating hashes for this specific screenshot
-		CurScreenshot->pSSHashCache->UniqueFameCounter = CurScreenshot->UniqueFameCounter;
+		ss->pSSHashCache = new ImgHashSS();
 	}
-	else if (CurScreenshot->UniqueFameCounter != CurScreenshot->pSSHashCache->UniqueFameCounter) {
+	// no need to reinit. linked image remained the same
+	else if (ss->UniqueFameCounter == ss->pSSHashCache->UniqueFameCounter) {
+		return;
+	}
+	// linked image changed. maybe we could keep the allocated mem. Todo : check if width/height changed
+	else if (ss->UniqueFameCounter != ss->pSSHashCache->UniqueFameCounter) {
 		// ditch previously generated hashes
-		FreeHashAllocatedData(CurScreenshot->pSSHashCache);
-		// reinit the struct
-		memset(CurScreenshot->pSSHashCache, 0, sizeof(ImgHashWholeIage));
+		FreeHashAllocatedData(ss->pSSHashCache);
+	}
+	// reinit the struct
+	if (ss->pSSHashCache) {
+		ss->pSSHashCache->reinit();
+		// just in case the input image resolution changed
+		ss->pSSHashCache->imgWidth = ss->Width;
+		ss->pSSHashCache->imgHeight = ss->Height;
+		ss->pSSHashCache->cols = ss->Width;
+		ss->pSSHashCache->rows = ss->Height;
 		// mark the cache that we are generating hashes for this specific screenshot
-		CurScreenshot->pSSHashCache->UniqueFameCounter = CurScreenshot->UniqueFameCounter;
+		ss->pSSHashCache->UniqueFameCounter = ss->UniqueFameCounter;
+		// alloc hash store for the whole image
+		ss->pSSHashCache->initHashes();
 	}
 }
+
+ImgHashWholeImage::~ImgHashWholeImage() {
+	FreeHashAllocatedData(this);
+}
+
+// force template initialization for later usage
+template int64_t GenHashesOnScreenshotForCachedImage<false>(CachedPicture*, ScreenshotStruct*, size_t, size_t);
+template int64_t GenHashesOnScreenshotForCachedImage<true>(CachedPicture*, ScreenshotStruct*, size_t, size_t);

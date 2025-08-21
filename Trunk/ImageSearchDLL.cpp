@@ -72,6 +72,26 @@ int main(int argc, char **arg)
 #endif
 
 #if defined(_DEBUG) || defined(_CONSOLE)
+	// curious if these 2 differ at all
+/* {
+#define RUN_TIME_COUNT	1000000000
+		COLORREF input[300 * 300];
+		COLORREF res = 0, res2 = 0; // anti optimization
+		uint64_t startTime = GetTickCount64();
+		for (size_t i = 0; i < RUN_TIME_COUNT; ++i) {
+			input[i % 9] = i;
+			Blurr3x3(input, 300, &res);
+			res2 += res;
+		}
+		printf("1) res %llu took %llu\n", res2, GetTickCount64() - startTime);
+		startTime = GetTickCount64();
+		for (size_t i = 0; i < RUN_TIME_COUNT; ++i) {
+			input[i % 9] = i;
+			Blurr3x3_2(input, 300, &res);
+			res2 += res;
+		}
+		printf("2) res %llu took %llu\n", res2, GetTickCount64() - startTime);
+	}/**/
 	// testing if auto adjust capture size is working
 /*	{
 		// take a screenshot

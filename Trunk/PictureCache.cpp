@@ -105,7 +105,7 @@ CachedPicture *CachePicture( const char *aFilespec )
 	PictureCache[NrPicturesCached].PrevSearchTop = PictureCache[NrPicturesCached].PrevSearchLeft = -1;
 	PictureCache[NrPicturesCached].PrevSearchReturnVal[0] = 0;
 
-	PictureCache[NrPicturesCached].m_Hash.hashes = NULL;
+	PictureCache[NrPicturesCached].m_Hash = NULL;
 
 	PictureCache[NrPicturesCached].pGrayscalePixels = NULL;
 	
@@ -277,13 +277,19 @@ void WINAPI LoadCacheOverScreenshot(const char *aFilename, int Atx, int Aty)
 	FileDebug("LoadCacheOverScreenshot : End");
 }
 
+static void UnloadCacheAtIndex(size_t ind) {
+	// PictureCache[NrPicturesCached - 1].LoadedPicture; // leaking this :(
+	MY_FREE(PictureCache[ind].Pixels);
+	PictureCache[ind].Pixels = NULL;
+	PictureCache[ind].NameHash = 0;
+	// TODO : handle all the fields here
+}
+
 void UnloadLastCache()
 {
 	if (NrPicturesCached == 0)
 		return;
-	// PictureCache[NrPicturesCached - 1].LoadedPicture; // leaking this :(
-	MY_FREE(PictureCache[NrPicturesCached - 1].Pixels);
-	PictureCache[NrPicturesCached - 1].Pixels = NULL;
+	UnloadCacheAtIndex(NrPicturesCached - 1);
 	NrPicturesCached--;
 }
 
@@ -294,16 +300,17 @@ void UnloadCache(char *aFilespec)
 	{
 		FileDebug("No cache to unload");
 	}
-	MY_FREE(PictureCache[ExistingCacheIndex].Pixels);
-	PictureCache[ExistingCacheIndex].Pixels = NULL;
-	PictureCache[ExistingCacheIndex].NameHash = 0;
+	UnloadCacheAtIndex(ExistingCacheIndex);
 }
 
-ImgHashWholeIage* GetCreateCacheHash(CachedPicture* cache)
+ImgHashCache* GetCreateCacheHash(CachedPicture* cache)
 {
-	if (cache->m_Hash.hashes != NULL)
+	if (cache->m_Hash == NULL) {
+		cache->m_Hash = new ImgHashCache();
+	}
+	if (cache->m_Hash->hashes != NULL)
 	{
-		return &cache->m_Hash;
+		return cache->m_Hash;
 	}
 
 	if (cache->Width < 8 || cache->Height < 8)
@@ -311,9 +318,9 @@ ImgHashWholeIage* GetCreateCacheHash(CachedPicture* cache)
 		return NULL;
 	}
 	
-	GenHashesForCachedImage(cache, &cache->m_Hash);
+	GenHashesForCachedImage(cache, cache->m_Hash);
 
-	return &cache->m_Hash;
+	return cache->m_Hash;
 }
 
 void EnsureCacheHasGrayscale(CachedPicture* cache)

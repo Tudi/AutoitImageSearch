@@ -63,8 +63,7 @@ void WINAPI ReleaseScreenshot()
 	FreeSADSUMScreenshot(&CurScreenshot->SADSums);
 	if (CurScreenshot->pSSHashCache)
 	{
-		FreeHashAllocatedData(CurScreenshot->pSSHashCache);
-		MY_FREE(CurScreenshot->pSSHashCache);
+		delete CurScreenshot->pSSHashCache;
 		CurScreenshot->pSSHashCache = NULL;
 	}
 	if (CurScreenshot->pGrayscalePixels)
