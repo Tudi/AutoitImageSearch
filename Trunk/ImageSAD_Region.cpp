@@ -132,6 +132,10 @@ void ImageSearch_SAD_Region_(CachedPicture* cache, int aLeft, int aTop, int aRig
 	size_t search_start_y = aTop - CurScreenshot->Top;
 	size_t search_end_y = search_start_y + (aBottom - aTop);
 
+	if constexpr (primary_cmp_hash == true) {
+		GenHashesOnScreenshotForSearchRegion(CurScreenshot, search_start_x, search_start_y, search_end_x, search_end_y); \
+	}
+
 #ifdef _DEBUG
 	{
 		char dbgmsg[DEFAULT_STR_BUFFER_SIZE];

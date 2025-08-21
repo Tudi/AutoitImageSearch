@@ -72,6 +72,45 @@ int main(int argc, char **arg)
 #endif
 
 #if defined(_DEBUG) || defined(_CONSOLE)
+	// running profiler on the search function to see if there are any obvious weak points
+/* {
+		TakeScreenshot(-1, -1, -1, -1);
+		const char* ret = ImageSearch_SAD_Region("visual_studio_text.bmp", 0, 0, 1900, 1000, SADSearchRegionFlags::SSRF_ST_MAIN_CHECK_IS_HASH);
+		TakeScreenshot(-1, -1, -1, -1);
+	}/**/
+	{
+#define RUN_TIME_COUNT	1000
+		// all these dynamic inits are anti optimization
+		size_t Width = 1900 + (GetTickCount64() % 20);
+		size_t Height = 1000 + (GetTickCount64() % 20);
+		LPCOLORREF input = LPCOLORREF(MY_ALLOC(Width * Height * sizeof(COLORREF)));
+		for (size_t i = 0; i < Width * Height; ++i)input[i] = COLORREF(i);
+		COLORREF res = 0, res2 = 0; 
+		uint64_t startTime = GetTickCount64();
+		{
+			LPCOLORREF ret1 = BoxBlur3x3_AIMade(input, Width, Height, Width);
+			LPCOLORREF ret2 = BlurrImage2_<1, 1.0>(input, Width, Height, Width);
+			// the border is not initialized on the output. Might give false compare results
+			assert(memcmp(ret1, ret2, Width * Height * sizeof(COLORREF)) == 0);
+			MY_FREE(ret1);
+			MY_FREE(ret2);
+		}
+		for (size_t i = 0; i < RUN_TIME_COUNT; ++i) {
+			LPCOLORREF ret = BoxBlur3x3_AIMade(input, Width, Height, Width);
+			MY_FREE(ret);
+			res2 += res;
+		}
+		printf("1) res %llu took %llu\n", res2, GetTickCount64() - startTime);
+		startTime = GetTickCount64();
+		for (size_t i = 0; i < RUN_TIME_COUNT; ++i) {
+			LPCOLORREF ret = BlurrImage2_<1, 1.0>(input, Width, Height, Width);
+			MY_FREE(ret);
+			res2 += res;
+		}
+		printf("2) res %llu took %llu\n", res2, GetTickCount64() - startTime);
+
+		MY_FREE(input);
+	}/**/
 	// curious if these 2 differ at all
 /* {
 #define RUN_TIME_COUNT	1000000000

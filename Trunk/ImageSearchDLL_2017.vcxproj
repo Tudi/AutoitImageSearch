@@ -220,6 +220,9 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <ModuleDefinitionFile>ImageSearchDLL.def</ModuleDefinitionFile>
@@ -300,6 +303,8 @@
       <WarningLevel>Level4</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <ModuleDefinitionFile>

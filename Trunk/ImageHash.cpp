@@ -115,39 +115,24 @@ static inline size_t bitCount(size_t num)
 	return setBits;
 }
 #else
-static inline size_t bitCount(uint64_t x) {
-	return __popcnt64(x);
-}
+#define bitCount(x) __popcnt64(x)
 #endif
 
-template <const bool bIsAcumulate>
-static inline void compareHash_8x8(const ImgHash8x8* __restrict h1, const ImgHash8x8* __restrict h2, ImgHash8x8_CompareResult* out)
+static __forceinline uint64_t get_pixel_diff_count_3_channel_8x8(const ImgHash8x8 &h1, const ImgHash8x8 &h2)
 {
-	if constexpr (bIsAcumulate == false) {
-		memset(out, 0, sizeof(ImgHash8x8_CompareResult));
-	}
-
-	const uint64_t valxorr = ((uint64_t)h1->rHash) ^ ((uint64_t)h2->rHash);
-	const uint64_t rBitsDifferent = bitCount(valxorr);
-	const uint64_t valxorg = ((uint64_t)h1->gHash) ^ ((uint64_t)h2->gHash);
-	const uint64_t gBitsDifferent = bitCount(valxorg);
-	const uint64_t valxorb = ((uint64_t)h1->bHash) ^ ((uint64_t)h2->bHash);
-	const uint64_t bBitsDifferent = bitCount(valxorb);
-
-	out->rgbBitsDiffer += rBitsDifferent;
-	out->rgbBitsDiffer += gBitsDifferent;
-	out->rgbBitsDiffer += bBitsDifferent;
-
-	out->blocksAcumulated++;
+	const uint64_t valxorr = ((uint64_t)h1.rHash) ^ ((uint64_t)h2.rHash);
+	const uint64_t valxorg = ((uint64_t)h1.gHash) ^ ((uint64_t)h2.gHash);
+	const uint64_t valxorb = ((uint64_t)h1.bHash) ^ ((uint64_t)h2.bHash);
+	return (bitCount(valxorr) + bitCount(valxorg) + bitCount(valxorb));
 }
 
 const size_t kernel_half_size = 1;
 
 // based on input pixels, we generate multiple hashes to cover an area
-template <const bool all_positions>
-int64_t GenHashesForGenericImage(LPCOLORREF Pixels, int Width, int Height, int Stride,
+template <const bool all_positions, typename HashStoreType>
+int64_t GenHashesForGenericImage(LPCOLORREF Pixels, size_t Width, size_t Height, size_t Stride,
 	size_t atX, size_t atY,
-	ImgHashWholeImage* out_hashes)
+	HashStoreType* out_hashes)
 {
 	// sanity checks
 	{
@@ -195,7 +180,8 @@ int64_t GenHashesForGenericImage(LPCOLORREF Pixels, int Width, int Height, int S
 
 	// blurring is advised or else it will be very sensitive to small pixel differences
 	LPCOLORREF Pixels2 = &Pixels[atY * Stride + atX];
-	LPCOLORREF blurredImg = BlurrImage2_<kernel_half_size, 1.0>(Pixels2, Width, Height, Stride);
+//	LPCOLORREF blurredImg = BlurrImage2_<kernel_half_size, 1.0>(Pixels2, Width, Height, Stride);
+	LPCOLORREF blurredImg = BoxBlur3x3_AIMade(Pixels2, Width, Height, Stride);
 	const size_t BlurredImageStride = Width;
 	if (blurredImg == NULL)
 	{
@@ -265,13 +251,34 @@ int64_t GenHashesOnScreenshotForCachedImage(CachedPicture* pic, ScreenshotStruct
 	return GenHashesForGenericImage<bGenAllPositions>(ss->Pixels, pic->Width, pic->Height, ss->Width, atX, atY, ss->pSSHashCache);
 }
 
-int64_t compareHash(const ImgHashSS* __restrict hashSS, const ImgHashCache* __restrict hashC, size_t atX, size_t atY, ImgHash8x8_CompareResult* out)
+int64_t GenHashesOnScreenshotForSearchRegion(ScreenshotStruct* ss, size_t search_start_x, size_t search_start_y, size_t search_end_x, size_t search_end_y)
 {
-	if (hashSS == NULL || hashC == NULL || out == NULL)
-	{
+	size_t search_width = search_end_x - search_start_x;
+	size_t search_height = search_end_y - search_start_y;
+	if (search_start_x + search_width > ss->Width) {
+		FileDebug("Unexpected search width for screenshot");
 		return -1;
 	}
-	memset(out, 0, sizeof(ImgHash8x8_CompareResult));
+	if (search_height + search_start_y > ss->Height) {
+		FileDebug("Unexpected search height for screenshot");
+		return -1;
+	}
+	return GenHashesForGenericImage<true>(ss->Pixels, search_width, search_height, ss->Width, search_start_x, search_start_y, ss->pSSHashCache);
+}
+
+int64_t compareHash(const ImgHashSS* __restrict hashSS, const ImgHashCache* __restrict hashC, size_t atX, size_t atY, ImgHash8x8_CompareResult* out)
+{
+#ifdef _DEBUG
+	if (hashSS == NULL || hashC == NULL || out == NULL)	{
+		assert(false);
+		return -1;
+	}
+#endif
+//	memset(out, 0, sizeof(ImgHash8x8_CompareResult));
+	const size_t hashBitCount = HashPixelWidth * HashPixelHeight;
+	const size_t rgbHashChannels = 3;
+	size_t PixelsHashedCount = 0;
+	size_t PixelDiffCount = 0;
 	for (size_t y = kernel_half_size; y <= hashC->imgHeight - kernel_half_size - HashPixelHeight; y+= HashPixelHeight)
 	{
 		for (size_t x = kernel_half_size; x <= hashC->imgWidth - kernel_half_size - HashPixelWidth; x+= HashPixelWidth)
@@ -286,16 +293,16 @@ int64_t compareHash(const ImgHashSS* __restrict hashSS, const ImgHashCache* __re
 				FileDebug("!!!Hash2 does not have a hash generated for all required locations");
 			}
 #endif
-			compareHash_8x8<true>(&hSS->AHash, &hC->AHash, out);
-			compareHash_8x8<true>(&hSS->BHash, &hC->BHash, out);
-			compareHash_8x8<true>(&hSS->CHash, &hC->CHash, out);
+			PixelDiffCount += get_pixel_diff_count_3_channel_8x8(hSS->AHash, hC->AHash);
+			PixelDiffCount += get_pixel_diff_count_3_channel_8x8(hSS->BHash, hC->BHash);
+			PixelDiffCount += get_pixel_diff_count_3_channel_8x8(hSS->CHash, hC->CHash);
+
+			PixelsHashedCount+= hashBitCount * rgbHashChannels * 3; // 3 hashes of 3 channels of 3 hashes
 		}
 	}
 
-	const size_t hashBitCount = HashPixelWidth * HashPixelHeight;
-	const size_t rgbHashChannels = 3;
-	out->PctDifferAvg = out->rgbBitsDiffer * 10000 / ( out->blocksAcumulated * hashBitCount * rgbHashChannels);
-
+	out->PctDifferAvg = PixelDiffCount * 10000 / PixelsHashedCount;
+//	out->rgbBitsDiffer = PixelDiffCount;
 
 	return 0;
 }

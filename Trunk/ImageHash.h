@@ -22,8 +22,8 @@ struct ImgHash8x8
 
 struct ImgHash8x8_CompareResult
 {
-	uint64_t blocksAcumulated;
-	uint64_t rgbBitsDiffer;
+//	uint64_t PixelsHashedCount;
+//	uint64_t rgbBitsDiffer;
 	uint64_t PctDifferAvg;
 };
 
@@ -50,7 +50,7 @@ public:
 	void reinit() {
 		cols = rows = 0;
 	}
-	virtual inline ImgHash8x8_All* GetHashStore(const size_t x, const size_t y) const { return NULL; }
+	virtual inline ImgHash8x8_All* GetHashStore(const size_t x, const size_t y) const { (void)x; (void)y; return NULL; }
 	size_t cols, rows; // because ss store 1 hash / pixel, but caches store 1 hash / 8 pixel
 	size_t imgWidth, imgHeight; // the hash was generated based on these sizes
 	ImgHash8x8_All* hashes; // screenshots will have 1 hash8x8 for every pixel. cached images will have 1 hash for every 8x8 pixel
@@ -60,7 +60,7 @@ public:
 class ImgHashCache : public ImgHashWholeImage {
 public:
 	// coordinates are original pixel based
-	inline ImgHash8x8_All* GetHashStore(const size_t x, const size_t y) const {
+	__forceinline ImgHash8x8_All* GetHashStore(const size_t x, const size_t y) const noexcept final {
 #ifdef _DEBUG
 		assert(hashes != NULL);
 		assert(x < imgWidth);
@@ -76,7 +76,7 @@ public:
 		cols = rows = 0;
 	}
 	// coordinates are original pixel based
-	inline ImgHash8x8_All* GetHashStore(const size_t x, const size_t y) const {
+	__forceinline ImgHash8x8_All* GetHashStore(const size_t x, const size_t y) const noexcept final {
 #ifdef _DEBUG
 		assert(hashes != NULL);
 		assert(x < imgWidth);
@@ -90,6 +90,7 @@ public:
 void GenHashesForCachedImage(CachedPicture *pic, ImgHashCache* out_hashes);
 template <const bool bGenAllPositions>
 int64_t GenHashesOnScreenshotForCachedImage(CachedPicture* pic, ScreenshotStruct* ss, size_t atX, size_t atY);
+int64_t GenHashesOnScreenshotForSearchRegion(ScreenshotStruct* ss, size_t search_start_x, size_t search_start_y, size_t search_end_x, size_t search_end_y);
 void FreeHashAllocatedData(ImgHashWholeImage* out_hashes);
 void ReinitScreenshotHashCache(ScreenshotStruct* ss);
 

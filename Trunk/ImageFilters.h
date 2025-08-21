@@ -1,5 +1,4 @@
-#ifndef _IMAGE_FILTERS_H_
-#define _IMAGE_FILTERS_H_
+#pragma once
 
 void WINAPI BlurrImage( int HalfKernelSize );
 void WINAPI ErrodeDiffMap( int HalfKernelSize );
@@ -108,4 +107,129 @@ LPCOLORREF BlurrImage2_(const LPCOLORREF Pixels, const size_t Width, const size_
 	}
 	return new_Pixels;
 }
-#endif
+
+inline LPCOLORREF BoxBlur3x3_AIMade(
+	const COLORREF* __restrict src, // LPCOLORREF
+	size_t width,
+	size_t height,
+	size_t stride
+) {
+	COLORREF* __restrict dst = (COLORREF*)MY_ALLOC(width * height * sizeof(COLORREF));
+	if (dst == NULL)
+	{
+		FileDebug("Error:Could not allocate buffer for blur!");
+		return NULL;
+	}
+
+
+	const size_t W = width;
+
+	// Thread-local scratch reused across calls to avoid allocations.
+	struct Buffers {
+		std::unique_ptr<uint16_t[]> hB[3], hG[3], hR[3]; // ring buffer of 3 rows
+		std::unique_ptr<uint16_t[]> vB, vG, vR;          // vertical sums for current 3 rows
+		size_t cap = 0;
+	};
+	static thread_local Buffers buf;
+
+	auto ensure_capacity = [&](size_t need) {
+		if (buf.cap >= need) return;
+		for (int i = 0; i < 3; ++i) {
+			buf.hB[i].reset(new uint16_t[need]);
+			buf.hG[i].reset(new uint16_t[need]);
+			buf.hR[i].reset(new uint16_t[need]);
+		}
+		buf.vB.reset(new uint16_t[need]);
+		buf.vG.reset(new uint16_t[need]);
+		buf.vR.reset(new uint16_t[need]);
+		buf.cap = need;
+		};
+	ensure_capacity(W);
+
+	// Helper: compute horizontal rolling 3-sums for row y into ring slot s (only interior cols written).
+	auto horz3 = [&](size_t y, uint16_t* __restrict outB,
+		uint16_t* __restrict outG,
+		uint16_t* __restrict outR) {
+			const COLORREF* __restrict row = src + y * stride;
+
+			// Seed window at x=1: pixels [0,1,2]
+			uint32_t p0 = row[0], p1 = row[1], p2 = row[2];
+			uint16_t sumB = (uint16_t)((p0 & 0xFF) + (p1 & 0xFF) + (p2 & 0xFF));
+			uint16_t sumG = (uint16_t)(((p0 >> 8) & 0xFF) + ((p1 >> 8) & 0xFF) + ((p2 >> 8) & 0xFF));
+			uint16_t sumR = (uint16_t)(((p0 >> 16) & 0xFF) + ((p1 >> 16) & 0xFF) + ((p2 >> 16) & 0xFF));
+
+			outB[1] = sumB; outG[1] = sumG; outR[1] = sumR;
+
+			for (size_t x = 2; x + 1 < W; ++x) {
+				uint32_t addp = row[x + 1];
+				uint32_t subp = row[x - 2];
+
+				sumB = (uint16_t)(sumB + (uint16_t)(addp & 0xFF) - (uint16_t)(subp & 0xFF));
+				sumG = (uint16_t)(sumG + (uint16_t)((addp >> 8) & 0xFF) - (uint16_t)((subp >> 8) & 0xFF));
+				sumR = (uint16_t)(sumR + (uint16_t)((addp >> 16) & 0xFF) - (uint16_t)((subp >> 16) & 0xFF));
+
+				outB[x] = sumB; outG[x] = sumG; outR[x] = sumR;
+			}
+		};
+
+	// Precompute first three rows of horizontal 3-sums
+	horz3(0, buf.hB[0].get(), buf.hG[0].get(), buf.hR[0].get());
+	horz3(1, buf.hB[1].get(), buf.hG[1].get(), buf.hR[1].get());
+	horz3(2, buf.hB[2].get(), buf.hG[2].get(), buf.hR[2].get());
+
+	// Initialize vertical sums v = h(0)+h(1)+h(2) for interior columns
+	for (size_t x = 1; x + 1 < W; ++x) {
+		buf.vB[x] = (uint16_t)(buf.hB[0][x] + buf.hB[1][x] + buf.hB[2][x]);
+		buf.vG[x] = (uint16_t)(buf.hG[0][x] + buf.hG[1][x] + buf.hG[2][x]);
+		buf.vR[x] = (uint16_t)(buf.hR[0][x] + buf.hR[1][x] + buf.hR[2][x]);
+	}
+
+	// Output row y=1 using current vertical sums
+	{
+		COLORREF* __restrict out = dst + 1 * width;
+		for (size_t x = 1; x + 1 < W; ++x) {
+			uint8_t b = (uint8_t)((buf.vB[x]) / 9);
+			uint8_t g = (uint8_t)((buf.vG[x]) / 9);
+			uint8_t r = (uint8_t)((buf.vR[x]) / 9);
+			out[x] = (uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b;
+		}
+	}
+
+	// Process remaining rows with vertical rolling update:
+	// At each step, compute horizontal sums for new row (y+2),
+	// v += newRow - oldRow, then write row y.
+	int top = 0, mid = 1, bot = 2;
+	for (size_t y = 2; y + 1 < height; ++y) {
+		// next row that enters the 3x window
+		size_t newRow = y + 1;
+
+		// Reuse the 'top' slot for the new horizontal sums (ring rotate)
+		horz3(newRow, buf.hB[top].get(), buf.hG[top].get(), buf.hR[top].get());
+
+		// Update vertical sums for interior columns: v = v + h[new] - h[old(top_before_overwrite)]
+		// Note: we overwrote 'top' with new row, so the "old" row to subtract is 'mid' (previous top row).
+		// To avoid confusion, rotate indices AFTER using old pointers:
+		int old = mid;
+
+		for (size_t x = 1; x + 1 < W; ++x) {
+			buf.vB[x] = (uint16_t)(buf.vB[x] + buf.hB[top][x] - buf.hB[old][x]);
+			buf.vG[x] = (uint16_t)(buf.vG[x] + buf.hG[top][x] - buf.hG[old][x]);
+			buf.vR[x] = (uint16_t)(buf.vR[x] + buf.hR[top][x] - buf.hR[old][x]);
+		}
+
+		// Write output for row y
+		COLORREF* __restrict out = dst + y * width;
+		for (size_t x = 1; x + 1 < W; ++x) {
+			uint8_t b = (uint8_t)(buf.vB[x]/9);
+			uint8_t g = (uint8_t)(buf.vG[x]/9);
+			uint8_t r = (uint8_t)(buf.vR[x]/9);
+			out[x] = (uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b;
+		}
+
+		// Rotate ring indices: (top,mid,bot) <- (mid,bot,top)
+		int newTop = mid, newMid = bot, newBot = top;
+		top = newTop; mid = newMid; bot = newBot;
+	}
+
+	return (LPCOLORREF)dst;
+}
