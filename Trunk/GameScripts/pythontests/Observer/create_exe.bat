@@ -1,0 +1,2 @@
+pyinstaller --onefile --windowed --name=ScriptManager --hidden-import=automate --add-binary "./ImageSearchDLL.dll;." manage_automations.py
+pyinstaller --onefile --hidden-import=automate --add-binary "./ImageSearchDLL.dll;." take_screenshots.py

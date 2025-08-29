@@ -4,18 +4,19 @@ from __future__ import annotations
 import ctypes
 from ctypes import wintypes
 from dataclasses import dataclass
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Union
 from enum import IntFlag
 import time
 import pyautogui
 import psutil
-from typing import Union
-import time
 import win32gui
 import win32process
 from pynput.keyboard import Key, Controller
 import os
 import sys
+import platform
+
+log_fnc=print
 
 # Enable ANSI escape sequences on Windows
 if os.name == 'nt':
@@ -71,24 +72,27 @@ class SingleResult:
     found_result: int = 0
     x: int = -1
     y: int = -1
-    sad: int = -1
-    sad_per_pixel: int = -1
-    avg_color_diff: int = -1
-    color_diff_count: int = -1
-    color_diff_pct: int = -1
-    hash_diff_pct: float = -1
-    satd: int = -1
-    satd_per_pixel: int = -1
-    sad_brightness_corrected: int = -1
-    raw: str = ""
-    img_name: str = ""
-    found_it: bool = False
-    img_width: int = -1
-    img_height: int = -1
+    sad: int = -1       # sum of absolute differences
+    mad: int = -1       # mean value obtained from SAD. SAD operates on 8x8 blocks, so SAD pixel count is not the same as image size
+    avg_color_diff: int = -1    # compare each pixel that changed and see what is the avg change value
+    color_diff_count: int = -1  # number of pixels changed 
+    color_diff_pct: int = -1    
+    hash_diff_pct: float = -1   # using image hashing, how different were the 2 images
+    satd: int = -1  # Sum of absolute Hadamard transformed differences
+    satd_per_pixel: int = -1 # SATD might be working on 8x8 or 16x16 pixel blocks
+    sad_brightness_corrected: int = -1 # if there is a brightness difference between 2 images, try to remove it
+    raw: str = ""   # the result string returned by the imgsearch dll
+    img_name: str = "" # input parameter to the search function
+    found_it: bool = False # if the image we found is not similar enough to the one we were searching for, we makr it to be not found
+    img_width: int = -1 # only populated if values are fetched from file name
+    img_height: int = -1 # only populated if values are fetched from file name
 
 def _parse_single_result(raw: str) -> SingleResult:
     if not raw:
         return SingleResult(raw="")
+
+    # just making values not have huge size. No actual functionality is being done here
+    raw = raw.replace("18446744073709551615","-1")
 
     toks = [t for t in (x.strip() for x in raw.split("|")) if t != ""]
     try:    # be flexible about short/partial strings
@@ -97,7 +101,7 @@ def _parse_single_result(raw: str) -> SingleResult:
             x               = int(toks[1]) if len(toks) > 1 else -1,
             y               = int(toks[2]) if len(toks) > 2 else -1,
             sad             = int(toks[3]) if len(toks) > 3 else -1,
-            sad_per_pixel   = int(toks[4]) if len(toks) > 4 else -1,
+            mad             = int(toks[4]) if len(toks) > 4 else -1,
             avg_color_diff  = int(toks[5]) if len(toks) > 5 else -1,
             color_diff_count= int(toks[6]) if len(toks) > 6 else -1,
             color_diff_pct  = int(toks[7]) if len(toks) > 7 else -1,
@@ -107,11 +111,6 @@ def _parse_single_result(raw: str) -> SingleResult:
             sad_brightness_corrected   = int(toks[11]) if len(toks) > 11 else -1,
             raw=raw
         )
-        if ret.sad_brightness_corrected == 18446744073709551615:
-            ret.sad_brightness_corrected = -1
-        if ret.satd_per_pixel == 18446744073709551615:
-            ret.satd_per_pixel = -1
-        ret.raw = ret.raw.replace("18446744073709551615","-1")
         return ret
     except ValueError:
         return SingleResult(raw=raw)
@@ -129,7 +128,7 @@ def _get_coords_from_image_filename(path: str) -> Tuple[int,int,int,int]:
         return (x,y,width,height)
     except Exception:
         return (0,0,0,0)
-
+    
 class ImageSearchDLL:
     def __init__(self, dll_path: str = "./ImageSearchDLL.dll"):
         self._dll = _DLL(dll_path)
@@ -151,18 +150,17 @@ class ImageSearchDLL:
             color_mask = self._mask_default
         self._dll.ApplyColorBitmask(ctypes.c_uint(color_mask))
         self._dll.SaveScreenshot()
-
-    # --- Image search (region) ---
-    def SearchImageInRegion(self, img_name: str,
+    
+    def SearchImageInRegion(self, img_names,
                         start_x: int = -1, start_y: int = -1,
                         end_x: int = -1, end_y: int = -1,
-                        search_flags: int = int(SADSearchRegionFlags.SSRF_ST_ALLOW_MULTI_STAGE_GSAD2) | int(SADSearchRegionFlags.SSRF_ST_INLCUDE_HASH_INFO), # in case you catch an instance where this is not accurate, remove it
+                        search_flags: int = int(SADSearchRegionFlags.SSRF_ST_ALLOW_MULTI_STAGE_GSAD2) | int(SADSearchRegionFlags.SSRF_ST_INLCUDE_HASH_INFO),
                         apply_mask: bool = True,
-                        search_radius_for_auto_taget = 10,   # when the search location is extracted from the file name, we will search an area to make sure there is no target movement
+                        search_radius_for_auto_taget = 10,
                         no_new_screenshot = False,
                         wait_appear_timeout = -1,
                         wait_dissapear_timeout = -1,
-                        accepted_similarity_pct = -1,
+                        accepted_diff_pct = -1,
                         click_image = False,
                         click_offset_x = -10000,
                         click_offset_y = -10000,
@@ -171,95 +169,171 @@ class ImageSearchDLL:
                         extend_search_up = -10000,
                         extend_search_right = -10000,
                         extend_search_down = -10000,
+                        move_mouse_to00 = True,
+                        auto_adjust_to_resolution_change = True,
+                        return_first_match = True
                         ) -> SingleResult:
-
-        w = -1
-        h = -1
-        # optional filename-derived coordinates
-        if start_x < 0 or start_y < 0 or end_x < 0 or end_y < 0:
-            x, y, w, h = _get_coords_from_image_filename(img_name)
-            if x and y and w and h:
-                start_x = x - search_radius_for_auto_taget
-                start_y = y - search_radius_for_auto_taget
-                end_x   = x + search_radius_for_auto_taget
-                end_y   = y + search_radius_for_auto_taget
-            if extend_search_left != -10000:
-                start_x -= extend_search_left
-            if extend_search_up != -10000:
-                start_y -= extend_search_up
-            if extend_search_right != -10000:
-                end_x += extend_search_right
-            if extend_search_down != -10000:
-                end_y -= extend_search_down
-
+        """
+        Search for multiple images and return the first one found (or best match).
+        """
+        
+        if isinstance(img_names, str):
+            img_names = [img_names]
+        elif not isinstance(img_names, list):
+            raise TypeError("img_names must be either a string or a list of strings")
+        
+        if not img_names:
+            result = SingleResult()
+            result.found_result = 0
+            result.found_it = False
+            return result
+        
+        if move_mouse_to00:
+            MouseClick(0, 0, skip_click=True)
+        
         start_time = time.time()
         prev_search_res = ""
+        debug_output_printed = {}
+        
         while True:
+            current_best_result = None
+            current_best_similarity = -1
+            
+            # Take screenshot once per iteration
             if no_new_screenshot == False:
-                # take a (possibly throttled) screenshot of “full screen” (-1,-1,-1,-1). -1 values mean the screenshot will be smart to target search area used
                 self._dll.TakeScreenshot(-1, -1, -1, -1)
-                # optional mask to smooth color blending
                 if apply_mask:
                     self._dll.ApplyColorBitmask(ctypes.c_uint(self._mask_default))
-
-            # call the search; DLL expects ANSI/MBCS path (change to utf-8 if your DLL does)
-            path_b = img_name.encode("mbcs", errors="replace")
             
-            # make a search
-            raw_ptr = self._dll.ImageSearchRegion(
-                path_b, int(start_x), int(start_y), int(end_x), int(end_y),
-                int(search_flags)
-            )
-            raw = (ctypes.cast(raw_ptr, ctypes.c_char_p).value or b"").decode("mbcs", errors="replace")
-            result = _parse_single_result(raw)
-
-            # check similarity if threshold is set
-            similarity_ok = False
-            if accepted_similarity_pct >= 0 and result.found_result != 0 and result.hash_diff_pct is not None:
-                similarity_ok = int(result.hash_diff_pct) <= int(accepted_similarity_pct)
-#                if similarity_ok == False:
-                diff_time = int((time.time() - start_time) * 1000)
-                if prev_search_res != result.raw:
-                    print(f" t{diff_time:>03} {result.hash_diff_pct}% <?> {accepted_similarity_pct}%  {result.raw} ")                
-                    prev_search_res = result.raw
-                else:
-                    print(f"\033[A\r\033[K t{diff_time:>03} {result.hash_diff_pct}% <?> {accepted_similarity_pct}%  {result.raw} ")                
-
-            # handle wait_appear_timeout: wait until image appears
+            # Search each image
+            for img_name in img_names:
+                # Calculate search coordinates for this image
+                img_start_x, img_start_y, img_end_x, img_end_y = start_x, start_y, end_x, end_y
+                w, h = -1, -1
+                
+                # Get coordinates from filename if not provided
+                if img_start_x < 0 or img_start_y < 0 or img_end_x < 0 or img_end_y < 0:
+                    x, y, w, h = _get_coords_from_image_filename(img_name)
+                    if x and y and w and h:
+                        img_start_x = x - search_radius_for_auto_taget
+                        img_start_y = y - search_radius_for_auto_taget
+                        img_end_x = x + search_radius_for_auto_taget
+                        img_end_y = y + search_radius_for_auto_taget
+                
+                # Apply extensions
+                if extend_search_left != -10000:
+                    img_start_x -= extend_search_left
+                if extend_search_up != -10000:
+                    img_start_y -= extend_search_up
+                if extend_search_right != -10000:
+                    img_end_x += extend_search_right
+                if extend_search_down != -10000:
+                    img_end_y += extend_search_down
+                
+                # Apply resolution scaling
+                if auto_adjust_to_resolution_change:
+                    if img_start_x >= 0:
+                        img_start_x = img_start_x * self.img_search_scale_x
+                    if img_end_x >= 0:
+                        img_end_x = img_end_x * self.img_search_scale_x
+                    if img_start_y > 0:
+                        img_start_y = img_start_y * self.img_search_scale_y
+                    if img_end_y > 0:
+                        img_end_y = img_end_y * self.img_search_scale_y
+                
+                if img_name not in debug_output_printed:
+                    debug_output_printed[img_name] = 1
+                    log_fnc(f"Searching {img_name} in [{img_start_x},{img_start_y}],[{img_end_x},{img_end_y}]")
+                
+                # Perform search for this image
+                path_b = img_name.encode("mbcs", errors="replace")
+                raw_ptr = self._dll.ImageSearchRegion(path_b, int(img_start_x), int(img_start_y), int(img_end_x), int(img_end_y), int(search_flags))
+                raw = (ctypes.cast(raw_ptr, ctypes.c_char_p).value or b"").decode("mbcs", errors="replace")
+                result = _parse_single_result(raw)
+                result.img_name = img_name
+                result.img_width = w
+                result.img_height = h
+                
+                # Check similarity
+                similarity_ok = False
+                if accepted_diff_pct >= 0 and result.found_result != 0:
+                    similarity_ok = result.hash_diff_pct <= accepted_diff_pct
+                    
+                    # Log progress
+                    diff_time = int((time.time() - start_time) * 1000)
+                    log_msg = f" t{diff_time:>03} {result.hash_diff_pct}% <?> {accepted_diff_pct}% [{img_name}] {result.raw}"
+                    if prev_search_res != result.raw:
+                        log_fnc(log_msg)
+                        prev_search_res = result.raw
+                    else:
+                        log_fnc(f"\033[A\r\033[K{log_msg}")
+                
+                result.found_it = similarity_ok
+                
+                # If return_first_match is True and we found a good match, return immediately
+                if return_first_match and similarity_ok == True and wait_dissapear_timeout < 0:
+                    current_best_result = result
+                    break
+                if return_first_match and similarity_ok == False and wait_dissapear_timeout > 0:
+                    current_best_result = result
+                    break
+                
+                # Track best result if not returning first match
+                if return_first_match == False:
+                    similarity_score = result.hash_diff_pct
+                    if wait_dissapear_timeout < 0:
+                        if similarity_ok == True and (current_best_result is None or similarity_score < current_best_similarity):
+                            current_best_result = result
+                            current_best_similarity = similarity_score
+                    else:
+                        if similarity_ok == False and (current_best_result is None or similarity_score < current_best_similarity):
+                            current_best_result = result
+                            current_best_similarity = similarity_score
+            
+            # Handle waiting logic
+            found_any = current_best_result is not None and current_best_result.found_it
+            
+            # Handle wait_appear_timeout
             if wait_appear_timeout >= 0:
-                if similarity_ok:
-                    break  # image appeared
+                if found_any == True:
+                    log_fnc("Waiting for img to appear : We see it")
+                    break
                 elif time.time() - start_time > wait_appear_timeout:
-                    break  # timeout reached
+                    log_fnc("Waiting for img to appear. Timeout")
+                    break
                 else:
                     continue
-
-            # handle wait_disappear_timeout: wait until image disappears
+            
+            # Handle wait_disappear_timeout
             if wait_dissapear_timeout >= 0:
-                if not similarity_ok:
-                    break  # image disappeared
+                if (current_best_result is not None) and current_best_result.found_it == False and current_best_result.found_result != 0:
+                    log_fnc("Waiting for img to vanish. We no longer see it")
+                    break
                 elif time.time() - start_time > wait_dissapear_timeout:
-                    break  # timeout reached
+                    log_fnc("Waiting for img to vanish. Timeout")
+                    break
                 else:
                     continue
-
-            # if no wait timeouts, exit after one iteration
+            
+            # If no wait timeouts, exit after one iteration
             if wait_appear_timeout < 0 and wait_dissapear_timeout < 0:
+                log_fnc("Returning one time search result")
                 break
-
-        if click_image and similarity_ok:
-            if click_offset_x == -10000:
-                click_offset_x = w/2
-            if click_offset_y == -10000:
-                click_offset_y = h/2
-            MouseClick(result.x + click_offset_x, result.y + click_offset_y, click_sleep) # after a click, we sleep a bit to allow window to refresh
-   
-        result.img_name = img_name
-        result.found_it = similarity_ok
-        result.img_width = w
-        result.img_height = h
         
-        return result
+        # Return best result or create empty result
+        final_result = current_best_result if current_best_result else SingleResult()
+        if not current_best_result:
+            final_result.found_result = 0
+            final_result.found_it = False
+        
+        # Handle clicking
+        if click_image and final_result.found_it:
+            click_x = click_offset_x if click_offset_x != -10000 else final_result.img_width/2
+            click_y = click_offset_y if click_offset_y != -10000 else final_result.img_height/2
+            MouseClick(final_result.x + click_x, final_result.y + click_y, click_sleep)
+        
+        return final_result
+
 
     def BlurrImage(self, half_kernel_size: int) -> None:
         self._dll.BlurrImage(int(half_kernel_size))
@@ -271,10 +345,60 @@ class ImageSearchDLL:
         raw = (ctypes.cast(raw_ptr, ctypes.c_char_p).value or b"").decode("mbcs", errors="replace")
         return _parse_single_result(raw)     
 
+    img_search_scale_x = 1
+    img_search_scale_y = 1
+    def auto_scale_images_for_resolution(self, width, height, zoom, scale):
+        resolution_info = get_windows_display_essentials()
+        print(resolution_info)
+        if zoom != resolution_info['zoom_percent']:
+            log_fnc(f"{zoom} != {resolution_info['zoom_percent']}, can't auto adjust image positions. Automation will probably fail")
+            return
+        if scale != resolution_info['scale_factor']:
+            log_fnc(f"{scale} != resolution_info['scale_factor'], can't auto adjust image positions. Automation will probably fail")
+            return
+        self.img_search_scale_x = width / resolution_info['logical_resolution']['width']
+        self.img_search_scale_y = height / resolution_info['logical_resolution']['height']
+        log_fnc(f"Will auto scale image positions by x={self.img_search_scale_x} y={self.img_search_scale_y}")
+
+def get_windows_display_essentials():
+    """Get essential display info using only Windows API"""
+    if platform.system() != 'Windows':
+        return {'error': 'Windows only'}
+    
+    user32 = ctypes.windll.user32
+    gdi32 = ctypes.windll.gdi32
+    
+    hdc = user32.GetDC(0)
+    try:
+        # Essential measurements
+        logical_width = gdi32.GetDeviceCaps(hdc, 8)   # HORZRES
+        logical_height = gdi32.GetDeviceCaps(hdc, 10)  # VERTRES
+        physical_width = gdi32.GetDeviceCaps(hdc, 118) # DESKTOPHORZRES  
+        physical_height = gdi32.GetDeviceCaps(hdc, 117) # DESKTOPVERTRES
+        dpi_x = gdi32.GetDeviceCaps(hdc, 88)  # LOGPIXELSX
+        dpi_y = gdi32.GetDeviceCaps(hdc, 90)  # LOGPIXELSY
+        
+        zoom_percent = round((dpi_x / 96) * 100)
+        scale_factor = physical_width / logical_width if logical_width > 0 else 1.0
+        
+        return {
+            'physical_resolution': {'width': physical_width, 'height': physical_height},
+            'logical_resolution': {'width': logical_width, 'height': logical_height},
+            'dpi': {'x': dpi_x, 'y': dpi_y},
+            'zoom_percent': zoom_percent,
+            'scale_factor': round(scale_factor, 3),
+        }
+    finally:
+        user32.ReleaseDC(0, hdc)
+        
 #######################################################################################################
     
-def MouseClick(x:int, y:int, click_sleep = 0.1):
-    print(f"Will click mouse coord : [{x},{y}]")
+def MouseClick(x:int, y:int, click_sleep = 0.1, skip_click = False):
+    if skip_click == False:
+        log_fnc(f"Will click mouse coord : [{x},{y}]")
+    else:
+        log_fnc(f"Will move mouse to coord : [{x},{y}]")
+        
     # Windows API constants
     MOUSEEVENTF_MOVE = 0x0001
     MOUSEEVENTF_ABSOLUTE = 0x8000
@@ -294,8 +418,9 @@ def MouseClick(x:int, y:int, click_sleep = 0.1):
     time.sleep(click_sleep)  # short delay to ensure move registers
 
     # click
-    ctypes.windll.user32.mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
-    ctypes.windll.user32.mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)    
+    if skip_click == False:
+        ctypes.windll.user32.mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
+        ctypes.windll.user32.mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)    
 
 #######################################################################################################
 
@@ -303,7 +428,7 @@ class SendKeys:
     def __init__(self):
         self.keyboard = Controller()
     
-    def send_key(self, key, delay=0.01):
+    def send_key(self, key, delay=0.03):
         """Send a single key press"""
         if isinstance(key, str):
             if len(key) == 1:
@@ -323,7 +448,7 @@ class SendKeys:
         
         time.sleep(delay)
     
-    def send_text(self, text, delay=0.01):
+    def send_text(self, text, delay=0.03):
         """Send a string of text"""
         for char in text:
             self.keyboard.press(char)
@@ -412,10 +537,18 @@ def winactivate(process_name, start_process_path = "", wait_time_startup = 3):
             except subprocess.CalledProcessError:
                 # Method 3: Fallback to regular process start
                 subprocess.Popen([start_process_path])
+        except:
+            return False
         
         # Wait a bit
         time.sleep(wait_time_startup)
-        # Try to activate it again
-        win32gui.EnumWindows(callback, None)
         
     return found
+    
+class ScriptExitException(Exception):
+    """Custom exception to gracefully exit script execution"""
+    def __init__(self, message="Script execution terminated", return_value=False):
+        self.message = message
+        self.return_value = return_value
+        super().__init__(self.message)    
+        

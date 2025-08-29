@@ -9,7 +9,7 @@ import time
 
 # Import your wrapper around ImageSearchDLL.dll
 # (This file comes from your upload and exposes TakeScreenshotRegionAndSaveit)
-from imagesearchdll import ImageSearchDLL  # :contentReference[oaicite:0]{index=0}
+from imagesearchdll import ImageSearchDLL, get_windows_display_essentials
 
 # --- Win32 mouse position ---
 def get_mouse_pos() -> tuple[int, int]:
@@ -39,6 +39,8 @@ def main():
     print("  s  -> set BOTTOM-RIGHT to current mouse position")
     print("  r  -> TakeScreenshotRegionAndSaveit(left, top, right, bottom)")
     print("  esc-> quit")
+    print()
+    print(f"Ensure the automation runs in these same conditions {get_windows_display_essentials()}")
     print()
 
     # Load the DLL wrapper (expects ImageSearchDLL.dll in the same folder or in PATH)
